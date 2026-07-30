@@ -1,22 +1,18 @@
 @props(['invoices'])
 
 {{--
-    Cijela lista računa u jednoj komponenti: kartice na telefonu, mreža na desktopu.
-    Isti raspored kolona kao v1 — Račun/Klijent, Status, Datum, Dospijeće, Plaćanje, Ukupno.
+    Cijela lista računa. Raspored i sadržaj kartice prate v1: na telefonu kartica sa
+    brojem, statusom, klijentom, načinom plaćanja i podnožjem sa datumima i ukupnim
+    iznosom; na desktopu ista mreža kolona kao u v1.
 --}}
 
 @if ($invoices->isEmpty())
-    <div class="p-10 rounded-2xl border-2 border-dashed border-[var(--color-text-dim)]/20 text-center bg-[var(--color-text-dim)]/5">
-        <x-icon name="file-text" class="h-8 w-8 mx-auto mb-3 text-[var(--color-text-dim)]" />
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-dim)]">Nema računa</p>
-        <a href="{{ route('invoices.create') }}" class="inline-block mt-4 text-xs font-bold text-primary">Kreiraj prvi račun</a>
-    </div>
+    <x-empty-state icon="file-text" title="Nema računa" :action="route('invoices.create')" action-label="Kreiraj prvi račun" />
 @else
     {{-- Telefon --}}
     <div class="md:hidden space-y-3">
         @foreach ($invoices as $invoice)
-            <a href="{{ route('invoices.show', $invoice) }}"
-               class="group block p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] hover:border-primary/30 transition-all space-y-2.5">
+            <x-entity-card :href="route('invoices.show', $invoice)">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center gap-2 min-w-0">
                         <x-icon name="hash" class="w-3 h-3 text-primary shrink-0" />
@@ -24,11 +20,11 @@
                             {{ $invoice->invoice_number }}
                         </span>
                     </div>
-                    <x-status-badge :status="$invoice->status" />
+                    <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <x-icon name="user" class="w-3.5 h-3.5 text-[var(--color-text-dim)] shrink-0" />
+                    <x-icon name="contact" class="w-3.5 h-3.5 text-[var(--color-text-dim)] shrink-0" />
                     <span class="text-xs font-bold text-[var(--color-text-muted)] tracking-tight truncate">
                         {{ $invoice->client?->name ?? 'Nepoznat klijent' }}
                     </span>
@@ -50,23 +46,23 @@
                         {{ $invoice->formatted($invoice->total) }} {{ $invoice->currency }}
                     </p>
                 </div>
-            </a>
+            </x-entity-card>
         @endforeach
     </div>
 
-    {{-- Desktop: zaglavlje --}}
-    <div class="hidden md:grid grid-cols-[minmax(0,1.6fr)_0.6fr_0.7fr_0.7fr_0.7fr_0.7fr] gap-3 px-4 pb-2 mb-1">
-        @foreach (['Račun / Klijent', 'Status', 'Datum', 'Dospijeće', 'Plaćanje'] as $column)
-            <span class="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-dim)]">{{ $column }}</span>
-        @endforeach
-        <span class="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-dim)] text-right">Ukupno</span>
-    </div>
+    {{-- Desktop --}}
+    <x-list-header grid="grid-cols-[minmax(0,1.6fr)_0.6fr_0.7fr_0.7fr_0.7fr_0.7fr]" :columns="[
+        ['label' => 'Račun / Klijent'],
+        ['label' => 'Status'],
+        ['label' => 'Datum'],
+        ['label' => 'Dospijeće'],
+        ['label' => 'Plaćanje'],
+        ['label' => 'Ukupno', 'align' => 'right'],
+    ]" />
 
-    {{-- Desktop: redovi --}}
     <div class="hidden md:block space-y-3">
         @foreach ($invoices as $invoice)
-            <a href="{{ route('invoices.show', $invoice) }}"
-               class="group block p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] hover:border-primary/30 transition-all">
+            <x-entity-card :href="route('invoices.show', $invoice)">
                 <div class="grid grid-cols-[minmax(0,1.6fr)_0.6fr_0.7fr_0.7fr_0.7fr_0.7fr] gap-3 items-center">
                     <div class="flex items-center gap-3 min-w-0">
                         <span class="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -85,7 +81,7 @@
                         </div>
                     </div>
 
-                    <div><x-status-badge :status="$invoice->status" /></div>
+                    <div><x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" /></div>
 
                     <span class="text-xs font-bold text-[var(--color-text-muted)]">{{ $invoice->date->format('d.m.Y.') }}</span>
                     <span class="text-xs font-bold text-[var(--color-text-muted)]">{{ $invoice->due_date->format('d.m.Y.') }}</span>
@@ -95,7 +91,7 @@
                         {{ $invoice->formatted($invoice->total) }} {{ $invoice->currency }}
                     </span>
                 </div>
-            </a>
+            </x-entity-card>
         @endforeach
     </div>
 

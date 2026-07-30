@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sr-Latn" class="{{ $theme ?? 'dark' }}">
+<html lang="sr-Latn" class="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
@@ -7,28 +7,29 @@
     <title>@yield('title', 'ppKalkulatron')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen font-sans">
-    {{-- Svjetleći krugovi u pozadini, kao u v1 --}}
-    <div class="fixed inset-0 overflow-hidden -z-10">
+<body class="font-sans">
+<div class="min-h-screen flex flex-col pb-32 lg:pb-8 relative" x-data="{ userDrawer: false, settingsDrawer: false }">
+    <div class="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
         <div class="glow-ball glow-ball-primary -top-20 -left-20"></div>
         <div class="glow-ball glow-ball-secondary -bottom-20 -right-20"></div>
     </div>
 
-    <div class="min-h-screen flex flex-col pb-28 lg:pb-8 relative">
-        <x-app-header />
+    <x-app-header />
 
-        <main class="grow max-w-[1200px] w-full mx-auto px-5 py-6">
-            <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-black tracking-tight italic">@yield('heading', View::yieldContent('title'))</h1>
-                @yield('actions')
-            </div>
+    <main class="grow max-w-[1200px] w-full mx-auto px-5 py-6 relative">
+        <div class="flex items-center justify-between mb-6 gap-3">
+            <h1 class="text-2xl font-black tracking-tight italic">@yield('heading', View::yieldContent('title'))</h1>
+            @yield('actions')
+        </div>
 
-            <x-flash />
+        <x-flash />
 
-            @yield('content')
-        </main>
+        @yield('content')
+    </main>
 
-        <x-bottom-nav />
-    </div>
+    <x-bottom-nav />
+    <x-user-drawer />
+    <x-settings-drawer />
+</div>
 </body>
 </html>

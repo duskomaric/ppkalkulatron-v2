@@ -4,7 +4,7 @@
 @section('heading', 'Račun '.$invoice->invoice_number)
 
 @section('actions')
-    <x-status-badge :status="$invoice->status" />
+    <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
 @endsection
 
 @section('content')

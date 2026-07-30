@@ -80,3 +80,6 @@ body {
 
 .glow-ball-primary { @apply w-[300px] h-[300px]; }
 .glow-ball-secondary { @apply w-[250px] h-[250px]; }
+
+/* Alpine: sakrij dok se ne inicijalizuje */
+[x-cloak] { display: none !important; }

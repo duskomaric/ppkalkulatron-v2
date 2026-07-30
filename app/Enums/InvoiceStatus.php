@@ -19,14 +19,14 @@ enum InvoiceStatus: string
         };
     }
 
-    /** Tailwind klase za bedž — prati boje iz v1. */
-    public function badgeClasses(): string
+    /** Boja bedža — iste vrijednosti kao StatusBadge u v1. */
+    public function badgeColor(): string
     {
         return match ($this) {
-            self::Created => 'bg-[var(--color-text-dim)]/15 text-[var(--color-text-muted)]',
-            self::Fiscalized => 'bg-[var(--color-success)]/15 text-[var(--color-success)]',
-            self::RefundCreated => 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]',
-            self::Refunded => 'bg-[var(--color-error)]/15 text-[var(--color-error)]',
+            self::Created => 'gray',
+            self::Fiscalized => 'green',
+            self::RefundCreated => 'amber',
+            self::Refunded => 'red',
         };
     }
 

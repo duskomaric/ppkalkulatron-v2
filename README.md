@@ -53,15 +53,38 @@ php artisan native:install
 Korisne komande: `native:debug` (provjera okoline), `native:run`, `native:emulator`,
 `native:tail` (Laravel logovi sa telefona), `native:watch`.
 
-## Prvi cilj — spike, prije bilo kakvog UI-a
+## Spike — pripremljen, čeka toolchain
 
-Dokazati ono jedno što cijelu ideju nosi:
+`OFSService` je prenesen iz v1 i **radi** — provjereno protiv prave cloud kase
+(`uid 5BW66JRX`, oznake F/N/P/E/T/A/B/C) i protiv lažnog ESIR-a.
 
-1. Prekopirati `OFSService` iz v1 (`ppKalkulatron-api/app/Services/OFSService.php`)
-2. Jedna Blade stranica sa dugmetom → `testAttention()` na LAN IP kase
-3. `native:run` na pravom Android telefonu na tom Wi-Fi-u
+```bash
+php artisan ofs:ping --url=http://192.168.31.102:3566 --key=KLJUC
+```
 
-Ako prođe, sve dalje je UI rad bez nepoznanica. Android prvo — nema review-a ni pretplate.
+Blade ekran za telefon je na `/spike` — polje za Base URL i dugme koje zove
+`/api/attention`, pa se rezultat vidi na uređaju.
+
+**Lažni ESIR** za kad prava kasa nije na mreži — isti port, iste putanje, vraća
+i primljene headere da se vidi da su stigli:
+
+```bash
+php -S 0.0.0.0:3566 tools/mock-esir.php
+```
+
+Sa telefona onda: `http://<IP-racunara>:3566`.
+
+### Ostaje da se dokaže
+
+`native:run` na pravom Android telefonu — jedino to potvrđuje da OS pušta plain
+HTTP na LAN iz native aplikacije. Za to treba:
+
+```bash
+brew install --cask android-studio
+```
+
+Android prvo — nema review-a ni pretplate. Zatim iOS, gdje dodatno treba ATS i
+dozvola za lokalnu mrežu.
 
 Nakon toga isto na iOS-u, gdje dodatno treba:
 

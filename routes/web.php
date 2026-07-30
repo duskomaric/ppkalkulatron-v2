@@ -1,35 +1,21 @@
 <?php
 
+use App\Http\Controllers\PinSettingsController;
+use App\Http\Controllers\UnlockController;
+use App\Http\Middleware\EnsureUnlocked;
+use App\Services\PinLock;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+// Ekran za otključavanje mora biti dostupan i zaključanoj aplikaciji.
+Route::get('/unlock', [UnlockController::class, 'show'])->name('unlock');
+Route::post('/unlock', [UnlockController::class, 'store'])->name('unlock.store');
+
+Route::middleware(EnsureUnlocked::class)->group(function () {
+    Route::get('/', fn (PinLock $pin) => view('home', ['pinEnabled' => $pin->isEnabled()]))->name('home');
+
+    Route::post('/lock', [UnlockController::class, 'destroy'])->name('unlock.destroy');
+
+    Route::get('/settings/pin', [PinSettingsController::class, 'edit'])->name('settings.pin.edit');
+    Route::put('/settings/pin', [PinSettingsController::class, 'update'])->name('settings.pin.update');
+    Route::delete('/settings/pin', [PinSettingsController::class, 'destroy'])->name('settings.pin.destroy');
 });
-
-/*
- * Spike: dokazuje da PHP na uređaju može pozvati HTTP kasu na lokalnoj mreži —
- * ono što preglednik iz HTTPS stranice ne smije. Briše se kad se dokaže.
- */
-Route::get('/spike', fn () => view('spike', ['baseUrl' => config('ofs.base_url')]))->name('spike');
-
-Route::post('/spike/attention', function (\Illuminate\Http\Request $request) {
-    $service = new \App\Services\OFSService(
-        baseUrl: $request->string('base_url')->toString() ?: null,
-        apiKey: $request->string('api_key')->toString() ?: null,
-    );
-
-    try {
-        $response = $service->testAttention();
-        $result = [
-            'ok' => $response->successful(),
-            'text' => 'HTTP '.$response->status()."\n\n".$response->body(),
-        ];
-    } catch (\Throwable $e) {
-        $result = ['ok' => false, 'text' => get_class($e)."\n\n".$e->getMessage()];
-    }
-
-    return view('spike', [
-        'baseUrl' => $request->string('base_url')->toString(),
-        'result' => $result,
-    ]);
-})->name('spike.attention');

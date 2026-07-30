@@ -53,45 +53,28 @@ php artisan native:install
 Korisne komande: `native:debug` (provjera okoline), `native:run`, `native:emulator`,
 `native:tail` (Laravel logovi sa telefona), `native:watch`.
 
-## Spike — pripremljen, čeka toolchain
+## Šta je urađeno
 
-`OFSService` je prenesen iz v1 i **radi** — provjereno protiv prave cloud kase
-(`uid 5BW66JRX`, oznake F/N/P/E/T/A/B/C) i protiv lažnog ESIR-a.
+- **Zaključavanje PIN-om** — opcionalno. Prvi put nije podešeno i ulazi se direktno
+  u račune; kad se postavi u podešavanjima, traži se pri pokretanju. Bez brojača
+  pokušaja i bez traženja trenutnog PIN-a. Čuva se kao hash.
+- **Računi** — lista (kartice na telefonu, mreža na desktopu), forma sa stavkama,
+  detalj, izmjena i brisanje. Numeracija se izvodi iz samih računa, pa brisanje
+  oslobađa broj bez ijedne dodatne linije — u v1 to nije radilo.
+- **UI prati v1** — isti tokeni (amber, tamna tema, svjetleći krugovi), Tailwind 4.
+- **OFSService** prenesen iz v1, gleda na cloud kasu. `php artisan ofs:ping`.
 
-```bash
-php artisan ofs:ping --url=http://192.168.31.102:3566 --key=KLJUC
-```
+Komponente su namjerno veće cjeline: `x-invoices.list` je cijela lista,
+`x-invoices.form` cijela forma. Dijelimo ih kasnije po potrebi.
 
-Blade ekran za telefon je na `/spike` — polje za Base URL i dugme koje zove
-`/api/attention`, pa se rezultat vidi na uređaju.
+### Demo podaci
 
-**Lažni ESIR** za kad prava kasa nije na mreži — isti port, iste putanje, vraća
-i primljene headere da se vidi da su stigli:
-
-```bash
-php -S 0.0.0.0:3566 tools/mock-esir.php
-```
-
-Sa telefona onda: `http://<IP-racunara>:3566`.
-
-### Ostaje da se dokaže
-
-`native:run` na pravom Android telefonu — jedino to potvrđuje da OS pušta plain
-HTTP na LAN iz native aplikacije. Za to treba:
+`sail artisan migrate:fresh --seed` napravi tri klijenta, četiri artikla i četiri
+računa. PIN se postavlja iz tinkera:
 
 ```bash
-brew install --cask android-studio
+sail artisan tinker --execute="app(\App\Services\PinLock::class)->set('1111');"
 ```
-
-Android prvo — nema review-a ni pretplate. Zatim iOS, gdje dodatno treba ATS i
-dozvola za lokalnu mrežu.
-
-Nakon toga isto na iOS-u, gdje dodatno treba:
-
-- `NSAllowsLocalNetworking` u ATS-u
-- `NSLocalNetworkUsageDescription` — iOS 14+ traži dozvolu korisnika za lokalnu mrežu
-
-Nijedno od toga nije potvrđeno u dokumentaciji koju sam našao; iOS je zato drugi korak.
 
 ## Zatečene stvari koje utiču na dizajn
 

@@ -3,7 +3,80 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* Tokeni preneseni iz v1 (ppKalkulatron-pwa/app/app.css) da izgled ostane isti. */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Jedina boja koja se mijenja */
+    --primary-base: 245, 158, 11; /* Amber 500 */
+
+    --color-primary: rgb(var(--primary-base));
+    --color-primary-hover: color-mix(in srgb, var(--color-primary), white 20%);
+    --color-primary-light: rgba(var(--primary-base), 0.1);
+
+    --shadow-glow-primary: 0 0 20px 2px rgba(var(--primary-base), 0.4);
+
+    --animate-fade-in: fade-in 0.3s ease-out;
+    --animate-slide-in-bottom: slide-in-bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Tema — dark */
+    --color-bg: #0b0b0f;
+    --color-surface: #16161e;
+    --color-surface-hover: #1c1c26;
+    --color-border: rgba(255, 255, 255, 0.05);
+    --color-border-strong: rgba(255, 255, 255, 0.1);
+    --color-text-main: #f9fafb;
+    --color-text-muted: #9ca3af;
+    --color-text-dim: #6b7280;
+    --color-glass: rgba(22, 22, 30, 0.8);
+
+    --color-success: #10b981;
+    --color-error: #ef4444;
+    --color-warning: #f59e0b;
+    --color-info: #3b82f6;
+
+    @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slide-in-bottom {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
 }
+
+/* Tema — light */
+:root[class~='light'] {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f1f5f9;
+    --color-border: rgba(15, 23, 42, 0.05);
+    --color-border-strong: rgba(15, 23, 42, 0.1);
+    --color-text-main: #0f172a;
+    --color-text-muted: #475569;
+    --color-text-dim: #94a3b8;
+    --color-glass: rgba(255, 255, 255, 0.8);
+
+    --color-success: #059669;
+    --color-error: #dc2626;
+    --color-warning: #d97706;
+    --color-info: #2563eb;
+}
+
+html,
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text-main);
+    @apply antialiased overflow-x-hidden transition-colors duration-300;
+}
+
+/* Svjetleći krugovi u pozadini — jedino mjesto gdje ne idemo čistim Tailwindom. */
+.glow-ball {
+    background-color: var(--color-primary);
+    @apply absolute rounded-full blur-[100px] opacity-30 pointer-events-none;
+}
+
+.glow-ball-primary { @apply w-[300px] h-[300px]; }
+.glow-ball-secondary { @apply w-[250px] h-[250px]; }

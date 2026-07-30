@@ -1,56 +1,42 @@
 @extends('layouts.app')
 
-@section('title', 'PIN')
+@section('title', 'Podešavanja')
+@section('heading', 'PIN')
 
 @section('content')
-    <nav>
-        <a href="{{ route('home') }}">Početna</a>
-        <a href="{{ route('settings.pin.edit') }}">PIN</a>
-    </nav>
+    <div class="space-y-5 max-w-md">
+        <p class="text-sm text-[var(--color-text-muted)]">
+            {{ $enabled
+                ? 'PIN se traži pri svakom pokretanju aplikacije.'
+                : 'PIN je opcionalan. Kad ga postavite, tražit će se pri svakom pokretanju.' }}
+        </p>
 
-    <h1>{{ $enabled ? 'Promijeni PIN' : 'Postavi PIN' }}</h1>
-    <p class="sub">
-        {{ $enabled
-            ? 'PIN se traži pri svakom pokretanju aplikacije.'
-            : 'PIN je opcionalan. Kad ga postavite, tražit će se pri svakom pokretanju.' }}
-    </p>
-
-    <div class="card">
-        <form method="POST" action="{{ route('settings.pin.update') }}">
-            @csrf
-            @method('PUT')
-
-            @if ($enabled)
-                <label for="current_pin">Trenutni PIN</label>
-                <input id="current_pin" name="current_pin" type="password" class="pin" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••">
-                @error('current_pin')<p class="err">{{ $message }}</p>@enderror
-            @endif
-
-            <label for="pin">{{ $enabled ? 'Novi PIN' : 'PIN' }}</label>
-            <input id="pin" name="pin" type="password" class="pin" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" @if (! $enabled) autofocus @endif>
-            @error('pin')<p class="err">{{ $message }}</p>@enderror
-
-            <label for="pin_confirmation">Ponovi PIN</label>
-            <input id="pin_confirmation" name="pin_confirmation" type="password" class="pin" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••">
-
-            <button type="submit">{{ $enabled ? 'Promijeni PIN' : 'Postavi PIN' }}</button>
-        </form>
-    </div>
-
-    @if ($enabled)
-        <div class="card">
-            <h2>Ukloni PIN</h2>
-            <p>Aplikacija se nakon ovoga otvara bez zaključavanja.</p>
-
-            <form method="POST" action="{{ route('settings.pin.destroy') }}">
+        <x-section :title="$enabled ? 'Promijeni PIN' : 'Postavi PIN'" icon="lock">
+            <form method="POST" action="{{ route('settings.pin.update') }}" class="space-y-4">
                 @csrf
-                @method('DELETE')
+                @method('PUT')
 
-                <label for="current_pin_remove">Trenutni PIN</label>
-                <input id="current_pin_remove" name="current_pin" type="password" class="pin" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••">
+                <x-field label="PIN" name="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"
+                         hint="Od 4 do 8 cifara." required />
 
-                <button type="submit" class="danger">Ukloni PIN</button>
+                <x-field label="Ponovi PIN" name="pin_confirmation" type="password" inputmode="numeric"
+                         maxlength="8" autocomplete="off" required />
+
+                <x-button variant="primary" class="w-full">{{ $enabled ? 'Promijeni PIN' : 'Postavi PIN' }}</x-button>
             </form>
-        </div>
-    @endif
+        </x-section>
+
+        @if ($enabled)
+            <x-section title="Ukloni PIN" icon="lock">
+                <p class="text-sm text-[var(--color-text-muted)]">Aplikacija se nakon ovoga otvara bez PIN-a.</p>
+
+                <form method="POST" action="{{ route('settings.pin.destroy') }}"
+                      onsubmit="return confirm('Ukloniti PIN?')">
+                    @csrf
+                    @method('DELETE')
+                    <x-button variant="danger" class="w-full">Ukloni PIN</x-button>
+                </form>
+            </x-section>
+        @endif
+    </div>
 @endsection

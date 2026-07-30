@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\PinLock;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class UnlockController extends Controller
@@ -13,46 +12,28 @@ class UnlockController extends Controller
 
     public function show(Request $request)
     {
-        // Bez PIN-a nema šta otključavati, a otključan korisnik ne treba ekran.
         if (! $this->pin->isEnabled() || $request->session()->has(PinLock::SESSION_KEY)) {
-            return redirect()->route('home');
+            return redirect()->route('invoices.index');
         }
 
-        return view('unlock', [
-            'lockedForSeconds' => $this->pin->secondsUntilUnlock(),
-            'attemptsLeft' => $this->pin->attemptsLeft(),
-        ]);
+        return view('unlock');
     }
 
     public function store(Request $request)
     {
         if (! $this->pin->isEnabled()) {
-            return redirect()->route('home');
-        }
-
-        if ($seconds = $this->pin->secondsUntilUnlock()) {
-            throw ValidationException::withMessages([
-                'pin' => "Previše pogrešnih pokušaja. Pokušajte za {$seconds} s.",
-            ]);
+            return redirect()->route('invoices.index');
         }
 
         $validated = $request->validate(['pin' => ['required', 'string']]);
 
         if (! $this->pin->verify($validated['pin'])) {
-            Log::warning('Neuspjelo otključavanje PIN-om', ['ip' => $request->ip()]);
-
-            throw ValidationException::withMessages([
-                'pin' => $this->pin->isLockedOut()
-                    ? 'Previše pogrešnih pokušaja. Aplikacija je zaključana na '.PinLock::LOCKOUT_SECONDS.' s.'
-                    : 'Pogrešan PIN. Preostalo pokušaja: '.$this->pin->attemptsLeft().'.',
-            ]);
+            throw ValidationException::withMessages(['pin' => 'Pogrešan PIN.']);
         }
 
-        // Novi session id nakon otključavanja — stara sesija ne smije ostati upotrebljiva.
-        $request->session()->regenerate();
-        $request->session()->put(PinLock::SESSION_KEY, now()->toIso8601String());
+        $request->session()->put(PinLock::SESSION_KEY, true);
 
-        return redirect()->intended(route('home'));
+        return redirect()->intended(route('invoices.index'));
     }
 
     public function destroy(Request $request)

@@ -21,4 +21,27 @@ return [
     'serial_number' => env('OFS_SERIAL_NUMBER'),
     'pac' => env('OFS_PAC'),
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Poreske oznake
+    |--------------------------------------------------------------------------
+    |
+    | Uređaj ih javlja u /api/status → currentTaxRates. Ovo je fallback za formu
+    | dok ih ne budemo čitali i keširali sa uređaja. Vrijednosti su bazni poeni:
+    | 1100 = 11%.
+    |
+    */
+
+    'tax_labels' => [
+        'F' => 1100,
+        'N' => 0,
+        'P' => 4000,
+        'E' => 600,
+        'T' => 200,
+        'A' => 900,
+        'B' => 0,
+        'C' => 0,
+    ],
+
 ];

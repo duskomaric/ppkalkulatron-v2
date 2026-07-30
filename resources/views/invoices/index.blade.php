@@ -3,6 +3,8 @@
 @section('actions')<x-create-button :href="route('invoices.create')" label="Novi račun" />@endsection
 
 @section('content')
-    <x-search-bar :value="$q" placeholder="Pretraga po broju ili klijentu…" />
-    <x-invoices.list :invoices="$invoices" />
+    <div x-data="{ yearDrawer: false }">
+        <x-invoices.filters :filters="$filters" :years="$years" :active-filters="$activeFilters" />
+        <x-invoices.list :invoices="$invoices" />
+    </div>
 @endsection

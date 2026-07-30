@@ -15,8 +15,22 @@ class InvoiceController extends Controller
 
     public function index(Request $request)
     {
+        $filters = [
+            'q' => $request->string('q')->toString(),
+            'status' => $request->string('status')->toString(),
+            'payment_type' => $request->string('payment_type')->toString(),
+            'created_from' => $request->string('created_from')->toString(),
+            'created_to' => $request->string('created_to')->toString(),
+            'year' => (int) ($request->integer('year') ?: date('Y')),
+        ];
+
         $invoices = Invoice::with('client')
-            ->search($request->string('q')->toString())
+            ->search($filters['q'])
+            ->whereYear('date', $filters['year'])
+            ->when($filters['status'], fn ($q, $status) => $q->where('status', $status))
+            ->when($filters['payment_type'], fn ($q, $type) => $q->where('payment_type', $type))
+            ->when($filters['created_from'], fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
+            ->when($filters['created_to'], fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
             ->latest('date')
             ->latest('id')
             ->paginate(20)
@@ -24,8 +38,68 @@ class InvoiceController extends Controller
 
         return view('invoices.index', [
             'invoices' => $invoices,
-            'q' => $request->string('q')->toString(),
+            'filters' => $filters,
+            'years' => $this->years($filters['year']),
+            'activeFilters' => $this->activeFilters($filters),
         ]);
+    }
+
+    /** Godine u kojima postoje računi, uvijek uključujući izabranu i tekuću. */
+    private function years(int $selected): array
+    {
+        return Invoice::query()
+            ->selectRaw('DISTINCT YEAR(`date`) as year')
+            ->pluck('year')
+            ->push($selected, (int) date('Y'))
+            ->map(fn ($year) => (int) $year)
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->all();
+    }
+
+    /** Bedževi aktivnih filtera; svaki nosi link koji samo njega uklanja. */
+    private function activeFilters(array $filters): array
+    {
+        $active = [];
+
+        if ($filters['q'] !== '') {
+            $active[] = ['label' => 'Pretraga', 'value' => $filters['q'], 'clear' => $this->without($filters, ['q'])];
+        }
+
+        if ($filters['status'] !== '') {
+            $active[] = [
+                'label' => 'Status',
+                'value' => \App\Enums\InvoiceStatus::from($filters['status'])->label(),
+                'clear' => $this->without($filters, ['status']),
+            ];
+        }
+
+        if ($filters['payment_type'] !== '') {
+            $active[] = [
+                'label' => 'Plaćanje',
+                'value' => \App\Enums\PaymentType::from($filters['payment_type'])->label(),
+                'clear' => $this->without($filters, ['payment_type']),
+            ];
+        }
+
+        if ($filters['created_from'] !== '' || $filters['created_to'] !== '') {
+            $active[] = [
+                'label' => 'Datum',
+                'value' => ($filters['created_from'] ?: '—').' → '.($filters['created_to'] ?: '—'),
+                'clear' => $this->without($filters, ['created_from', 'created_to']),
+            ];
+        }
+
+        return $active;
+    }
+
+    private function without(array $filters, array $keys): string
+    {
+        return route('invoices.index', array_merge(
+            array_filter($filters, fn ($value, $key) => ! in_array($key, $keys, true) && $value !== '', ARRAY_FILTER_USE_BOTH),
+            ['year' => $filters['year']],
+        ));
     }
 
     public function create()

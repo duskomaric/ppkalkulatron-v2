@@ -1,4 +1,4 @@
-@props(['entityName', 'entityIcon', 'state' => 'detailDrawer'])
+@props(['entityName', 'entityIcon'])
 
 {{--
     Unutrašnjost v1 DetailDrawer-a: kartica zaglavlja, sadržaj, pa podnožje sa akcijama.
@@ -24,6 +24,7 @@
         @isset($actions)
             <div class="flex gap-2">{{ $actions }}</div>
         @endisset
-        <x-drawer-secondary-button label="Zatvori" x-on:click="{{ $state }} = false" />
+        <x-drawer-secondary-button label="Zatvori"
+                                   x-on:click="$data.detailDrawer === undefined ? history.back() : ($data.detailDrawer = false)" />
     </div>
 </div>

@@ -8,21 +8,25 @@
         <x-section-block>
             <x-section-header icon="file-text" title="Osnovni podaci" />
 
+            {{-- Redoslijed i boje pločica prate v1. Izostavljeni su Jezik, Izvor i
+                 Ponavljanje — v2 ima jedan jezik, nema konverzije ni ponavljanja. --}}
             <x-details-grid :columns="2">
                 <x-details-item icon="contact" label="Klijent" :value="$invoice->client?->name"
                                 color="bg-blue-500/10 text-blue-500" />
                 <x-details-item icon="calendar" label="Datum" :value="$invoice->date->format('d.m.Y.')"
                                 color="bg-green-500/10 text-green-500" />
+                @if ($invoice->refundInvoice)
+                    <x-details-item icon="repeat" label="Storno od" :value="$invoice->refundInvoice->invoice_number"
+                                    color="bg-red-500/10 text-red-500" />
+                @endif
                 <x-details-item icon="clock" label="Dospijeće" :value="$invoice->due_date->format('d.m.Y.')"
                                 color="bg-green-500/10 text-green-500" />
                 <x-details-item icon="credit-card" label="Valuta" :value="$invoice->currency"
                                 color="bg-amber-500/10 text-amber-500" />
+                <x-details-item icon="file-text" label="Predložak" :value="$invoice->template->label()"
+                                color="bg-indigo-500/10 text-indigo-500" />
                 <x-details-item icon="credit-card" label="Način plaćanja" :value="$invoice->payment_type->label()"
                                 color="bg-teal-500/10 text-teal-500" />
-                @if ($invoice->client?->vat_id)
-                    <x-details-item icon="hash" label="JIB kupca" :value="$invoice->client->vat_id"
-                                    color="bg-indigo-500/10 text-indigo-500" />
-                @endif
             </x-details-grid>
         </x-section-block>
 

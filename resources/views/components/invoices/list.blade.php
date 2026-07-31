@@ -7,7 +7,7 @@
 --}}
 
 @if ($invoices->isEmpty())
-    <x-empty-state icon="file-text" title="Nema računa" :action="route('invoices.create')" action-label="Kreiraj prvi račun" />
+    <x-empty-state icon="x" title="Nema pronađenih računa" />
 @else
     {{-- Telefon --}}
     <div class="md:hidden space-y-3">
@@ -30,6 +30,15 @@
                         {{ $invoice->client?->name ?? 'Nepoznat klijent' }}
                     </span>
                 </div>
+
+                @if ($invoice->refundInvoice)
+                    <div class="flex items-center gap-2">
+                        <x-icon name="repeat" class="w-3 h-3 text-red-500 shrink-0" />
+                        <span class="text-[10px] font-bold text-[var(--color-text-dim)] tracking-tight truncate">
+                            Storno od: {{ $invoice->refundInvoice->invoice_number }}
+                        </span>
+                    </div>
+                @endif
 
                 <div class="flex items-center gap-2">
                     <x-icon name="credit-card" class="w-3 h-3 text-[var(--color-text-dim)] shrink-0" />
@@ -77,21 +86,40 @@
                                     {{ $invoice->invoice_number }}
                                 </span>
                             </div>
-                            <p class="text-xs font-bold text-[var(--color-text-muted)] truncate">
-                                {{ $invoice->client?->name ?? 'Nepoznat klijent' }}
-                            </p>
+                            <div class="flex items-center gap-2 mt-1 text-xs font-bold text-[var(--color-text-muted)] min-w-0">
+                                <x-icon name="contact" class="w-3.5 h-3.5 text-[var(--color-text-dim)] shrink-0" />
+                                <span class="truncate">{{ $invoice->client?->name ?? 'Nepoznat klijent' }}</span>
+                            </div>
+
+                            @if ($invoice->refundInvoice)
+                                <div class="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-[var(--color-text-dim)] min-w-0">
+                                    <x-icon name="repeat" class="w-3 h-3 text-red-500 shrink-0" />
+                                    <span class="truncate">Storno od: {{ $invoice->refundInvoice->invoice_number }}</span>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
                     <div><x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" /></div>
 
-                    <span class="text-xs font-bold text-[var(--color-text-muted)]">{{ $invoice->date->format('d.m.Y.') }}</span>
-                    <span class="text-xs font-bold text-[var(--color-text-muted)]">{{ $invoice->due_date->format('d.m.Y.') }}</span>
-                    <span class="text-xs font-bold text-[var(--color-text-muted)] truncate">{{ $invoice->payment_type->label() }}</span>
+                    <div class="flex items-center gap-1 text-xs font-bold text-[var(--color-text-muted)]">
+                        <x-icon name="calendar" class="w-3 h-3 text-[var(--color-text-dim)]" />
+                        <span>{{ $invoice->date->format('d.m.Y.') }}</span>
+                    </div>
 
-                    <span class="text-base font-black tracking-tighter italic text-right">
+                    <div class="flex items-center gap-1 text-xs font-bold text-[var(--color-text-muted)]">
+                        <x-icon name="clock" class="w-3 h-3 text-[var(--color-text-dim)]" />
+                        <span>{{ $invoice->due_date->format('d.m.Y.') }}</span>
+                    </div>
+
+                    <div class="flex items-center gap-1 text-xs font-bold text-[var(--color-text-muted)] min-w-0">
+                        <x-icon name="credit-card" class="w-3 h-3 text-[var(--color-text-dim)] shrink-0" />
+                        <span class="truncate">{{ $invoice->payment_type->label() }}</span>
+                    </div>
+
+                    <p class="text-right text-lg font-black tracking-tighter italic">
                         {{ $invoice->formatted($invoice->total) }} {{ $invoice->currency }}
-                    </span>
+                    </p>
                 </div>
             </x-entity-card>
         @endforeach

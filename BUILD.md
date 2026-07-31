@@ -121,7 +121,15 @@ cd nativephp/android
     -PMYAPP_UPLOAD_KEY_PASSWORD=...
 ```
 
-APK završi u `nativephp/android/app/build/outputs/apk/release/`.
+APK završi u `nativephp/android/app/build/outputs/apk/release/app-release.apk`.
+
+Prvi build traje dugo (~20 min): Gradle povuče sebe, NDK i CMake, oko 2 GB. Svaki
+sljedeći je pitanje minuta. Provjera šta je stvarno izašlo:
+
+```bash
+$ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging <apk> | head -3
+$ANDROID_HOME/build-tools/36.0.0/apksigner verify --print-certs <apk>
+```
 
 `--build-type=bundle` pravi AAB, što Play Store traži; za slanje pojedincu je APK
 jednostavniji jer se instalira direktno.

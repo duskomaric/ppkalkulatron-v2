@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="theme-color" content="#0B0B0F">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'ppKalkulatron')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -30,6 +31,7 @@
     <x-bottom-nav />
     <x-user-drawer />
     <x-settings-drawer />
+    <x-toast />
 </div>
 
 @stack('scripts')

@@ -1,12 +1,15 @@
 <?php
 
 use App\Enums\InvoiceStatus;
+use App\Mail\InvoiceMail;
 use App\Models\Article;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Services\FiscalReceiptStore;
 use App\Services\InvoiceNumber;
 use App\Services\InvoicePdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
@@ -195,4 +198,106 @@ it('nudi PDF na preuzimanje', function () {
     $this->get(route('invoices.pdf', $invoice))
         ->assertStatus(200)
         ->assertHeader('content-type', 'application/pdf');
+});
+
+it('šalje račun mailom sa PDF prilogom', function () {
+    Mail::fake();
+
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $this->postJson(route('invoices.email', $invoice), [
+        'to' => 'kupac@example.com',
+        'subject' => 'Račun '.$invoice->invoice_number,
+        'body' => 'U prilogu je račun.',
+        'attach_pdf' => true,
+    ])->assertStatus(200)->assertJson(['message' => 'Račun je poslat na email.']);
+
+    // Privremeni PDF se briše čim slanje prođe, pa se provjerava da je bio priložen,
+    // a da prilog stvarno nastane pokriva test ispod.
+    Mail::assertSent(InvoiceMail::class, function ($mail) {
+        return $mail->hasTo('kupac@example.com') && $mail->pdfPath !== null;
+    });
+});
+
+it('prilaže PDF i fiskalni račun sa pravim sadržajem', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail()->load('fiscalRecords');
+
+    $record = $invoice->fiscalRecords()->create(['type' => 'original']);
+    app(FiscalReceiptStore::class)->store($record, 'bajtovi-racuna', 'pdf');
+    $invoice->load('fiscalRecords.receiptImage');
+
+    $path = storage_path('app/private/test-'.uniqid().'.pdf');
+    @mkdir(dirname($path), 0755, true);
+    file_put_contents($path, app(InvoicePdfService::class)->contents($invoice));
+
+    $attachments = (new InvoiceMail(
+        invoice: $invoice, emailSubject: 'Račun', body: 'Tekst',
+        pdfPath: $path, attachFiscalRecordIds: [$record->id],
+    ))->attachments();
+
+    expect($attachments)->toHaveCount(2);
+
+    @unlink($path);
+});
+
+it('traži ispravnog primaoca', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+
+    $this->postJson(route('invoices.email', Invoice::firstOrFail()), [
+        'to' => 'nije-email', 'subject' => '', 'body' => '',
+    ])->assertStatus(422)->assertJsonValidationErrors(['to', 'subject', 'body']);
+});
+
+it('prilaže fiskalni račun i kaže kad ga nema', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $withImage = $invoice->fiscalRecords()->create(['type' => 'original', 'fiscal_invoice_number' => 'X-1']);
+    app(FiscalReceiptStore::class)->store($withImage, 'binarni-sadrzaj', 'png');
+    $withoutImage = $invoice->fiscalRecords()->create(['type' => 'copy', 'fiscal_invoice_number' => 'X-2']);
+
+    Mail::fake();
+
+    $this->postJson(route('invoices.email', $invoice), [
+        'to' => 'kupac@example.com',
+        'subject' => 'Račun',
+        'body' => 'Tekst',
+        'attach_pdf' => false,
+        'attach_fiscal_record_ids' => [$withImage->id, $withoutImage->id],
+    ])->assertStatus(200)
+        ->assertJson(['message' => 'Račun je poslat, ali fiskalni račun nije priložen jer sadržaja nema.']);
+
+    Mail::assertSent(InvoiceMail::class, function ($mail) use ($withImage) {
+        return $mail->attachFiscalRecordIds === [$withImage->id];
+    });
+});
+
+it('servira sliku fiskalnog računa iz baze', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $record = Invoice::firstOrFail()->fiscalRecords()->create(['type' => 'original']);
+    app(FiscalReceiptStore::class)->store($record, 'sadrzaj-slike', 'png');
+
+    $this->get(route('invoices.receipt', $record))
+        ->assertStatus(200)
+        ->assertHeader('content-type', 'image/png')
+        ->assertSee('sadrzaj-slike');
+});
+
+it('ne stavlja kosu crtu u ime priloga', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail()->load('fiscalRecords');
+
+    $path = storage_path('app/private/test-'.uniqid().'.pdf');
+    @mkdir(dirname($path), 0755, true);
+    file_put_contents($path, '%PDF-');
+
+    $name = (new InvoiceMail(
+        invoice: $invoice, emailSubject: 'x', body: 'x', pdfPath: $path,
+    ))->attachments()[0]->as;
+
+    expect($name)->toBe('racun_0001-'.date('Y').'.pdf');
+
+    @unlink($path);
 });

@@ -24,6 +24,8 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::post('/lock', [UnlockController::class, 'destroy'])->name('unlock.destroy');
 
     Route::get('/racuni/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+    Route::post('/racuni/{invoice}/mail', [InvoiceController::class, 'email'])->name('invoices.email');
+    Route::get('/fiskalni-racun/{record}', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
     Route::resource('racuni', InvoiceController::class)->parameters(['racuni' => 'invoice'])->names('invoices');
     Route::resource('klijenti', ClientController::class)->parameters(['klijenti' => 'client'])->names('clients')->except('show');
     Route::resource('artikli', ArticleController::class)->parameters(['artikli' => 'article'])->names('articles')->except('show');

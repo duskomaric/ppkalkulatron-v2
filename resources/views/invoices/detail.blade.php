@@ -111,6 +111,25 @@
                class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-primary/30 bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-all cursor-pointer min-h-[44px]">
                 <x-icon name="file-text" class="h-4 w-4" /> Preuzmi PDF
             </a>
+
+            @php
+                $emailDefaults = [
+                    'url' => route('invoices.email', $invoice),
+                    'to' => $invoice->client?->email ?? '',
+                    'subject' => 'Račun '.$invoice->invoice_number,
+                    'body' => "Poštovani,\n\nU prilogu vam šaljemo račun {$invoice->invoice_number}.\n\nS poštovanjem",
+                    'receipts' => $invoice->fiscalRecords->map(fn ($record) => [
+                        'id' => $record->id,
+                        'type_label' => $record->type->label(),
+                    ])->values(),
+                ];
+            @endphp
+
+            <button type="button" :disabled="! $data.openEmail"
+                    x-on:click="{{ \App\Support\Js::call('$data.openEmail', $emailDefaults) }}"
+                    class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 text-blue-500 font-bold text-sm hover:bg-blue-500/20 transition-all cursor-pointer min-h-[44px] disabled:opacity-50">
+                <x-icon name="mail" class="h-4 w-4" /> Pošalji mail
+            </button>
         </div>
     </div>
 

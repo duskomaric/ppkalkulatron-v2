@@ -6,7 +6,7 @@
                 <x-icon name="chevron-left" class="h-4 w-4" />
             </span>
         @else
-            <a href="{{ $paginator->previousPageUrl() }}" rel="prev"
+            <a href="{{ $paginator->previousPageUrl() }}" rel="prev" aria-label="Prethodna strana"
                class="px-3 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 transition-all">
                 <x-icon name="chevron-left" class="h-4 w-4" />
             </a>
@@ -30,7 +30,7 @@
         @endforeach
 
         @if ($paginator->hasMorePages())
-            <a href="{{ $paginator->nextPageUrl() }}" rel="next"
+            <a href="{{ $paginator->nextPageUrl() }}" rel="next" aria-label="Sljedeća strana"
                class="px-3 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 transition-all">
                 <x-icon name="chevron-right" class="h-4 w-4" />
             </a>

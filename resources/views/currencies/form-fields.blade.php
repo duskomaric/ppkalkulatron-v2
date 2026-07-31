@@ -35,7 +35,8 @@
         <x-section-block variant="card">
             <x-section-header icon="credit-card" title="Kursevi prema KM" />
 
-            <form method="POST" action="{{ route('currencies.rates.store', $currency) }}" class="space-y-4">
+            <form method="POST" action="{{ route('currencies.rates.store', $currency) }}" class="space-y-4"
+                  x-on:submit="$data.submitForm && ($event.preventDefault(), $data.submitForm($event))">
                 @csrf
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

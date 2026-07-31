@@ -36,7 +36,8 @@
      x-transition:leave="transition-all ease-[cubic-bezier(0.19,1,0.22,1)] duration-500"
      x-transition:leave-start="translate-y-0 opacity-100 scale-100"
      x-transition:leave-end="-translate-y-6 opacity-0 scale-95"
-     class="fixed top-6 left-1/2 -translate-x-1/2 z-[1200] w-[calc(100%-2.5rem)] max-w-[420px]">
+     role="status" aria-live="polite"
+     class="fixed left-1/2 -translate-x-1/2 z-[1200] w-[calc(100%-2.5rem)] max-w-[420px] top-[calc(1.5rem+env(safe-area-inset-top,0px))]">
     <div class="relative overflow-hidden backdrop-blur-2xl bg-zinc-900/80 border rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-colors hover:bg-zinc-900/90"
          :class="type === 'error' ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/10 border-emerald-500/20'">
         <div class="flex items-start justify-between gap-4 p-4">

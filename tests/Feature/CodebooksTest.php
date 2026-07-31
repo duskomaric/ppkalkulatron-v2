@@ -65,7 +65,7 @@ it('čuva kurs valute prema KM', function () {
 
     $this->post(route('currencies.rates.store', $eur), [
         'rate_to_bam' => '1.95583', 'rate_date' => '2026-07-31',
-    ])->assertRedirect(route('currencies.edit', $eur));
+    ])->assertRedirect(route('currencies.index'));
 
     expect((float) ExchangeRate::where('currency', 'EUR')->value('rate_to_bam'))->toBe(1.95583);
 });

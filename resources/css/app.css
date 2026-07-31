@@ -81,6 +81,16 @@ body {
 .glow-ball-primary { @apply w-[300px] h-[300px]; }
 .glow-ball-secondary { @apply w-[250px] h-[250px]; }
 
+/*
+ * Tokeni koje su komponente koristile a nisu bili definisani: border je padao na
+ * currentColor (bijelo u tamnoj temi), a pozadina na prozirno.
+ */
+:root {
+    --color-page-border-subtle: color-mix(in srgb, var(--color-primary), transparent 70%);
+    --color-page-bg-strong: color-mix(in srgb, var(--color-primary), transparent 88%);
+    --color-page-bg-hover: color-mix(in srgb, var(--color-primary), transparent 80%);
+}
+
 /* Alpine: sakrij dok se ne inicijalizuje */
 [x-cloak] { display: none !important; }
 

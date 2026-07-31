@@ -1,4 +1,4 @@
-@props(['label', 'delete' => null])
+@props(['label', 'delete' => null, 'cancel' => null])
 
 {{--
     Dugme za brisanje cilja formu izvan ove preko atributa form="delete-entity".
@@ -19,5 +19,7 @@
         </button>
     @endif
 
-    <x-drawer-secondary-button label="Odustani" x-on:click="$data.closeForm && $data.closeForm()" />
+    {{-- Na punoj stranici nema drawera koji bi se zatvorio, pa se ide nazad. --}}
+    <x-drawer-secondary-button label="Odustani"
+                               :x-on:click="'$data.closeForm ? $data.closeForm() : (window.location = '.\App\Support\Js::from($cancel ?? url()->previous()).')'" />
 </div>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Settings\SecuritySettings;
 use Illuminate\Support\Facades\Hash;
+use Native\Mobile\Runtime;
 
 /**
  * PIN zaključavanje aplikacije, namjerno jednostavno.
@@ -33,6 +34,19 @@ class PinLock
     public static function boot(): string
     {
         return self::$boot ??= bin2hex(random_bytes(8));
+    }
+
+    /**
+     * Da li oznaka procesa uopšte nešto znači.
+     *
+     * Ima smisla samo u trajnom NativePHP procesu, gdje jedan PHP servira sve
+     * zahtjeve. Pod php-fpm ili ugrađenim serverom svaki zahtjev je novi proces,
+     * pa bi provjera zaključala korisnika na prvom kliku poslije unosa PIN-a.
+     */
+    public static function tracksProcess(): bool
+    {
+        return (new \ReflectionClass(Runtime::class))
+            ->getStaticPropertyValue('booted', false) === true;
     }
 
     public function __construct(private SecuritySettings $settings) {}

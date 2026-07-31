@@ -147,5 +147,9 @@ php artisan app:brand-assets    # public/icon.png 1024², splash{,-dark}.png 108
 - **`npm run build` u Sail kontejneru ne radi** (rolldown nema linux-arm64 binding).
 - **`google-services.json` stoji u `firebase/`**, ne u korijenu — vidi
   [firebase/README.md](firebase/README.md).
-- **Verzija** se diže u `.env` ili `php artisan native:release`; Play Store odbija
-  isti `version_code` dva puta.
+- **Verziju treba dići za svaki build koji ide na uređaj.** NativePHP raspakuje novi
+  PHP kod samo kad se `version` + `version_code` razlikuju od već raspakovanog, a
+  `migrate --force` se pokreće samo poslije raspakivanja. Bez dizanja: instalacija
+  prođe, a aplikacija vrti stari kod i bez migracija. Play Store to iznuđuje,
+  sideload ne.
+- **`storage/framework` ne ide u paket** — vidi gore.

@@ -33,8 +33,7 @@
         <div class="space-y-3">
             <x-section-header icon="cog" title="Postavke teme" class="px-1" />
 
-            <div class="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-1 flex items-center gap-1"
-                 x-data x-init="$store.theme.init()">
+            <div class="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-1 flex items-center gap-1">
                 @foreach ([['light', 'Svijetla', 'sun'], ['dark', 'Tamna', 'moon'], ['system', 'Sistemska', 'monitor']] as [$value, $label, $icon])
                     <button type="button" x-on:click="$store.theme.set('{{ $value }}')"
                             class="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl transition-all cursor-pointer"

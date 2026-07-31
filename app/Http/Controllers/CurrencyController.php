@@ -81,7 +81,7 @@ class CurrencyController extends Controller
         $rate->rate_to_bam = $data['rate_to_bam'];
         $rate->save();
 
-        return redirect()->route('currencies.edit', $currency)->with('status', 'Kurs je sačuvan.');
+        return $this->saved($request, 'currencies.index', 'Kurs je sačuvan.');
     }
 
     private function save(Request $request, Currency $currency): void

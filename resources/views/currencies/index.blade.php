@@ -10,9 +10,15 @@
     <div x-data="entityIndex()"
          x-on:open-entity-form.window="openForm({{ \App\Support\Js::from(route('currencies.create', ['partial' => 1])) }}, 'Nova valuta')">
         <div data-entity-list>
+            @if ($currencies->isEmpty())
+                <x-empty-state icon="hash" title="Nema valuta" />
+            @else
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 animate-fade-in">
                 @foreach ($currencies as $currency)
-                    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-5 rounded-2xl relative group shadow-sm hover:shadow-md transition-shadow">
+                    {{-- Cijela kartica je meta za dodir; olovka od 32px je premala na telefonu. --}}
+                    <a href="{{ route('currencies.edit', $currency) }}"
+                       x-on:click.prevent="{{ \App\Support\Js::call('openForm', route('currencies.edit', [$currency, 'partial' => 1]), 'Izmjena valute') }}"
+                       class="block bg-[var(--color-surface)] border border-[var(--color-border)] p-5 rounded-2xl relative group shadow-sm hover:shadow-md hover:border-primary/40 transition-all">
                         <div class="flex justify-between items-center mb-3 pr-12">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div class="h-10 min-w-10 px-2 bg-[var(--color-surface-hover)] rounded-full flex items-center justify-center text-primary font-black text-sm shrink-0">
@@ -38,17 +44,10 @@
                                 @endisset
                             </p>
                         @endunless
-
-                        <div class="absolute top-4 right-4 flex gap-2">
-                            <a href="{{ route('currencies.edit', $currency) }}" aria-label="Uredi"
-                               x-on:click.prevent="{{ \App\Support\Js::call('openForm', route('currencies.edit', [$currency, 'partial' => 1]), 'Izmjena valute') }}"
-                               class="h-8 w-8 bg-[var(--color-surface-hover)] hover:text-primary rounded-lg flex items-center justify-center transition-colors cursor-pointer">
-                                <x-icon name="pencil" class="h-4 w-4" />
-                            </a>
-                        </div>
-                    </div>
+                    </a>
                 @endforeach
             </div>
+            @endif
         </div>
 
         <x-entity-form-drawer />

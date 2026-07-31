@@ -3,8 +3,15 @@
 use App\Services\PinLock;
 use App\Settings\SecuritySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Native\Mobile\Runtime;
 
 uses(RefreshDatabase::class);
+
+/** Simulira trajni NativePHP proces, u kojem oznaka pokretanja ima značenje. */
+function pretendPersistentRuntime(bool $booted = true): void
+{
+    (new ReflectionClass(Runtime::class))->setStaticPropertyValue('booted', $booted);
+}
 
 /**
  * PIN je opcionalan: prvi put nije podešen i ulazi se direktno u račune.
@@ -149,6 +156,7 @@ it('vraća na početak umjesto 405 kad se GET-om pogodi POST ruta', function () 
 });
 
 it('traži PIN ponovo poslije restarta aplikacije', function () {
+    pretendPersistentRuntime();
     setPin('1111');
     $this->post(route('unlock.store'), ['pin' => '1111']);
     $this->get(route('invoices.index'))->assertStatus(200);
@@ -164,6 +172,7 @@ it('traži PIN ponovo poslije restarta aplikacije', function () {
 });
 
 it('ne pušta ni kad je automatsko zaključavanje isključeno a aplikacija restartovana', function () {
+    pretendPersistentRuntime();
     setPin('1111');
     $settings = app(SecuritySettings::class);
     $settings->auto_lock_minutes = 0;
@@ -185,4 +194,16 @@ it('ograničava broj pokušaja PIN-a', function () {
     }
 
     $this->post(route('unlock.store'), ['pin' => '9999'])->assertStatus(429);
+});
+
+afterEach(fn () => pretendPersistentRuntime(false));
+
+it('ne traži PIN na svaki klik van trajnog procesa', function () {
+    // Pod php-fpm i ugrađenim serverom svaki zahtjev je novi proces; da se oznaka
+    // pokretanja tamo provjeravala, korisnik bi bio zaključan odmah poslije PIN-a.
+    setPin('1111');
+    $this->post(route('unlock.store'), ['pin' => '1111']);
+
+    $this->get(route('invoices.index'))->assertStatus(200);
+    $this->get(route('clients.index'))->assertStatus(200);
 });

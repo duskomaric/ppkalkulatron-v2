@@ -19,16 +19,15 @@
     <form method="GET">
         <input type="hidden" name="year" value="{{ $filters['year'] }}">
 
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-2"></div>
-
-            <div class="flex items-center gap-2 w-full md:w-auto">
+        {{-- Na uskom ekranu pretraga ide u svoj red: uz dugmad joj ostane 133px. --}}
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+            <div class="flex items-center gap-2">
                 <x-filter-button state="filtersOpen" />
                 <x-year-button :year="$filters['year']" />
+            </div>
 
-                <div class="w-full md:w-[320px]">
-                    <x-filter-search :value="$filters['q']" placeholder="Pretraži račune (min. 3 znaka)..." />
-                </div>
+            <div class="w-full sm:w-[320px]">
+                <x-filter-search :value="$filters['q']" placeholder="Pretraži račune…" />
             </div>
         </div>
 

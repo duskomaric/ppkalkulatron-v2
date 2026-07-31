@@ -26,10 +26,13 @@ class EnsureUnlocked
             return $next($request);
         }
 
-        // Sesija sama nije dokaz: preživi restart aplikacije i telefona. Uz nju
-        // mora stajati oznaka procesa u kojem je PIN unesen.
-        if (! $request->session()->has(PinLock::SESSION_KEY)
-            || $request->session()->get(PinLock::BOOT_KEY) !== PinLock::boot()) {
+        // Sesija sama nije dokaz: na uređaju preživi restart aplikacije i telefona.
+        // Uz nju mora stajati oznaka procesa u kojem je PIN unesen — ali samo tamo
+        // gdje jedan proces služi sve zahtjeve, inače bi svaki klik tražio PIN.
+        $staleProcess = PinLock::tracksProcess()
+            && $request->session()->get(PinLock::BOOT_KEY) !== PinLock::boot();
+
+        if (! $request->session()->has(PinLock::SESSION_KEY) || $staleProcess) {
             $request->session()->forget([PinLock::SESSION_KEY, PinLock::BOOT_KEY, PinLock::SEEN_KEY]);
 
             return redirect()->route('unlock');

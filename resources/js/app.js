@@ -252,6 +252,8 @@ Alpine.data('entityIndex', () => ({
 
             if (response.status === 422) {
                 this.formErrors = (await response.json()).errors || {};
+                this.$nextTick(() => this.$el.querySelector('[data-error-summary]')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
 
                 return;
             }
@@ -355,5 +357,132 @@ Alpine.data('pinEntry', () => ({
         this.$nextTick(() => this.$root.requestSubmit());
     },
 }));
+
+/**
+ * Radnje nad računom: fiskalizacija, kopija, storno, slika računa i mail.
+ *
+ * Živi ovdje, a ne u opisu liste, jer isti partial detalja koristi i puna stranica
+ * računa — tamo bez ovoga svaki fiskalni dugmić samo javi grešku u konzoli.
+ * Osvježavanje se traži preko `refreshAfterAction`, koje lista prepisuje.
+ */
+const invoiceActions = () => ({
+    emailModal: false,
+    emailSending: false,
+    emailError: '',
+    emailUrl: '',
+    emailReceipts: [],
+    emailForm: { to: '', subject: '', body: '', attach_pdf: true, attach_fiscal_record_ids: [] },
+
+    receiptModal: false,
+    receiptUrl: '',
+    receiptKind: 'image',
+
+    confirm: { open: false, message: '', running: false, action: null },
+
+    openReceipt(url, kind = 'image') {
+        this.receiptUrl = url;
+        this.receiptKind = kind;
+        this.receiptModal = true;
+    },
+
+    /** Fiskalne radnje traže potvrdu prije izvršenja. */
+    fiscalAction(url, message) {
+        this.confirm = { open: true, message, running: false, action: url };
+    },
+
+    async runConfirmed() {
+        if (this.confirm.running) return;
+
+        this.confirm.running = true;
+
+        try {
+            const response = await fetch(this.confirm.action, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                },
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            this.confirm.open = false;
+            this.flash(data.message || (response.ok ? 'Gotovo.' : 'Radnja nije uspjela.'),
+                response.ok ? 'success' : 'error');
+
+            if (response.ok) {
+                await this.refreshAfterAction(data);
+            }
+        } catch {
+            this.confirm.open = false;
+            this.flash('Radnja nije uspjela.', 'error');
+        } finally {
+            this.confirm.running = false;
+        }
+    },
+
+    /** Puna stranica se samo ponovo učita; lista ovo prepisuje. */
+    async refreshAfterAction(data) {
+        window.location = data.invoice_id ? `/racuni/${data.invoice_id}` : window.location.href;
+    },
+
+    openEmail(defaults) {
+        this.emailError = '';
+        this.emailUrl = defaults.url;
+        this.emailReceipts = defaults.receipts;
+        this.emailForm = {
+            to: defaults.to,
+            subject: defaults.subject,
+            body: defaults.body,
+            attach_pdf: true,
+            attach_fiscal_record_ids: defaults.receipts.map((record) => record.id),
+        };
+        this.emailModal = true;
+    },
+
+    async sendEmail() {
+        if (this.emailSending) return;
+
+        this.emailSending = true;
+        this.emailError = '';
+
+        try {
+            const response = await fetch(this.emailUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                },
+                body: JSON.stringify(this.emailForm),
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                this.emailError = data.message || Object.values(data.errors || {})[0]?.[0]
+                    || 'Slanje nije uspjelo.';
+
+                return;
+            }
+
+            this.emailModal = false;
+            this.flash(data.message);
+        } catch {
+            this.emailError = 'Slanje nije uspjelo.';
+        } finally {
+            this.emailSending = false;
+        }
+    },
+
+    flash(message, type = 'success') {
+        window.dispatchEvent(new CustomEvent('app-flash', { detail: { message, type } }));
+    },
+});
+
+Alpine.data('invoiceActions', invoiceActions);
+window.invoiceActions = invoiceActions;
 
 Alpine.start();

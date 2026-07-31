@@ -1,7 +1,10 @@
 @props(['title', 'state', 'titleExpr' => null])
 
 {{-- Ista struktura kao v1: bottom sheet na telefonu, centrirano na desktopu. --}}
-<div x-cloak x-show="{{ $state }}" class="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4">
+<div x-cloak x-show="{{ $state }}" role="dialog" aria-modal="true"
+     x-on:keydown.escape.window="{{ $state }} = false"
+     x-effect="document.body.style.overflow = {{ $state }} ? 'hidden' : ''"
+     class="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-[8px] animate-fade-in" @click="{{ $state }} = false"></div>
 
     <div class="relative w-full max-w-lg md:max-w-3xl lg:max-w-4xl bg-[var(--color-surface)]/95 backdrop-blur-2xl rounded-t-[32px] sm:rounded-[40px] shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.5)] overflow-visible sm:overflow-hidden animate-slide-in-bottom border-t sm:border border-[var(--color-border)] flex flex-col max-h-[94vh] sm:max-h-[90vh]">

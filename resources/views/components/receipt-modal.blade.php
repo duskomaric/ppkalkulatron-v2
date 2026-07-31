@@ -2,7 +2,8 @@
     v1 ImageModal: sadržaj na tamnoj podlozi, bez okvira kartice. Slika ide u
     prirodnom odnosu stranica (isječak je uzak i visok), a PDF i HTML u okvir.
 --}}
-<div x-cloak x-show="receiptModal" class="fixed inset-0 z-[1200] flex items-center justify-center p-4">
+<div x-cloak x-show="receiptModal" role="dialog" aria-modal="true"
+     x-on:keydown.escape.window="receiptModal = false" z-[1200] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" x-on:click="receiptModal = false"></div>
 
     <div class="relative max-w-[95vw] max-h-[95vh] flex flex-col items-center">

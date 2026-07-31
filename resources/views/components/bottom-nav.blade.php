@@ -23,7 +23,7 @@
                     'text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mt-1 sm:block max-w-[64px] sm:max-w-none truncate text-center',
                     'text-primary' => $item['active'],
                     'text-[var(--color-text-dim)] group-hover:text-[var(--color-text-main)]' => ! $item['active'],
-                ]) />{{ $item['title'] }}</span>
+                ])>{{ $item['title'] }}</span>
             </a>
         @endforeach
     </nav>

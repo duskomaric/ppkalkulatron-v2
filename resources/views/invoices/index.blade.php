@@ -52,18 +52,19 @@
                 formErrors: {},
                 saving: false,
 
-                emailModal: false,
-                emailSending: false,
-                emailError: '',
-                emailUrl: '',
-                emailReceipts: [],
-                emailForm: { to: '', subject: '', body: '', attach_pdf: true, attach_fiscal_record_ids: [] },
+                // Zajedničke radnje nad računom (fiskalizacija, slika, mail) dolaze iz
+                // Alpine opisa `invoiceActions` u app.js — isti koji koristi i puna
+                // stranica računa, da fiskalni dugmići rade na oba mjesta.
+                ...window.invoiceActions(),
 
-                receiptModal: false,
-                receiptUrl: '',
-                receiptKind: 'image',
+                /** Lista osvježi drawer i redove na mjestu, bez napuštanja stranice. */
+                async refreshAfterAction(data) {
+                    if (data.invoice_id) {
+                        this.detailUrl = `/racuni/${data.invoice_id}?partial=1`;
+                    }
 
-                confirm: { open: false, message: '', running: false, action: null },
+                    await Promise.all([this.refreshDetail(), this.refreshList()]);
+                },
 
                 // Detalji i forma se dovlače sa servera pa u v2 postoji samo jedan
                 // izvor izgleda računa — isti Blade koji servira i puna stranica.
@@ -107,110 +108,6 @@
                     this.formDrawer = true;
                     this.formHtml = await this.load(url, failure);
                     this.formLoading = false;
-                },
-
-                openReceipt(url, kind = 'image') {
-                    this.receiptUrl = url;
-                    this.receiptKind = kind;
-                    this.receiptModal = true;
-                },
-
-                /** Fiskalne radnje traže potvrdu, pa se izvrše i osvježe prikaz. */
-                fiscalAction(url, message) {
-                    this.confirm = { open: true, message, running: false, action: url };
-                },
-
-                async runConfirmed() {
-                    if (this.confirm.running) return;
-
-                    this.confirm.running = true;
-
-                    try {
-                        const response = await fetch(this.confirm.action, {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                            },
-                        });
-
-                        const data = await response.json().catch(() => ({}));
-
-                        this.confirm.open = false;
-                        this.flash(data.message || (response.ok ? 'Gotovo.' : 'Radnja nije uspjela.'),
-                            response.ok ? 'success' : 'error');
-
-                        if (response.ok) {
-                            // Račun ostaje otvoren; mijenjaju se status, zapisi i dostupne radnje.
-                            if (data.invoice_id) {
-                                this.detailUrl = `/racuni/${data.invoice_id}?partial=1`;
-                            }
-
-                            await Promise.all([this.refreshDetail(), this.refreshList()]);
-                        }
-                    } catch {
-                        this.confirm.open = false;
-                        this.flash('Radnja nije uspjela.', 'error');
-                    } finally {
-                        this.confirm.running = false;
-                    }
-                },
-
-                openEmail(defaults) {
-                    this.emailError = '';
-                    this.emailUrl = defaults.url;
-                    this.emailReceipts = defaults.receipts;
-                    this.emailForm = {
-                        to: defaults.to,
-                        subject: defaults.subject,
-                        body: defaults.body,
-                        attach_pdf: true,
-                        attach_fiscal_record_ids: defaults.receipts.map((record) => record.id),
-                    };
-                    this.emailModal = true;
-                },
-
-                async sendEmail() {
-                    if (this.emailSending) return;
-
-                    this.emailSending = true;
-                    this.emailError = '';
-
-                    try {
-                        const response = await fetch(this.emailUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                            },
-                            body: JSON.stringify(this.emailForm),
-                        });
-
-                        const data = await response.json().catch(() => ({}));
-
-                        if (! response.ok) {
-                            this.emailError = data.message || Object.values(data.errors || {})[0]?.[0]
-                                || 'Slanje nije uspjelo.';
-
-                            return;
-                        }
-
-                        // Račun ostaje otvoren i poslije slanja.
-                        this.emailModal = false;
-                        this.flash(data.message);
-                    } catch {
-                        this.emailError = 'Slanje nije uspjelo.';
-                    } finally {
-                        this.emailSending = false;
-                    }
-                },
-
-                /** Poruka poslije radnje iz drawera; stranica se ne osvježava. */
-                flash(message, type = 'success') {
-                    window.dispatchEvent(new CustomEvent('app-flash', { detail: { message, type } }));
                 },
 
                 closeForm() {

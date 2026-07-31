@@ -1,5 +1,6 @@
 {{-- v1 ConfirmModal: potvrda prije radnje koja se ne poništava. --}}
-<div x-cloak x-show="confirm.open" class="fixed inset-0 z-[1200] flex items-center justify-center p-4">
+<div x-cloak x-show="confirm.open" role="dialog" aria-modal="true"
+     x-on:keydown.escape.window="confirm.open = false" z-[1200] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-[12px]" x-on:click="confirm.running || (confirm.open = false)"></div>
 
     <div class="relative w-full max-w-[400px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-xl overflow-hidden">

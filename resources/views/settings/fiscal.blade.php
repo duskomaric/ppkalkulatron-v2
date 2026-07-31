@@ -40,9 +40,14 @@
                     <x-field-label variant="settings" required for="receipt_image_format">Format slike</x-field-label>
                     <div class="relative">
                         <select id="receipt_image_format" name="receipt_image_format" required
+                                x-effect="layout === 'Invoice' && $el.value === 'Png' && ($el.value = 'Pdf')"
                                 class="w-full h-12 px-4 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm appearance-none cursor-pointer">
                             {{-- A4 nema PNG: uređaj vrati praznu jednopikselnu sliku. --}}
-                            <option value="Png" x-show="layout !== 'Invoice'" @selected(old('receipt_image_format', $settings->receipt_image_format) === 'Png')>Png</option>
+                            {{-- template x-if, ne x-show: sakriven <option> ostaje izabran, a
+                             mobilni Safari display:none na opciji ionako ignoriše. --}}
+                        <template x-if="layout !== 'Invoice'">
+                            <option value="Png" @selected(old('receipt_image_format', $settings->receipt_image_format) === 'Png')>Png</option>
+                        </template>
                             <option value="Pdf" @selected(old('receipt_image_format', $settings->receipt_image_format) === 'Pdf')>Pdf</option>
                             <option value="Html" @selected(old('receipt_image_format', $settings->receipt_image_format) === 'Html')>Html</option>
                         </select>
@@ -106,7 +111,7 @@
                 </div>
                 <x-button variant="ghost" type="button" class="!py-3.5 shrink-0" x-on:click="run()"
                           ::disabled="scanning">
-                    <span x-show="scanning" class="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></span>
+                    <span x-show="scanning" x-cloak class="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></span>
                     <span x-text="scanning ? 'Skeniram...' : 'Skeniraj mrežu'"></span>
                 </x-button>
             </div>

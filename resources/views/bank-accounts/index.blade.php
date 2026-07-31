@@ -15,7 +15,10 @@
             @else
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
                     @foreach ($accounts as $account)
-                        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-5 rounded-2xl relative group shadow-sm hover:shadow-md transition-shadow">
+                        {{-- Cijela kartica je meta za dodir; olovka od 32px je premala na telefonu. --}}
+                    <a href="{{ route('bank-accounts.edit', $account) }}"
+                       x-on:click.prevent="{{ \App\Support\Js::call('openForm', route('bank-accounts.edit', [$account, 'partial' => 1]), 'Izmjena bankovnog računa') }}"
+                       class="block bg-[var(--color-surface)] border border-[var(--color-border)] p-5 rounded-2xl relative group shadow-sm hover:shadow-md hover:border-primary/40 transition-all">
                             <div class="flex justify-between items-start mb-2 pr-12">
                                 <div class="min-w-0">
                                     <h4 class="font-bold text-[var(--color-text-main)] text-lg truncate">{{ $account->bank_name }}</h4>
@@ -34,15 +37,7 @@
                                     <span>SWIFT: {{ $account->swift }}</span>
                                 </div>
                             @endif
-
-                            <div class="absolute top-5 right-5 flex gap-2">
-                                <a href="{{ route('bank-accounts.edit', $account) }}" aria-label="Uredi"
-                                   x-on:click.prevent="{{ \App\Support\Js::call('openForm', route('bank-accounts.edit', [$account, 'partial' => 1]), 'Izmjena bankovnog računa') }}"
-                                   class="h-8 w-8 bg-[var(--color-surface-hover)] hover:text-primary rounded-lg flex items-center justify-center transition-colors cursor-pointer">
-                                    <x-icon name="pencil" class="h-4 w-4" />
-                                </a>
-                            </div>
-                        </div>
+                    </a>
                     @endforeach
                 </div>
             @endif

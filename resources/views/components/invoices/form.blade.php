@@ -108,7 +108,8 @@
                               x-text="selectedClient() ? selectedClient().name : 'Odaberi klijenta...'"></span>
                         <div class="flex items-center gap-1 shrink-0">
                             <button type="button" x-show="clientId" x-cloak x-on:click.stop="clientId = ''"
-                                    class="h-5 w-5 rounded-full bg-[var(--color-border)] hover:bg-red-500/20 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer">
+                                    aria-label="Ukloni klijenta"
+                                    class="h-11 w-11 -mr-3 rounded-full hover:bg-red-500/20 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer">
                                 <x-icon name="x" class="h-3 w-3" />
                             </button>
                             <x-icon name="chevron-down" class="h-4 w-4 text-[var(--color-text-dim)] transition-transform"
@@ -227,8 +228,8 @@
                 <div class="flex items-center justify-between">
                     <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-dim)]"
                           x-text="'#' + (index + 1)"></span>
-                    <button type="button" x-on:click="removeItem(index)"
-                            class="h-7 w-7 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all cursor-pointer">
+                    <button type="button" x-on:click="removeItem(index)" aria-label="Ukloni stavku"
+                            class="h-11 w-11 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all cursor-pointer">
                         <x-icon name="trash" class="h-3.5 w-3.5" />
                     </button>
                 </div>
@@ -247,7 +248,8 @@
                                       x-text="selectedArticle(item) ? selectedArticle(item).name : 'Odaberi artikal...'"></span>
                                 <div class="flex items-center gap-1 shrink-0">
                                     <button type="button" x-show="item.article_id" x-cloak x-on:click.stop="clearArticle(item)"
-                                            class="h-5 w-5 rounded-full bg-[var(--color-border)] hover:bg-red-500/20 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer">
+                                            aria-label="Ukloni artikal"
+                                            class="h-11 w-11 -mr-3 rounded-full hover:bg-red-500/20 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer">
                                         <x-icon name="x" class="h-3 w-3" />
                                     </button>
                                     <x-icon name="chevron-down" class="h-4 w-4 text-[var(--color-text-dim)] transition-transform"
@@ -334,6 +336,7 @@
                 {{-- Naziv, jedinica i porez idu sa artikla; server ih traži, korisnik ih ne unosi. --}}
                 <input type="hidden" :name="`items[${index}][article_id]`" :value="item.article_id">
                 <input type="hidden" :name="`items[${index}][name]`" :value="item.name">
+                <input type="hidden" :name="`items[${index}][description]`" :value="item.description">
                 <input type="hidden" :name="`items[${index}][unit]`" :value="item.unit">
                 <input type="hidden" :name="`items[${index}][tax_label]`" :value="item.tax_label">
                 <input type="hidden" :name="`items[${index}][quantity]`" :value="item.quantity">

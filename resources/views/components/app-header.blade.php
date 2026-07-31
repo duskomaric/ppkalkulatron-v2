@@ -3,8 +3,8 @@
     <div class="h-[56px] w-full flex items-center">
     <div class="max-w-[1200px] w-full mx-auto px-4 sm:px-6 flex justify-between items-center gap-2">
         <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <a href="{{ route('invoices.index') }}"
-               class="h-8 w-8 shrink-0 bg-primary rounded-xl flex items-center justify-center text-white shadow-glow-primary transition-all duration-500">
+            <a href="{{ route('invoices.index') }}" aria-label="Početna"
+               class="h-11 w-11 shrink-0 bg-primary rounded-xl flex items-center justify-center text-white shadow-glow-primary transition-all duration-500">
                 <x-icon name="calculator" class="h-4 w-4" />
             </a>
 
@@ -28,13 +28,13 @@
         </div>
 
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-            <button type="button" @click="settingsDrawer = true"
-                    class="relative cursor-pointer h-8 w-8 rounded-lg border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-dim)] hover:text-primary hover:border-primary/30 transition-all">
+            <button type="button" @click="settingsDrawer = true" aria-label="Podešavanja"
+                    class="relative cursor-pointer h-11 w-11 rounded-lg border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-dim)] hover:text-primary hover:border-primary/30 transition-all">
                 <x-icon name="cog" class="h-4 w-4" />
             </button>
 
-            <button type="button" @click="userDrawer = true"
-                    class="cursor-pointer h-9 w-9 bg-[var(--color-surface)] text-[var(--color-text-muted)] rounded-xl flex items-center justify-center font-bold text-xs border border-[var(--color-border)] hover:border-primary hover:text-primary transition-all">
+            <button type="button" @click="userDrawer = true" aria-label="Moj nalog"
+                    class="cursor-pointer h-11 w-11 bg-[var(--color-surface)] text-[var(--color-text-muted)] rounded-xl flex items-center justify-center font-bold text-xs border border-[var(--color-border)] hover:border-primary hover:text-primary transition-all">
                 <x-icon name="user" class="h-5 w-5" />
             </button>
         </div>

@@ -19,7 +19,7 @@
                          :options="\App\Enums\Unit::options()" required />
 
                 <x-field label="Poreska oznaka" name="tax_label" :value="$article?->tax_label"
-                         :options="['' => '—'] + collect(config('ofs.tax_labels'))->mapWithKeys(fn ($rate, $label) => [$label => $label.' — '.$rate / 100 .'%'])->all()"
+                         :options="['' => '—'] + \App\Models\TaxRate::orderBy('label')->get()->mapWithKeys(fn ($t) => [$t->label => $t->label.' — '.$t->rate.'%'])->all()"
                          hint="Uređaj javlja koje oznake priznaje." />
 
                 <x-field label="Cijena" name="last_unit_price" type="number" step="0.01"

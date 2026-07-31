@@ -22,7 +22,7 @@ class InvoiceRequest extends FormRequest
             'items.*.article_id' => ['nullable', 'exists:articles,id'],
             'items.*.name' => ['required', 'string', 'max:255'],
             'items.*.unit' => ['required', Rule::enum(Unit::class)],
-            'items.*.tax_label' => ['nullable', Rule::in(array_keys(config('ofs.tax_labels')))],
+            'items.*.tax_label' => ['nullable', Rule::in(array_keys(\App\Models\TaxRate::basisPointsByLabel()))],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ];

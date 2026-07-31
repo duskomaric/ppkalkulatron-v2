@@ -81,7 +81,7 @@ class InvoiceWriter
         $quantity = max(1, (int) $row['quantity']);
         $unitPrice = (int) round(((float) $row['unit_price']) * 100);
         $taxLabel = $row['tax_label'] ?: null;
-        $taxRate = $taxLabel ? (int) (config('ofs.tax_labels')[$taxLabel] ?? 0) : 0;
+        $taxRate = $taxLabel ? (int) (\App\Models\TaxRate::basisPointsByLabel()[$taxLabel] ?? 0) : 0;
 
         $total = $quantity * $unitPrice;
         $subtotal = (int) round($total / (1 + $taxRate / 10000));

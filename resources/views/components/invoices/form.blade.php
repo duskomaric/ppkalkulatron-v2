@@ -94,8 +94,8 @@
                             <select :name="`items[${index}][tax_label]`" x-model="item.tax_label"
                                     class="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl font-bold text-sm outline-none focus:border-primary/50">
                                 <option value="">—</option>
-                                @foreach (config('ofs.tax_labels') as $label => $rate)
-                                    <option value="{{ $label }}">{{ $label }} — {{ $rate / 100 }}%</option>
+                                @foreach (\App\Models\TaxRate::orderBy('label')->get() as $taxRate)
+                                    <option value="{{ $taxRate->label }}">{{ $taxRate->label }} — {{ $taxRate->rate }}%</option>
                                 @endforeach
                             </select>
                         </div>

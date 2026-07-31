@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PaymentType;
 use App\Services\OFSService;
 use App\Settings\FiscalSettings;
 use Illuminate\Http\Request;
@@ -25,7 +26,7 @@ class FiscalSettingsController extends Controller
             'device_mode' => ['required', Rule::in(['cloud', 'local'])],
             'receipt_layout' => ['required', Rule::in(['Slip', 'Invoice'])],
             'receipt_image_format' => ['required', Rule::in(['Png', 'Pdf', 'Html'])],
-            'default_payment_type' => ['required', Rule::enum(\App\Enums\PaymentType::class)],
+            'default_payment_type' => ['required', Rule::enum(PaymentType::class)],
             'receipt_header_text_lines' => ['nullable', 'string'],
         ], [], [
             'base_url' => 'base URL', 'device_mode' => 'način uređaja',

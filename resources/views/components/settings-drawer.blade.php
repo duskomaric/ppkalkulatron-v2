@@ -32,6 +32,10 @@
                            description="Kupci, JIB i PDV broj" />
         <x-drawer-nav-item :href="route('articles.index')" icon="boxes" title="Artikli"
                            description="Usluge i proizvodi, jedinice i poreske oznake" />
+        <x-drawer-nav-item :href="route('bank-accounts.index')" icon="credit-card" title="Bankovni računi"
+                           description="Računi koji se ispisuju na dokumentima" />
+        <x-drawer-nav-item :href="route('currencies.index')" icon="hash" title="Valute"
+                           description="Valute i kursevi prema konvertibilnoj marki" />
 
         <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)] px-1 pt-4 pb-1">
             Aplikacija

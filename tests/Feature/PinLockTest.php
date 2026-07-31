@@ -1,7 +1,7 @@
 <?php
 
-use App\Settings\SecuritySettings;
 use App\Services\PinLock;
+use App\Settings\SecuritySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -44,7 +44,7 @@ it('čuva PIN kao hash, nikad kao tekst', function () {
     setPin('1111');
 
     expect(app(SecuritySettings::class)->pin_hash)->toStartWith('$2y$')
-        ->and(\DB::table('settings')->pluck('payload')->implode('|'))->not->toContain('1111');
+        ->and(DB::table('settings')->pluck('payload')->implode('|'))->not->toContain('1111');
 });
 
 it('postavlja PIN i ostavlja korisnika otključanim', function () {

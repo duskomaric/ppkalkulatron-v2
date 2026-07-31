@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Settings\FiscalSettings;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,7 @@ class OFSService
         protected ?string $serialNumber = null,
         protected ?string $pac = null,
     ) {
-        $settings = app(\App\Settings\FiscalSettings::class);
+        $settings = app(FiscalSettings::class);
 
         $this->baseUrl = rtrim($baseUrl ?: $settings->base_url, '/');
         $this->apiKey ??= $settings->api_key;

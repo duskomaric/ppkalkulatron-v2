@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\FiscalSettingsController;
@@ -24,6 +26,9 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::resource('racuni', InvoiceController::class)->parameters(['racuni' => 'invoice'])->names('invoices');
     Route::resource('klijenti', ClientController::class)->parameters(['klijenti' => 'client'])->names('clients')->except('show');
     Route::resource('artikli', ArticleController::class)->parameters(['artikli' => 'article'])->names('articles')->except('show');
+
+    Route::resource('bankovni-racuni', BankAccountController::class)->parameters(['bankovni-racuni' => 'bankAccount'])->names('bank-accounts')->except('show');
+    Route::resource('valute', CurrencyController::class)->parameters(['valute' => 'currency'])->names('currencies')->except('show');
 
     Route::view('/pomoc', 'help')->name('help');
 

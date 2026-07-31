@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Services\OFSService;
+use App\Settings\FiscalSettings;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 
 /**
  * Brza provjera da li je ESIR dostupan i šta prijavljuje.
@@ -29,7 +31,7 @@ class OfsPingCommand extends Command
             pac: $this->option('pac') ?: null,
         );
 
-        $this->line('Uređaj: '.($this->option('url') ?: app(\App\Settings\FiscalSettings::class)->base_url));
+        $this->line('Uređaj: '.($this->option('url') ?: app(FiscalSettings::class)->base_url));
         $this->newLine();
 
         try {
@@ -41,7 +43,7 @@ class OfsPingCommand extends Command
         }
 
         $this->line('attention → HTTP '.$attention->status());
-        $this->line('  '.\Illuminate\Support\Str::limit($attention->body(), 200));
+        $this->line('  '.Str::limit($attention->body(), 200));
 
         if (! $attention->successful()) {
             return self::FAILURE;

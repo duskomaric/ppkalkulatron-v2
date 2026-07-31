@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Unit;
 use App\Models\Article;
+use App\Models\TaxRate;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -57,7 +58,7 @@ class ArticleController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'unit' => ['required', Rule::enum(Unit::class)],
-            'tax_label' => ['nullable', Rule::in(array_keys(\App\Models\TaxRate::basisPointsByLabel()))],
+            'tax_label' => ['nullable', Rule::in(array_keys(TaxRate::basisPointsByLabel()))],
             'gtin' => ['nullable', 'string', 'min:8', 'max:14'],
             'last_unit_price' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['nullable', 'boolean'],

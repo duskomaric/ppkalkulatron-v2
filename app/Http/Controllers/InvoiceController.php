@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\InvoiceStatus;
+use App\Enums\PaymentType;
 use App\Http\Requests\InvoiceRequest;
 use App\Models\Article;
 use App\Models\Client;
@@ -70,7 +72,7 @@ class InvoiceController extends Controller
         if ($filters['status'] !== '') {
             $active[] = [
                 'label' => 'Status',
-                'value' => \App\Enums\InvoiceStatus::from($filters['status'])->label(),
+                'value' => InvoiceStatus::from($filters['status'])->label(),
                 'clear' => $this->without($filters, ['status']),
             ];
         }
@@ -78,7 +80,7 @@ class InvoiceController extends Controller
         if ($filters['payment_type'] !== '') {
             $active[] = [
                 'label' => 'Plaćanje',
-                'value' => \App\Enums\PaymentType::from($filters['payment_type'])->label(),
+                'value' => PaymentType::from($filters['payment_type'])->label(),
                 'clear' => $this->without($filters, ['payment_type']),
             ];
         }

@@ -12,7 +12,8 @@
     {{-- Telefon --}}
     <div class="md:hidden space-y-3">
         @foreach ($invoices as $invoice)
-            <x-entity-card :href="route('invoices.show', $invoice)">
+            <x-entity-card :href="route('invoices.show', $invoice)"
+                          x-on:click.prevent="openDetail(@js(route('invoices.show', [$invoice, 'partial' => 1])))">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center gap-2 min-w-0">
                         <x-icon name="hash" class="w-3 h-3 text-primary shrink-0" />
@@ -62,7 +63,8 @@
 
     <div class="hidden md:block space-y-3">
         @foreach ($invoices as $invoice)
-            <x-entity-card :href="route('invoices.show', $invoice)">
+            <x-entity-card :href="route('invoices.show', $invoice)"
+                          x-on:click.prevent="openDetail(@js(route('invoices.show', [$invoice, 'partial' => 1])))">
                 <div class="grid grid-cols-[minmax(0,1.6fr)_0.6fr_0.7fr_0.7fr_0.7fr_0.7fr] gap-3 items-center">
                     <div class="flex items-center gap-3 min-w-0">
                         <span class="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">

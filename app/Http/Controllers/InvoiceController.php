@@ -118,9 +118,15 @@ class InvoiceController extends Controller
             ->with('status', "Račun {$invoice->invoice_number} je kreiran.");
     }
 
-    public function show(Invoice $invoice)
+    public function show(Request $request, Invoice $invoice)
     {
-        return view('invoices.show', ['invoice' => $invoice->load('client', 'items')]);
+        $invoice->load('client', 'items');
+
+        // Lista otvara detalje u draweru i dovlači samo njegov sadržaj; puna
+        // stranica ostaje za direktan link i za rad bez JavaScripta.
+        return $request->boolean('partial')
+            ? view('invoices.detail', ['invoice' => $invoice])
+            : view('invoices.show', ['invoice' => $invoice]);
     }
 
     public function edit(Invoice $invoice)

@@ -31,5 +31,7 @@
     <x-user-drawer />
     <x-settings-drawer />
 </div>
+
+@stack('scripts')
 </body>
 </html>

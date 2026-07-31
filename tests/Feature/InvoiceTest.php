@@ -162,3 +162,15 @@ it('prikazuje listu i detalj', function () {
     $this->get(route('invoices.index'))->assertStatus(200)->assertSee($invoice->invoice_number);
     $this->get(route('invoices.show', $invoice))->assertStatus(200)->assertSee('Usluga');
 });
+
+it('servira detalje računa kao dio drawera', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $partial = $this->get(route('invoices.show', [$invoice, 'partial' => 1]));
+
+    $partial->assertStatus(200)
+        ->assertSee($invoice->invoice_number)
+        ->assertSee('Zatvori')
+        ->assertDontSee('<!DOCTYPE html>', false);
+});

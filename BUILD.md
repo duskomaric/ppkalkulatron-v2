@@ -123,7 +123,7 @@ php artisan app:brand-assets    # public/icon.png 1024², splash{,-dark}.png 108
 |---|---|---|
 | Ime | `.env` `APP_NAME` | ppKalkulatron |
 | Bundle ID | `.env` `NATIVEPHP_APP_ID` | com.plusplusit.ppkalkulatron |
-| Verzija | `.env` `NATIVEPHP_APP_VERSION` / `_CODE` | 0.3.0 / 4 |
+| Verzija | `.env` `NATIVEPHP_APP_VERSION` / `_CODE` | 0.4.0 / 5 |
 | Boja teme | `nativephp.android.theme.color_primary` | `#F59E0B` |
 | Orijentacija | `nativephp.orientation` | portret |
 | iPad | `nativephp.ipad` | isključen (u App Store-u se ne može povući) |

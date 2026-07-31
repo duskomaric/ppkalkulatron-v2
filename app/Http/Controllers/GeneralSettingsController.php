@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentLanguage;
+use App\Enums\DocumentTemplate;
 use App\Settings\DocumentSettings;
 use App\Settings\NumberingSettings;
 use Illuminate\Http\Request;
@@ -24,11 +26,12 @@ class GeneralSettingsController extends Controller
             'proforma_starting_number' => ['required', 'integer', 'min:1'],
             'quote_prefix' => ['nullable', 'string', 'max:16'],
             'quote_starting_number' => ['required', 'integer', 'min:1'],
-            'template' => ['required', Rule::in(['classic', 'modern', 'minimal', 'standard'])],
+            'template' => ['required', Rule::enum(DocumentTemplate::class)],
+            'language' => ['required', Rule::enum(DocumentLanguage::class)],
             'invoice_due_days' => ['required', 'integer', 'min:0', 'max:365'],
             'invoice_notes' => ['nullable', 'string', 'max:2000'],
         ], [], [
-            'pad_zeros' => 'broj nula', 'template' => 'predložak',
+            'pad_zeros' => 'broj nula', 'template' => 'predložak', 'language' => 'jezik',
             'invoice_due_days' => 'rok plaćanja', 'invoice_notes' => 'napomena',
         ]);
 
@@ -39,7 +42,7 @@ class GeneralSettingsController extends Controller
         $numbering->reset_yearly = $request->boolean('reset_yearly');
         $numbering->save();
 
-        $document->fill(collect($data)->only(['template', 'invoice_due_days', 'invoice_notes'])->all());
+        $document->fill(collect($data)->only(['template', 'language', 'invoice_due_days', 'invoice_notes'])->all());
         $document->save();
 
         return back()->with('status', 'Podešavanja su sačuvana.');

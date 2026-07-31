@@ -31,7 +31,9 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <x-form-select label="Predložak" name="template" :value="$document->template" required
-                               :options="['classic' => 'Classic', 'modern' => 'Modern', 'minimal' => 'Minimal', 'standard' => 'Standard']" />
+                               :options="\App\Enums\DocumentTemplate::options()" />
+                <x-form-select label="Jezik" name="language" :value="$document->language" required
+                               :options="\App\Enums\DocumentLanguage::options()" />
                 <x-form-input label="Rok plaćanja (dana)" name="invoice_due_days" type="number" :value="$document->invoice_due_days" required />
             </div>
 

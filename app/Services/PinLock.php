@@ -2,43 +2,41 @@
 
 namespace App\Services;
 
-use App\Models\AppSetting;
+use App\Settings\SecuritySettings;
 use Illuminate\Support\Facades\Hash;
 
 /**
  * PIN zaključavanje aplikacije, namjerno jednostavno.
  *
- * PIN je opcionalan: prvi put kad se aplikacija pokrene nije podešen i ulazi se
- * direktno u račune. Kad se podesi u podešavanjima, traži se pri pokretanju.
- *
- * Čuva se kao hash — jedina stvar koja nije "samo PIN", ali čuvati ga kao tekst
- * na telefonu nema opravdanja.
+ * Opcionalno je: dok nije podešen, ulazi se direktno. Kad se podesi, traži se pri
+ * pokretanju. Čuva se kao hash — jedino odstupanje od „samo PIN", jer čuvati ga kao
+ * tekst na telefonu nema opravdanja.
  */
 class PinLock
 {
     public const SESSION_KEY = 'pin_unlocked';
 
-    private const HASH = 'pin.hash';
+    public function __construct(private SecuritySettings $settings) {}
 
     public function isEnabled(): bool
     {
-        return AppSetting::get(self::HASH) !== null;
+        return filled($this->settings->pin_hash);
     }
 
     public function set(string $pin): void
     {
-        AppSetting::set(self::HASH, Hash::make($pin));
+        $this->settings->pin_hash = Hash::make($pin);
+        $this->settings->save();
     }
 
     public function disable(): void
     {
-        AppSetting::forget(self::HASH);
+        $this->settings->pin_hash = null;
+        $this->settings->save();
     }
 
     public function verify(string $pin): bool
     {
-        $hash = AppSetting::get(self::HASH);
-
-        return $hash !== null && Hash::check($pin, $hash);
+        return $this->isEnabled() && Hash::check($pin, $this->settings->pin_hash);
     }
 }

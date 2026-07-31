@@ -27,10 +27,12 @@ class OFSService
         protected ?string $serialNumber = null,
         protected ?string $pac = null,
     ) {
-        $this->baseUrl = rtrim($baseUrl ?? (string) config('ofs.base_url'), '/');
-        $this->apiKey ??= config('ofs.api_key');
-        $this->serialNumber ??= config('ofs.serial_number');
-        $this->pac ??= config('ofs.pac');
+        $settings = app(\App\Settings\FiscalSettings::class);
+
+        $this->baseUrl = rtrim($baseUrl ?: $settings->base_url, '/');
+        $this->apiKey ??= $settings->api_key;
+        $this->serialNumber ??= $settings->serial_number;
+        $this->pac ??= $settings->pac;
     }
 
     /** Cloud traži sva tri; lokalni ESIR koristi samo Authorization. */

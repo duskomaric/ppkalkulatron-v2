@@ -10,6 +10,17 @@
 
         <x-drawer-nav-item :href="route('settings.company.edit')" icon="building" title="Profil kompanije"
                            description="Podaci o firmi, adresa i JIB/PIB" />
+        <x-drawer-nav-item :href="route('settings.mail.edit')" icon="mail" title="Mail"
+                           description="Slanje računa, SMTP" />
+
+        <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)] px-1 pt-4 pb-1">
+            Podešavanja dokumenata
+        </p>
+
+        <x-drawer-nav-item :href="route('settings.general.edit')" icon="cog" title="Generalno"
+                           description="Numeracija, predložak i napomene" />
+        <x-drawer-nav-item :href="route('settings.fiscal.edit')" icon="file-text" title="Fiskalizacija"
+                           description="OFS ESIR – cloud ili lokalni uređaj" />
 
 
 

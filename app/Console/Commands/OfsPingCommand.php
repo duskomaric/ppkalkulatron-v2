@@ -29,7 +29,7 @@ class OfsPingCommand extends Command
             pac: $this->option('pac') ?: null,
         );
 
-        $this->line('Uređaj: '.($this->option('url') ?: config('ofs.base_url')));
+        $this->line('Uređaj: '.($this->option('url') ?: app(\App\Settings\FiscalSettings::class)->base_url));
         $this->newLine();
 
         try {

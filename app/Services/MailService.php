@@ -6,6 +6,7 @@ use App\Settings\MailSettings;
 use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 
 /**
  * Slanje pošte kroz SMTP iz podešavanja, po v1 CompanyMailService.
@@ -46,6 +47,17 @@ class MailService
 
     public function send(string|array $to, Mailable $mailable): void
     {
-        ($this->mailer() ?? Mail::getFacadeRoot())->to($to)->send($mailable);
+        $mailer = $this->mailer();
+
+        // Samo SMTP traži host; `log` i `array` u razvoju i testovima ne diramo.
+        $fallback = config('mail.mailers.'.config('mail.default'), []);
+
+        if ($mailer === null && ($fallback['transport'] ?? null) === 'smtp' && blank($fallback['host'] ?? null)) {
+            throw new RuntimeException(
+                'SMTP nije podešen. Otvorite Podešavanja → Mail i unesite server za slanje.'
+            );
+        }
+
+        ($mailer ?? Mail::getFacadeRoot())->to($to)->send($mailable);
     }
 }

@@ -37,6 +37,6 @@ class MailSettingsController extends Controller
         $settings->fill($data);
         $settings->save();
 
-        return back()->with('status', 'Mail podešavanja su sačuvana.');
+        return redirect()->route('settings.mail.edit')->with('status', 'Mail podešavanja su sačuvana.');
     }
 }

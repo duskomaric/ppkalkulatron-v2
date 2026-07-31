@@ -37,6 +37,6 @@ class CompanySettingsController extends Controller
         $settings->is_vat_obligor = $request->boolean('is_vat_obligor');
         $settings->save();
 
-        return back()->with('status', 'Podaci kompanije su sačuvani.');
+        return redirect()->route('settings.company.edit')->with('status', 'Podaci kompanije su sačuvani.');
     }
 }

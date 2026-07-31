@@ -64,7 +64,7 @@ class CurrencyController extends Controller
     public function storeRate(Request $request, Currency $currency)
     {
         if ($currency->is_default) {
-            return back()->with('error', 'Podrazumijevana valuta nema kurs prema samoj sebi.');
+            return redirect()->route('currencies.index')->with('error', 'Podrazumijevana valuta nema kurs prema samoj sebi.');
         }
 
         $data = $request->validate([

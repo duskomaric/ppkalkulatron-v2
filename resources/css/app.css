@@ -83,3 +83,38 @@ body {
 
 /* Alpine: sakrij dok se ne inicijalizuje */
 [x-cloak] { display: none !important; }
+
+/*
+ * Sigurne zone.
+ *
+ * Android 15 nameće crtanje od ivice do ivice svakoj aplikaciji sa targetSdk 35+,
+ * a iPhone ionako ima urez i traku za povlačenje. Bez ovoga zaglavlje stoji ispod
+ * status trake, a donji meni preko trake za navigaciju. `viewport-fit=cover` je
+ * već u <meta>, pa env() ovdje ima šta da vrati.
+ *
+ * Klase se koriste umjesto Tailwind arbitrarnih vrijednosti jer env() u njima
+ * nije pouzdan kroz sve verzije alata.
+ */
+.safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Prostor ispod donjeg menija mora rasti za visinu sistemske trake. */
+.pb-nav {
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+    .pb-nav {
+        padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+    }
+}

@@ -55,7 +55,7 @@ class FiscalSettingsController extends Controller
         $settings->print_receipt = $request->boolean('print_receipt');
         $settings->save();
 
-        return back()->with('status', 'Fiskalna podešavanja su sačuvana.');
+        return redirect()->route('settings.fiscal.edit')->with('status', 'Fiskalna podešavanja su sačuvana.');
     }
 
     /** Provjera dostupnosti uređaja — v1 ima tri dugmeta, ovdje su spojena u jedno. */
@@ -66,7 +66,7 @@ class FiscalSettingsController extends Controller
             $attention = $ofs->testAttention();
 
             if (! $attention->successful()) {
-                return back()->with('error', "Uređaj nije dostupan (HTTP {$attention->status()}).");
+                return redirect()->route('settings.fiscal.edit')->with('error', "Uređaj nije dostupan (HTTP {$attention->status()}).");
             }
 
             $status = $ofs->getStatus();
@@ -74,7 +74,7 @@ class FiscalSettingsController extends Controller
             $gsc = array_map('strval', (array) ($data['gsc'] ?? []));
 
             if (in_array('1500', $gsc, true)) {
-                return back()->with('error', 'Uređaj traži PIN sigurnosnog elementa.');
+                return redirect()->route('settings.fiscal.edit')->with('error', 'Uređaj traži PIN sigurnosnog elementa.');
             }
 
             $labels = collect($data['currentTaxRates']['taxCategories'] ?? [])
@@ -82,10 +82,10 @@ class FiscalSettingsController extends Controller
                 ->map(fn ($r) => ($r['label'] ?? '?').' '.($r['rate'] ?? '?').'%')
                 ->implode(', ');
 
-            return back()->with('status', 'Uređaj je dostupan. UID '.($data['uid'] ?? '—').
+            return redirect()->route('settings.fiscal.edit')->with('status', 'Uređaj je dostupan. UID '.($data['uid'] ?? '—').
                 ($labels ? '. Oznake: '.$labels : ''));
         } catch (\Throwable $e) {
-            return back()->with('error', 'Greška: '.$e->getMessage());
+            return redirect()->route('settings.fiscal.edit')->with('error', 'Greška: '.$e->getMessage());
         }
     }
 
@@ -142,12 +142,12 @@ class FiscalSettingsController extends Controller
             $code = trim($response->body(), " \t\n\r\0\x0B\"");
 
             if ($response->successful() && $code === self::PIN_OK) {
-                return back()->with('status', 'PIN je prihvaćen. Uređaj je spreman za fiskalizaciju.');
+                return redirect()->route('settings.fiscal.edit')->with('status', 'PIN je prihvaćen. Uređaj je spreman za fiskalizaciju.');
             }
 
-            return back()->with('error', self::PIN_ERRORS[$code] ?? "Uređaj je odbio PIN (kod {$code}).");
+            return redirect()->route('settings.fiscal.edit')->with('error', self::PIN_ERRORS[$code] ?? "Uređaj je odbio PIN (kod {$code}).");
         } catch (\Throwable $e) {
-            return back()->with('error', 'Greška: '.$e->getMessage());
+            return redirect()->route('settings.fiscal.edit')->with('error', 'Greška: '.$e->getMessage());
         }
     }
 
@@ -163,16 +163,16 @@ class FiscalSettingsController extends Controller
             $response = $ofs->getInvoiceByRequestId($data['request_id']);
 
             if (! $response->successful()) {
-                return back()->with('error', "Uređaj nije odgovorio (HTTP {$response->status()}).");
+                return redirect()->route('settings.fiscal.edit')->with('error', "Uređaj nije odgovorio (HTTP {$response->status()}).");
             }
 
             $found = (array) $response->json();
 
-            return back()->with('status', empty($found)
+            return redirect()->route('settings.fiscal.edit')->with('status', empty($found)
                 ? 'Zahtjev nije pronađen — fiskalizacija vjerovatno nije prošla.'
                 : 'Pronađen račun '.($found['invoiceNumber'] ?? '—').', brojač '.($found['invoiceCounter'] ?? '—').'.');
         } catch (\Throwable $e) {
-            return back()->with('error', 'Greška: '.$e->getMessage());
+            return redirect()->route('settings.fiscal.edit')->with('error', 'Greška: '.$e->getMessage());
         }
     }
 }

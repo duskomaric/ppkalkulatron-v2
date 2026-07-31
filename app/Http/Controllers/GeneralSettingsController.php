@@ -45,6 +45,6 @@ class GeneralSettingsController extends Controller
         $document->fill(collect($data)->only(['template', 'language', 'invoice_due_days', 'invoice_notes'])->all());
         $document->save();
 
-        return back()->with('status', 'Podešavanja su sačuvana.');
+        return redirect()->route('settings.general.edit')->with('status', 'Podešavanja su sačuvana.');
     }
 }

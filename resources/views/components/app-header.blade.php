@@ -1,4 +1,6 @@
-<header class="sticky top-0 z-40 h-[56px] flex items-center bg-[var(--color-bg)]/20 backdrop-blur-lg border-b border-[var(--color-border)]">
+{{-- safe-top: bez toga zaglavlje stoji ispod status trake na Androidu 15 i iPhoneu. --}}
+<header class="sticky top-0 z-40 flex items-center bg-[var(--color-bg)]/20 backdrop-blur-lg border-b border-[var(--color-border)] safe-top safe-x">
+    <div class="h-[56px] w-full flex items-center">
     <div class="max-w-[1200px] w-full mx-auto px-4 sm:px-6 flex justify-between items-center gap-2">
         <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <a href="{{ route('invoices.index') }}"
@@ -35,6 +37,7 @@
                     class="cursor-pointer h-9 w-9 bg-[var(--color-surface)] text-[var(--color-text-muted)] rounded-xl flex items-center justify-center font-bold text-xs border border-[var(--color-border)] hover:border-primary hover:text-primary transition-all">
                 <x-icon name="user" class="h-5 w-5" />
             </button>
+        </div>
         </div>
     </div>
 </header>

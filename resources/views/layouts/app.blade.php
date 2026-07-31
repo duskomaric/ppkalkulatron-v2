@@ -21,7 +21,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans">
-<div class="min-h-screen flex flex-col pb-32 lg:pb-8 relative" x-data="{ userDrawer: false, settingsDrawer: false }">
+<div class="min-h-screen flex flex-col pb-nav relative" x-data="{ userDrawer: false, settingsDrawer: false }">
     <div class="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
         <div class="glow-ball glow-ball-primary -top-20 -left-20"></div>
         <div class="glow-ball glow-ball-secondary -bottom-20 -right-20"></div>

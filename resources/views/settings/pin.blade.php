@@ -16,11 +16,11 @@
                 @csrf
                 @method('PUT')
 
-                <x-field label="PIN" name="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"
-                         hint="Od 4 do 8 cifara." required />
+                <x-field label="PIN" name="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off"
+                         hint="Četiri cifre." required />
 
                 <x-field label="Ponovi PIN" name="pin_confirmation" type="password" inputmode="numeric"
-                         maxlength="8" autocomplete="off" required />
+                         maxlength="4" autocomplete="off" required />
 
                 <x-button variant="primary" class="w-full">{{ $enabled ? 'Promijeni PIN' : 'Postavi PIN' }}</x-button>
             </form>

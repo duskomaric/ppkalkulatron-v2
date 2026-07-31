@@ -16,17 +16,17 @@ class FiscalController extends Controller
 
     public function fiscalize(Invoice $invoice)
     {
-        return $this->run(fn () => $this->fiscal->fiscalize($invoice), 'Račun je fiskalizovan.');
+        return $this->run(fn () => $this->fiscal->fiscalize($invoice), 'Račun je fiskalizovan.', $invoice);
     }
 
     public function copy(Invoice $invoice)
     {
-        return $this->run(fn () => $this->fiscal->copy($invoice), 'Kopija je odštampana.');
+        return $this->run(fn () => $this->fiscal->copy($invoice), 'Kopija je odštampana.', $invoice);
     }
 
     public function refund(Invoice $invoice)
     {
-        return $this->run(fn () => $this->fiscal->refund($invoice), 'Storno je fiskalizovan.');
+        return $this->run(fn () => $this->fiscal->refund($invoice), 'Storno je fiskalizovan.', $invoice);
     }
 
     /** Storno račun: kopija originala sa istim iznosima, kao u v1. */
@@ -85,7 +85,7 @@ class FiscalController extends Controller
         ]);
     }
 
-    private function run(callable $action, string $message)
+    private function run(callable $action, string $message, Invoice $invoice)
     {
         try {
             $action();
@@ -97,6 +97,6 @@ class FiscalController extends Controller
             return response()->json(['message' => 'Greška: '.$e->getMessage()], 500);
         }
 
-        return response()->json(['message' => $message]);
+        return response()->json(['message' => $message, 'invoice_id' => $invoice->id]);
     }
 }

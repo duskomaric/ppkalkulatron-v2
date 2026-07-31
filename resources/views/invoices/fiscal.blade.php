@@ -75,7 +75,7 @@
 
                             @if ($record->fiscal_receipt_image_path)
                                 <button type="button" title="Slika"
-                                        x-on:click="{{ \App\Support\Js::call('$data.openReceipt', route('invoices.receipt', $record)) }}"
+                                        x-on:click="{{ \App\Support\Js::call('$data.openReceipt', route('invoices.receipt', $record), match (strtolower($record->receiptImage?->extension ?: 'png')) { 'pdf' => 'pdf', 'html', 'htm' => 'html', default => 'image' }) }}"
                                         class="cursor-pointer flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white shadow-sm border border-black/5 hover:scale-[1.02] active:scale-[0.98] transition-all {{ $text }}">
                                     <x-icon name="image" class="h-5 w-5" />
                                     <span class="text-[10px] font-black uppercase sm:hidden">Prikaži</span>

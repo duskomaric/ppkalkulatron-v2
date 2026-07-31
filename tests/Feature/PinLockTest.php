@@ -62,10 +62,10 @@ it('traži potvrdu PIN-a', function () {
     expect(app(PinLock::class)->isEnabled())->toBeFalse();
 });
 
-it('prihvata samo cifre, 4 do 8', function (string $candidate) {
+it('prihvata samo četiri cifre', function (string $candidate) {
     $this->put(route('settings.pin.update'), ['pin' => $candidate, 'pin_confirmation' => $candidate])
         ->assertSessionHasErrors('pin');
-})->with(['123', '123456789', 'abcd', '12a4', '']);
+})->with(['123', '12345', 'abcd', '12a4', '']);
 
 it('uklanja PIN i pušta bez zaključavanja', function () {
     setPin('1111');

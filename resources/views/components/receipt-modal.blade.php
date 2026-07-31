@@ -1,29 +1,32 @@
-{{-- v1 ImageModal: slika fiskalnog računa preko cijelog ekrana. --}}
+{{--
+    v1 ImageModal: sadržaj na tamnoj podlozi, bez okvira kartice. Slika ide u
+    prirodnom odnosu stranica (isječak je uzak i visok), a PDF i HTML u okvir.
+--}}
 <div x-cloak x-show="receiptModal" class="fixed inset-0 z-[1200] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/80 backdrop-blur-[12px]" x-on:click="receiptModal = false"></div>
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" x-on:click="receiptModal = false"></div>
 
-    <div class="relative w-full max-w-[560px] max-h-[90vh] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-xl overflow-hidden flex flex-col">
-        <div class="p-4 border-b border-[var(--color-border)] flex items-center justify-between gap-3">
-            <h3 class="text-sm font-black text-[var(--color-text-main)] flex items-center gap-2">
-                <x-icon name="image" class="h-4 w-4 text-primary" /> Fiskalni račun
-            </h3>
-            <div class="flex items-center gap-2">
-                <a :href="receiptUrl" target="_blank" rel="noopener noreferrer" title="Otvori u novom tabu"
-                   class="h-9 w-9 rounded-xl bg-[var(--color-border)] hover:bg-[var(--color-surface-hover)] flex items-center justify-center text-[var(--color-text-muted)] transition-all">
-                    <x-icon name="external-link" class="h-4 w-4" />
-                </a>
-                <button type="button" x-on:click="receiptModal = false" aria-label="Zatvori"
-                        class="h-9 w-9 rounded-xl bg-[var(--color-border)] hover:bg-[var(--color-surface-hover)] flex items-center justify-center text-[var(--color-text-muted)] transition-all cursor-pointer">
-                    <x-icon name="x" class="h-4 w-4" />
-                </button>
-            </div>
-        </div>
+    <div class="relative max-w-[95vw] max-h-[95vh] flex flex-col items-center">
+        <h3 class="text-white font-bold text-sm mb-2 text-center">Fiskalni račun</h3>
 
-        <div class="p-4 overflow-auto bg-white flex justify-center">
-            {{-- Uređaj vraća PNG, PDF ili HTML — <object> prikaže sva tri. --}}
-            <object :data="receiptUrl" class="w-full min-h-[60vh]">
-                <img :src="receiptUrl" alt="Fiskalni račun" class="max-w-full h-auto">
-            </object>
+        <template x-if="receiptKind === 'image'">
+            <img :src="receiptUrl" alt="Fiskalni račun"
+                 class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl bg-white">
+        </template>
+
+        <template x-if="receiptKind !== 'image'">
+            <iframe :src="receiptUrl" title="Fiskalni račun" sandbox="allow-same-origin"
+                    class="w-[90vw] max-w-[900px] h-[80vh] rounded-xl bg-white"></iframe>
+        </template>
+
+        <div class="mt-4 flex items-center gap-2">
+            <a :href="receiptUrl" target="_blank" rel="noopener noreferrer" aria-label="Otvori u novom tabu"
+               class="p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors">
+                <x-icon name="external-link" class="h-5 w-5" />
+            </a>
+            <button type="button" x-on:click="receiptModal = false" aria-label="Zatvori"
+                    class="p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer">
+                <x-icon name="x" class="h-5 w-5" />
+            </button>
         </div>
     </div>
 </div>

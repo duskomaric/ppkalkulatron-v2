@@ -35,8 +35,6 @@
             @yield('actions')
         </div>
 
-        <x-flash />
-
         @yield('content')
     </main>
 
@@ -44,6 +42,7 @@
     <x-user-drawer />
     <x-settings-drawer />
     <x-toast />
+    <x-flash />
 </div>
 
 @stack('scripts')

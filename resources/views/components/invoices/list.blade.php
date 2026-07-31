@@ -1,5 +1,6 @@
 @props(['invoices'])
 
+<div data-invoice-list>
 {{--
     Cijela lista računa. Raspored i sadržaj kartice prate v1: na telefonu kartica sa
     brojem, statusom, klijentom, načinom plaćanja i podnožjem sa datumima i ukupnim
@@ -127,3 +128,4 @@
 
     <div class="mt-6">{{ $invoices->links() }}</div>
 @endif
+</div>

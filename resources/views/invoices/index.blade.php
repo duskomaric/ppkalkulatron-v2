@@ -43,6 +43,7 @@
                 detailDrawer: false,
                 detailLoading: false,
                 detailHtml: '',
+                detailUrl: '',
 
                 formDrawer: false,
                 formLoading: false,
@@ -60,17 +61,41 @@
 
                 receiptModal: false,
                 receiptUrl: '',
+                receiptKind: 'image',
 
                 confirm: { open: false, message: '', running: false, action: null },
 
                 // Detalji i forma se dovlače sa servera pa u v2 postoji samo jedan
                 // izvor izgleda računa — isti Blade koji servira i puna stranica.
                 async openDetail(url) {
+                    this.detailUrl = url;
                     this.detailHtml = '';
                     this.detailLoading = true;
                     this.detailDrawer = true;
                     this.detailHtml = await this.load(url, failure);
                     this.detailLoading = false;
+                },
+
+                /** Osvježi sadržaj otvorenog drawera bez zatvaranja i bez treptaja. */
+                async refreshDetail() {
+                    if (! this.detailUrl) return;
+
+                    this.detailHtml = await this.load(this.detailUrl, this.detailHtml);
+                },
+
+                /** Prepiši samo listu, da radnja iz drawera ne odnese korisnika sa stranice. */
+                async refreshList() {
+                    const html = await this.load(window.location.href, null);
+
+                    if (! html) return;
+
+                    const fresh = new DOMParser().parseFromString(html, 'text/html')
+                        .querySelector('[data-invoice-list]');
+                    const current = this.$el.querySelector('[data-invoice-list]');
+
+                    if (fresh && current) {
+                        current.innerHTML = fresh.innerHTML;
+                    }
                 },
 
                 async openForm(url, title) {
@@ -84,8 +109,9 @@
                     this.formLoading = false;
                 },
 
-                openReceipt(url) {
+                openReceipt(url, kind = 'image') {
                     this.receiptUrl = url;
+                    this.receiptKind = kind;
                     this.receiptModal = true;
                 },
 
@@ -116,8 +142,12 @@
                             response.ok ? 'success' : 'error');
 
                         if (response.ok) {
-                            // Status, zapisi i dostupne radnje se mijenjaju — lista se osvježava.
-                            setTimeout(() => window.location.reload(), 1200);
+                            // Račun ostaje otvoren; mijenjaju se status, zapisi i dostupne radnje.
+                            if (data.invoice_id) {
+                                this.detailUrl = `/racuni/${data.invoice_id}?partial=1`;
+                            }
+
+                            await Promise.all([this.refreshDetail(), this.refreshList()]);
                         }
                     } catch {
                         this.confirm.open = false;
@@ -168,8 +198,8 @@
                             return;
                         }
 
+                        // Račun ostaje otvoren i poslije slanja.
                         this.emailModal = false;
-                        this.detailDrawer = false;
                         this.flash(data.message);
                     } catch {
                         this.emailError = 'Slanje nije uspjelo.';
@@ -189,7 +219,11 @@
 
                 async load(url, fallback) {
                     try {
-                        const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                        // Bez no-store preglednik zna vratiti kopiju stranice od prije izmjene.
+                        const response = await fetch(url, {
+                            cache: 'no-store',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        });
 
                         return response.ok ? await response.text() : fallback;
                     } catch {
@@ -225,7 +259,12 @@
                             return;
                         }
 
-                        window.location = (await response.json()).redirect;
+                        const saved = await response.json();
+
+                        this.formDrawer = false;
+                        this.flash(saved.message);
+                        await this.refreshList();
+                        await this.openDetail(saved.detail_url);
                     } catch {
                         this.formErrors = { _: ['Čuvanje nije uspjelo. Pokušajte ponovo.'] };
                     } finally {

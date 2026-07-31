@@ -25,7 +25,7 @@
             <form method="POST" action="{{ route('unlock.store') }}" class="space-y-4">
                 @csrf
 
-                <input name="pin" type="password" inputmode="numeric" autocomplete="off" autofocus maxlength="8"
+                <input name="pin" type="password" inputmode="numeric" autocomplete="off" autofocus maxlength="4"
                        placeholder="••••"
                        class="w-full px-4 py-4 bg-[var(--color-surface)] border {{ $errors->any() ? 'border-[var(--color-error)]' : 'border-[var(--color-border)]' }} rounded-2xl text-center text-2xl font-black tracking-[0.5em] outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all">
 

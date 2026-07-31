@@ -253,11 +253,14 @@ class InvoiceController extends Controller
     /** Iz drawera se šalje preko XHR-a, pa odgovor mora reći kuda dalje. */
     private function saved(Request $request, Invoice $invoice, string $message)
     {
-        session()->flash('status', $message);
-
         if ($request->expectsJson()) {
-            return response()->json(['redirect' => route('invoices.index')]);
+            return response()->json([
+                'message' => $message,
+                'detail_url' => route('invoices.show', [$invoice, 'partial' => 1]),
+            ]);
         }
+
+        session()->flash('status', $message);
 
         return redirect()->route('invoices.show', $invoice);
     }

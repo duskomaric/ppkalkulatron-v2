@@ -21,7 +21,7 @@ class PinSettingsController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate(
-            ['pin' => ['required', 'digits_between:4,8', 'confirmed']],
+            ['pin' => ['required', 'digits:4', 'confirmed']],
             [],
             ['pin' => 'PIN'],
         );

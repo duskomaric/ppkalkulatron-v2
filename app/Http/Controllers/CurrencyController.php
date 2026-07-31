@@ -72,10 +72,14 @@ class CurrencyController extends Controller
             'rate_date' => ['required', 'date'],
         ], [], ['rate_to_bam' => 'kurs', 'rate_date' => 'datum']);
 
-        ExchangeRate::updateOrCreate(
-            ['currency' => $currency->code, 'rate_date' => $data['rate_date']],
-            ['rate_to_bam' => $data['rate_to_bam']],
-        );
+        // whereDate, ne updateOrCreate: na SQLite-u kolona datuma nosi i vrijeme,
+        // pa poređenje sa golim „Y-m-d" ne bi našlo postojeći zapis.
+        $rate = ExchangeRate::where('currency', $currency->code)
+            ->whereDate('rate_date', $data['rate_date'])
+            ->first() ?? new ExchangeRate(['currency' => $currency->code, 'rate_date' => $data['rate_date']]);
+
+        $rate->rate_to_bam = $data['rate_to_bam'];
+        $rate->save();
 
         return redirect()->route('currencies.edit', $currency)->with('status', 'Kurs je sačuvan.');
     }

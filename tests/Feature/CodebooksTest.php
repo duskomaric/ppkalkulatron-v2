@@ -156,3 +156,13 @@ it('otključava sa četiri polja za cifre', function () {
         ->and($html)->toContain('autocomplete="one-time-code"')
         ->and($html)->toContain('maxlength="1"');
 });
+
+it('drži kurs po valuti i datumu, ne po valuti', function () {
+    $eur = Currency::where('code', 'EUR')->sole();
+
+    foreach (['2026-07-30' => '1.95000', '2026-07-31' => '1.95583'] as $date => $rate) {
+        $this->post(route('currencies.rates.store', $eur), ['rate_to_bam' => $rate, 'rate_date' => $date]);
+    }
+
+    expect(ExchangeRate::where('currency', 'EUR')->count())->toBe(2);
+});

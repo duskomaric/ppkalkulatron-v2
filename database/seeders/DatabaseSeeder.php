@@ -29,6 +29,9 @@ class DatabaseSeeder extends Seeder
         $writer->create([
             'client_id' => $clients[0]->id,
             'payment_type' => 'WireTransfer',
+            'currency' => 'BAM',
+            'template' => 'classic',
+            'language' => 'sr_Latn',
             'date' => now()->subDays(12)->format('Y-m-d'),
             'due_date' => now()->subDays(12)->addDays(15)->format('Y-m-d'),
             'notes' => "Plaćanje na račun.\nHvala na saradnji.",
@@ -41,6 +44,9 @@ class DatabaseSeeder extends Seeder
         $writer->create([
             'client_id' => $clients[1]->id,
             'payment_type' => 'Cash',
+            'currency' => 'BAM',
+            'template' => 'classic',
+            'language' => 'sr_Latn',
             'date' => now()->subDays(4)->format('Y-m-d'),
             'due_date' => now()->addDays(11)->format('Y-m-d'),
             'items' => [
@@ -51,6 +57,9 @@ class DatabaseSeeder extends Seeder
         $writer->create([
             'client_id' => $clients[2]->id,
             'payment_type' => 'Card',
+            'currency' => 'BAM',
+            'template' => 'classic',
+            'language' => 'sr_Latn',
             'date' => now()->format('Y-m-d'),
             'due_date' => now()->addDays(15)->format('Y-m-d'),
             'items' => [
@@ -61,6 +70,9 @@ class DatabaseSeeder extends Seeder
         $writer->create([
             'client_id' => null,
             'payment_type' => 'Cash',
+            'currency' => 'BAM',
+            'template' => 'classic',
+            'language' => 'sr_Latn',
             'date' => now()->format('Y-m-d'),
             'due_date' => now()->format('Y-m-d'),
             'notes' => 'Račun bez klijenta.',

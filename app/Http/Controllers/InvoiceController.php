@@ -58,11 +58,12 @@ class InvoiceController extends Controller
     /** Godine u kojima postoje računi, uvijek uključujući izabranu i tekuću. */
     private function years(int $selected): array
     {
+        // Bez YEAR(): upakovana aplikacija radi na SQLite-u, koji tu funkciju nema.
         return Invoice::query()
-            ->selectRaw('DISTINCT YEAR(`date`) as year')
-            ->pluck('year')
+            ->distinct()
+            ->pluck('date')
+            ->map(fn ($date) => (int) $date->format('Y'))
             ->push($selected, (int) date('Y'))
-            ->map(fn ($year) => (int) $year)
             ->unique()
             ->sortDesc()
             ->values()

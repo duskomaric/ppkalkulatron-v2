@@ -184,4 +184,94 @@ Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, clie
     },
 }));
 
+/**
+ * Liste šifarnika: forma se otvara u draweru i šalje preko XHR-a, kao kod računa.
+ * Jedan opis za klijente, artikle, bankovne račune i valute — razlikuju se samo URL-ovi.
+ */
+Alpine.data('entityIndex', () => ({
+    formDrawer: false,
+    formLoading: false,
+    formHtml: '',
+    formTitle: '',
+    formErrors: {},
+    saving: false,
+
+    async openForm(url, title) {
+        this.formTitle = title;
+        this.formErrors = {};
+        this.formHtml = '';
+        this.formLoading = true;
+        this.formDrawer = true;
+        this.formHtml = await this.load(url);
+        this.formLoading = false;
+    },
+
+    closeForm() {
+        this.formDrawer = false;
+    },
+
+    async load(url) {
+        const failure = '<p class="py-8 text-center text-sm font-bold text-[var(--color-error)]">Nije moguće učitati.</p>';
+
+        try {
+            const response = await fetch(url, {
+                cache: 'no-store',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+
+            return response.ok ? await response.text() : failure;
+        } catch {
+            return failure;
+        }
+    },
+
+    /** Prepiši listu bez ponovnog učitavanja stranice. */
+    async refreshList() {
+        const html = await this.load(window.location.href);
+        const fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-entity-list]');
+        const current = this.$el.querySelector('[data-entity-list]');
+
+        if (fresh && current) {
+            current.innerHTML = fresh.innerHTML;
+        }
+    },
+
+    async submitForm(event) {
+        if (this.saving) return;
+
+        this.saving = true;
+        this.formErrors = {};
+
+        try {
+            const form = event.target;
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            });
+
+            if (response.status === 422) {
+                this.formErrors = (await response.json()).errors || {};
+
+                return;
+            }
+
+            if (! response.ok) {
+                this.formErrors = { _: ['Čuvanje nije uspjelo. Pokušajte ponovo.'] };
+
+                return;
+            }
+
+            const saved = await response.json();
+            this.formDrawer = false;
+            window.dispatchEvent(new CustomEvent('app-flash', { detail: saved.message }));
+            await this.refreshList();
+        } catch {
+            this.formErrors = { _: ['Čuvanje nije uspjelo. Pokušajte ponovo.'] };
+        } finally {
+            this.saving = false;
+        }
+    },
+}));
+
 Alpine.start();

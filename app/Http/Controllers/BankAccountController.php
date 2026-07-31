@@ -2,38 +2,41 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\DrawerForms;
 use App\Models\BankAccount;
 use Illuminate\Http\Request;
 
 class BankAccountController extends Controller
 {
+    use DrawerForms;
+
     public function index()
     {
         return view('bank-accounts.index', ['accounts' => BankAccount::orderBy('bank_name')->get()]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('bank-accounts.form', ['account' => null]);
+        return $this->formView($request, 'bank-accounts.form-fields', 'bank-accounts.form', ['account' => null]);
     }
 
     public function store(Request $request)
     {
         BankAccount::create($this->validated($request));
 
-        return redirect()->route('bank-accounts.index')->with('status', 'Bankovni račun je dodat.');
+        return $this->saved($request, 'bank-accounts.index', 'Bankovni račun je dodat.');
     }
 
-    public function edit(BankAccount $bankAccount)
+    public function edit(Request $request, BankAccount $bankAccount)
     {
-        return view('bank-accounts.form', ['account' => $bankAccount]);
+        return $this->formView($request, 'bank-accounts.form-fields', 'bank-accounts.form', ['account' => $bankAccount]);
     }
 
     public function update(Request $request, BankAccount $bankAccount)
     {
         $bankAccount->update($this->validated($request));
 
-        return redirect()->route('bank-accounts.index')->with('status', 'Izmjene su sačuvane.');
+        return $this->saved($request, 'bank-accounts.index', 'Izmjene su sačuvane.');
     }
 
     public function destroy(BankAccount $bankAccount)

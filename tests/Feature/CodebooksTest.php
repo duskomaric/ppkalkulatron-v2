@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\BankAccount;
+use App\Models\Client;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
 use App\Settings\MenuSettings;
@@ -101,4 +102,36 @@ it('premješta modul iz menija u drawer', function () {
 
     expect($settings->menu_modules)->toBe(['invoices', 'currencies'])
         ->and($settings->drawerModules())->toBe(['clients', 'articles', 'bank-accounts']);
+});
+
+it('servira formu šifarnika kao dio drawera', function (string $route) {
+    $partial = $this->get(route($route, ['partial' => 1]));
+
+    $partial->assertStatus(200)->assertDontSee('<!DOCTYPE html>', false);
+})->with(['clients.create', 'articles.create', 'bank-accounts.create', 'currencies.create']);
+
+it('ne ugnježdava formu za brisanje u formu za čuvanje', function () {
+    $client = Client::create(['name' => 'Za brisanje']);
+
+    $html = $this->get(route('clients.edit', [$client, 'partial' => 1]))->getContent();
+
+    // Ugniježdenu formu preglednik izmjesti, pa čuvanje ode na rutu za brisanje.
+    expect($html)->toMatch('/<\/form>\s*\n[\s\S]*id="delete-entity"/')
+        ->and(substr_count($html, '<form'))->toBe(2);
+});
+
+it('čuva klijenta iz drawera i vraća poruku', function () {
+    $client = Client::create(['name' => 'Stari naziv']);
+
+    $this->putJson(route('clients.update', $client), ['name' => 'Novi naziv', 'is_active' => '1'])
+        ->assertStatus(200)
+        ->assertJson(['message' => 'Izmjene su sačuvane.']);
+
+    expect($client->fresh()->name)->toBe('Novi naziv');
+});
+
+it('vraća greške validacije kao JSON za drawer', function () {
+    $this->postJson(route('clients.store'), ['name' => ''])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('name');
 });

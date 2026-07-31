@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Unit;
+use App\Http\Controllers\Concerns\DrawerForms;
 use App\Models\Article;
 use App\Models\TaxRate;
 use Illuminate\Http\Request;
@@ -10,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class ArticleController extends Controller
 {
+    use DrawerForms;
+
     public function index(Request $request)
     {
         return view('articles.index', [
@@ -21,28 +24,28 @@ class ArticleController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('articles.form', ['article' => null]);
+        return $this->formView($request, 'articles.form-fields', 'articles.form', ['article' => null]);
     }
 
     public function store(Request $request)
     {
         Article::create($this->validated($request));
 
-        return redirect()->route('articles.index')->with('status', 'Artikl je kreiran.');
+        return $this->saved($request, 'articles.index', 'Artikl je kreiran.');
     }
 
-    public function edit(Article $article)
+    public function edit(Request $request, Article $article)
     {
-        return view('articles.form', ['article' => $article]);
+        return $this->formView($request, 'articles.form-fields', 'articles.form', ['article' => $article]);
     }
 
     public function update(Request $request, Article $article)
     {
         $article->update($this->validated($request));
 
-        return redirect()->route('articles.index')->with('status', 'Izmjene su sačuvane.');
+        return $this->saved($request, 'articles.index', 'Izmjene su sačuvane.');
     }
 
     public function destroy(Article $article)

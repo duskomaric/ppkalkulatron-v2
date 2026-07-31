@@ -20,6 +20,9 @@ class MenuSettingsController extends Controller
     {
         $keys = array_keys(MenuSettings::modules());
 
+        // Skriveno prazno polje osigurava da odčekiranje svega pošalje praznu listu.
+        $request->merge(['menu_modules' => array_filter((array) $request->input('menu_modules', []))]);
+
         $data = $request->validate([
             'menu_modules' => ['array', 'max:5'],
             'menu_modules.*' => [Rule::in($keys)],

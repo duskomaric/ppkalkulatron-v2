@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\DrawerForms;
 use App\Models\Client;
 use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
+    use DrawerForms;
+
     public function index(Request $request)
     {
         return view('clients.index', [
@@ -18,28 +21,28 @@ class ClientController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('clients.form', ['client' => null]);
+        return $this->formView($request, 'clients.form-fields', 'clients.form', ['client' => null]);
     }
 
     public function store(Request $request)
     {
         Client::create($this->validated($request));
 
-        return redirect()->route('clients.index')->with('status', 'Klijent je kreiran.');
+        return $this->saved($request, 'clients.index', 'Klijent je kreiran.');
     }
 
-    public function edit(Client $client)
+    public function edit(Request $request, Client $client)
     {
-        return view('clients.form', ['client' => $client]);
+        return $this->formView($request, 'clients.form-fields', 'clients.form', ['client' => $client]);
     }
 
     public function update(Request $request, Client $client)
     {
         $client->update($this->validated($request));
 
-        return redirect()->route('clients.index')->with('status', 'Izmjene su sačuvane.');
+        return $this->saved($request, 'clients.index', 'Izmjene su sačuvane.');
     }
 
     public function destroy(Client $client)

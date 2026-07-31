@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\DrawerForms;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
 use Illuminate\Http\Request;
@@ -10,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class CurrencyController extends Controller
 {
+    use DrawerForms;
+
     public function index()
     {
         return view('currencies.index', [
@@ -18,21 +21,21 @@ class CurrencyController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('currencies.form', ['currency' => null, 'rates' => collect()]);
+        return $this->formView($request, 'currencies.form-fields', 'currencies.form', ['currency' => null, 'rates' => collect()]);
     }
 
     public function store(Request $request)
     {
         $this->save($request, new Currency);
 
-        return redirect()->route('currencies.index')->with('status', 'Valuta je dodata.');
+        return $this->saved($request, 'currencies.index', 'Valuta je dodata.');
     }
 
-    public function edit(Currency $currency)
+    public function edit(Request $request, Currency $currency)
     {
-        return view('currencies.form', [
+        return $this->formView($request, 'currencies.form-fields', 'currencies.form', [
             'currency' => $currency,
             'rates' => ExchangeRate::where('currency', $currency->code)
                 ->orderByDesc('rate_date')->limit(10)->get(),
@@ -43,7 +46,7 @@ class CurrencyController extends Controller
     {
         $this->save($request, $currency);
 
-        return redirect()->route('currencies.index')->with('status', 'Izmjene su sačuvane.');
+        return $this->saved($request, 'currencies.index', 'Izmjene su sačuvane.');
     }
 
     public function destroy(Currency $currency)

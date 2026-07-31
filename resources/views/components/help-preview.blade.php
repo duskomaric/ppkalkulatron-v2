@@ -18,11 +18,12 @@
         </span>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        @foreach ([['mobile', 'Mobile', 'aspect-[9/16]'], ['desktop', 'Desktop', 'aspect-[16/10]']] as [$kind, $label, $ratio])
+    {{-- Prikazuje se snimak koji odgovara ekranu na kojem se pomoć čita. --}}
+    <div>
+        @foreach ([['mobile', 'Mobile', 'aspect-[9/16] max-w-[280px]', 'md:hidden'], ['desktop', 'Desktop', 'aspect-[16/10]', 'hidden md:block']] as [$kind, $label, $ratio, $visible])
             @php($path = "help/{$slug}-{$kind}.png")
 
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 {{ $visible }}">
                 <p class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-dim)]">{{ $label }}</p>
 
                 @if (file_exists(public_path($path)))

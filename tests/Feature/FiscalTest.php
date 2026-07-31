@@ -4,6 +4,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\Client;
 use App\Models\ExchangeRate;
 use App\Models\Invoice;
+use App\Models\TaxRate;
 use App\Services\FiscalService;
 use App\Services\InvoiceWriter;
 use App\Services\NetworkScanner;
@@ -232,4 +233,79 @@ it('prevodi kod greške sa PIN-a u poruku', function () {
 
     $this->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
         ->assertSessionHas('error', 'Sigurnosni element nije prisutan u uređaju.');
+});
+
+it('stavku bez poreza šalje sa nultom stopom, ne sa 9%', function () {
+    fakeDevice();
+
+    $invoice = app(InvoiceWriter::class)->create([
+        'client_id' => Client::create(['name' => 'Kupac'])->id,
+        'payment_type' => 'Cash', 'currency' => 'BAM', 'template' => 'classic', 'language' => 'sr_Latn',
+        'date' => now()->format('Y-m-d'), 'due_date' => now()->addDay()->format('Y-m-d'),
+        'items' => [[
+            'article_id' => null, 'name' => 'Bez poreza', 'unit' => 'kom',
+            'tax_label' => null, 'quantity' => 1, 'unit_price' => '100.00',
+        ]],
+    ]);
+
+    app(FiscalService::class)->fiscalize($invoice);
+
+    Http::assertSent(function ($request) {
+        $label = $request['invoiceRequest']['items'][0]['labels'][0];
+
+        return (int) TaxRate::where('label', $label)->value('rate') === 0;
+    });
+});
+
+it('cijena × količina daje ukupno i poslije preračuna valute', function () {
+    fakeDevice();
+    ExchangeRate::create(['currency' => 'EUR', 'rate_to_bam' => 1.95583, 'rate_date' => now()->subDay()]);
+
+    $invoice = makeInvoice();
+    $invoice->update(['currency' => 'EUR']);
+    $invoice->items()->update(['quantity' => 3, 'total' => 300, 'unit_price' => 100]);
+
+    app(FiscalService::class)->fiscalize($invoice->fresh()->load('items'));
+
+    Http::assertSent(function ($request) {
+        $item = $request['invoiceRequest']['items'][0];
+
+        return round($item['unitPrice'] * $item['quantity'], 2) === round($item['totalAmount'], 2);
+    });
+});
+
+it('ne fiskalizuje storno dva puta', function () {
+    fakeDevice();
+    $invoice = makeInvoice();
+    app(FiscalService::class)->fiscalize($invoice);
+    $this->postJson(route('invoices.create-refund', $invoice->fresh()));
+    $refund = Invoice::latest('id')->first();
+    app(FiscalService::class)->refund($refund->fresh());
+
+    app(FiscalService::class)->refund($refund->fresh());
+})->throws(RuntimeException::class, 'Ovaj storno je već fiskalizovan.');
+
+it('ne dozvoljava izmjenu fiskalizovanog računa ni kad mu je storno kreiran', function () {
+    fakeDevice();
+    $invoice = makeInvoice();
+    app(FiscalService::class)->fiscalize($invoice);
+    $this->postJson(route('invoices.create-refund', $invoice->fresh()));
+
+    expect($invoice->fresh()->isDeletable())->toBeFalse();
+
+    $this->delete(route('invoices.destroy', $invoice))->assertRedirect();
+    expect(Invoice::find($invoice->id))->not->toBeNull();
+});
+
+it('brisanje storna vraća original u fiskalizovano stanje', function () {
+    fakeDevice();
+    $invoice = makeInvoice();
+    app(FiscalService::class)->fiscalize($invoice);
+    $this->postJson(route('invoices.create-refund', $invoice->fresh()));
+    $refund = Invoice::latest('id')->first();
+
+    $this->delete(route('invoices.destroy', $refund));
+
+    expect($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized)
+        ->and($invoice->fresh()->refund_invoice_id)->toBeNull();
 });

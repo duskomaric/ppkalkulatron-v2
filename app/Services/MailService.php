@@ -42,6 +42,10 @@ class MailService
             'timeout' => null,
         ]]);
 
+        // Bez purge: MailManager vrati transport napravljen sa starim hostom, a
+        // proces na uređaju živi između zahtjeva.
+        Mail::purge('app_smtp');
+
         return Mail::mailer('app_smtp');
     }
 

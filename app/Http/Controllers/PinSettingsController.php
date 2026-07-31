@@ -45,7 +45,7 @@ class PinSettingsController extends Controller
 
         $enabled = $this->pin->isEnabled();
         $this->pin->set($validated['pin']);
-        $request->session()->put(PinLock::SESSION_KEY, true);
+        $this->pin->markUnlocked();
 
         return redirect()
             ->route('settings.pin.edit')

@@ -19,6 +19,22 @@ class PinLock
     /** Vrijeme posljednje aktivnosti; po njemu se mjeri automatsko zaključavanje. */
     public const SEEN_KEY = 'pin_last_seen';
 
+    /** Oznaka procesa u kojem je otključano. */
+    public const BOOT_KEY = 'pin_boot';
+
+    /**
+     * Nova vrijednost pri svakom pokretanju procesa.
+     *
+     * Na uređaju jedan PHP proces služi sve zahtjeve, pa ovo pouzdano razlikuje
+     * „ista sesija, isto pokretanje" od „ista sesija, aplikacija je restartovana".
+     */
+    private static ?string $boot = null;
+
+    public static function boot(): string
+    {
+        return self::$boot ??= bin2hex(random_bytes(8));
+    }
+
     public function __construct(private SecuritySettings $settings) {}
 
     public function isEnabled(): bool
@@ -36,6 +52,16 @@ class PinLock
     {
         $this->settings->pin_hash = null;
         $this->settings->save();
+    }
+
+    /** Obilježi sesiju otključanom u ovom pokretanju aplikacije. */
+    public function markUnlocked(): void
+    {
+        session()->put([
+            self::SESSION_KEY => true,
+            self::BOOT_KEY => self::boot(),
+            self::SEEN_KEY => now(),
+        ]);
     }
 
     public function autoLockMinutes(): int

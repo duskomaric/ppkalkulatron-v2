@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
  * OFS ESIR klijent — prenesen iz v1 (ppKalkulatron-api/app/Services/OFSService.php).
  *
  * Jedina razlika je odakle dolaze podešavanja: v1 ih čita iz podešavanja kompanije,
- * ovdje su u config/ofs.php dok v2 nema model kompanije. Zaglavlja, putanje i
+ * ovdje su u podešavanjima aplikacije, jer v2 nema model kompanije. Zaglavlja, putanje i
  * ponašanje su isti, i isti su testirani protiv prave kase.
  *
  * Poenta v2: ovaj poziv se izvršava iz PHP-a na uređaju, pa ograničenja preglednika
@@ -59,7 +59,10 @@ class OFSService
 
         Log::info('OFS request', ['method' => $method, 'url' => $endpoint, 'request_id' => $requestId]);
 
-        $http = Http::withHeaders($headers)->timeout(15);
+        // Uređaj na lokalnoj mreži ili odgovori na rukovanje odmah ili nije tu.
+        // Bez ovoga se čeka Guzzle-ov podrazumijevani connect timeout, a jedan PHP
+        // proces služi sve zahtjeve — aplikacija stoji dok se čeka.
+        $http = Http::withHeaders($headers)->connectTimeout(2)->timeout(15);
 
         $response = $method === 'GET'
             ? $http->get($endpoint)
@@ -99,7 +102,8 @@ class OFSService
         $headers = $this->headers();
         unset($headers['Content-Type']);
 
-        return Http::withHeaders($headers)->withBody($pin, 'text/plain')->timeout(15)->post($endpoint);
+        return Http::withHeaders($headers)->withBody($pin, 'text/plain')
+            ->connectTimeout(2)->timeout(15)->post($endpoint);
     }
 
     public function createInvoice(array $payload, ?string $requestId = null): Response

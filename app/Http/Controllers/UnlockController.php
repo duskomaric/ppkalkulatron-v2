@@ -30,7 +30,7 @@ class UnlockController extends Controller
             return redirect()->route('unlock')->withErrors(['pin' => 'Pogrešan PIN.']);
         }
 
-        $request->session()->put(PinLock::SESSION_KEY, true);
+        $this->pin->markUnlocked();
 
         return redirect()->intended(route('invoices.index'));
     }

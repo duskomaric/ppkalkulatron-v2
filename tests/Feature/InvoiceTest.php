@@ -9,6 +9,7 @@ use App\Services\FiscalReceiptStore;
 use App\Services\InvoiceNumber;
 use App\Services\InvoicePdfService;
 use App\Settings\CompanySettings;
+use App\Settings\NumberingSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 
@@ -343,4 +344,64 @@ it('u pregledniku vraća PDF na preuzimanje', function () {
     $this->get(route('invoices.pdf', Invoice::firstOrFail()))
         ->assertStatus(200)
         ->assertHeader('content-type', 'application/pdf');
+});
+
+it('čuva opis stavke', function () {
+    $payload = invoicePayload();
+    $payload['items'][0]['description'] = 'Radovi po ugovoru 12/2026';
+
+    $this->post(route('invoices.store'), $payload);
+
+    expect(Invoice::firstOrFail()->items->first()->description)->toBe('Radovi po ugovoru 12/2026');
+});
+
+it('poštuje početni broj i prefiks iz podešavanja', function () {
+    $settings = app(NumberingSettings::class);
+    $settings->invoice_starting_number = 100;
+    $settings->invoice_prefix = 'INV';
+    $settings->pad_zeros = 5;
+    $settings->save();
+
+    $this->post(route('invoices.store'), invoicePayload());
+
+    expect(Invoice::firstOrFail()->invoice_number)->toBe('INV00100/'.date('Y'));
+});
+
+it('nastavlja numeraciju kroz godine kad je godišnji reset isključen', function () {
+    $settings = app(NumberingSettings::class);
+    $settings->reset_yearly = false;
+    $settings->save();
+
+    $this->post(route('invoices.store'), invoicePayload(['date' => '2025-06-01', 'due_date' => '2025-06-15']));
+    $this->post(route('invoices.store'), invoicePayload(['date' => '2026-06-01', 'due_date' => '2026-06-15']));
+
+    expect(Invoice::orderBy('id')->pluck('invoice_number')->all())->toBe(['0001/2025', '0002/2026']);
+});
+
+it('uzima godinu broja sa datuma računa, ne sa današnjeg', function () {
+    $this->post(route('invoices.store'), invoicePayload(['date' => '2025-12-20', 'due_date' => '2025-12-31']));
+
+    expect(Invoice::firstOrFail()->invoice_number)->toEndWith('/2025');
+});
+
+it('ne ruši listu na neispravan filter', function () {
+    $this->get(route('invoices.index', ['status' => 'bogus', 'payment_type' => 'bogus']))->assertStatus(200);
+});
+
+it('prikazuje PDV na PDF-u i kad kompanija nije obveznik', function () {
+    $company = app(CompanySettings::class);
+    $company->is_vat_obligor = false;
+    $company->save();
+
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $html = view('pdf.invoice', [
+        'invoice' => $invoice->load('client', 'items', 'fiscalRecords'),
+        'company' => $company,
+        'bankAccounts' => collect(),
+    ])->render();
+
+    // Osnovica + PDV mora davati ukupno; inače dokument sam sebi ne odgovara.
+    expect($html)->toContain('PDV');
 });

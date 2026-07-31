@@ -209,6 +209,13 @@ return [
         'DB_USERNAME',
         'APP_DEBUG',
         'APP_ENV',
+        // Nivo logovanja podešen za razvoj ne smije u paket: OFS zahtjevi i
+        // odgovori se logu ju, a fajl na uređaju preživi ažuriranje i ne rotira se.
+        'LOG_LEVEL',
+        // Putanje sa razvojne mašine i eventualni zaostali fiskalni ključevi.
+        'NATIVEPHP_ANDROID_SDK_LOCATION',
+        'NATIVEPHP_GRADLE_PATH',
+        'OFS_*',
         'MAIL_PASSWORD',
         'MAIL_USERNAME',
     ],

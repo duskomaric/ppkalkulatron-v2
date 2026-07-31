@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Article;
 use App\Models\Invoice;
 use App\Models\TaxRate;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,7 +23,7 @@ class InvoiceWriter
     {
         return DB::transaction(function () use ($data) {
             $invoice = Invoice::create($this->attributes($data) + [
-                'invoice_number' => $this->numbers->next(),
+                'invoice_number' => $this->numbers->next((int) Carbon::parse($data['date'])->year),
             ]);
 
             $this->writeItems($invoice, $data['items']);
@@ -93,6 +94,7 @@ class InvoiceWriter
         return [
             'article_id' => $row['article_id'] ?: null,
             'name' => $row['name'],
+            'description' => $row['description'] ?? null,
             'unit' => $row['unit'] ?? 'kom',
             'tax_label' => $taxLabel,
             'quantity' => $quantity,

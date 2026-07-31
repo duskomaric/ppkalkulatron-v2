@@ -10,7 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Pusti dalje ako PIN nije podešen, inače traži otključavanje.
  *
- * Sesija nosi otključanost, pa je novo pokretanje aplikacije opet zaključano.
+ * Otključanost nosi sesija, ali uz oznaku procesa: na uređaju i sesija i kolačići
+ * preživljavaju restart, pa bi bez toga PIN bio zatražen samo prvi put ikada.
  * Uz to se pamti vrijeme posljednjeg zahtjeva: kad prođe podešeni broj minuta
  * bez aktivnosti — telefon zaključan, aplikacija u pozadini, ekran ostavljen —
  * sljedeći zahtjev ponovo traži PIN.
@@ -25,7 +26,12 @@ class EnsureUnlocked
             return $next($request);
         }
 
-        if (! $request->session()->has(PinLock::SESSION_KEY)) {
+        // Sesija sama nije dokaz: preživi restart aplikacije i telefona. Uz nju
+        // mora stajati oznaka procesa u kojem je PIN unesen.
+        if (! $request->session()->has(PinLock::SESSION_KEY)
+            || $request->session()->get(PinLock::BOOT_KEY) !== PinLock::boot()) {
+            $request->session()->forget([PinLock::SESSION_KEY, PinLock::BOOT_KEY, PinLock::SEEN_KEY]);
+
             return redirect()->route('unlock');
         }
 

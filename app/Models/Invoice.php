@@ -91,8 +91,15 @@ class Invoice extends Model
         return number_format($pfening / 100, 2, ',', '.');
     }
 
+    /**
+     * Šta je jednom poslato uređaju ne smije se mijenjati ni brisati.
+     *
+     * Status nije dovoljna brana: originalu se pri kreiranju storna status mijenja
+     * na „storno kreiran", a to je stanje u kojem je *storno* još uvijek obrisiv.
+     * Postojanje fiskalnog zapisa je jednoznačno.
+     */
     public function isDeletable(): bool
     {
-        return $this->status->canBeDeleted();
+        return $this->status->canBeDeleted() && $this->fiscalRecords()->doesntExist();
     }
 }

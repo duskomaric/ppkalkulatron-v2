@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\Route;
 
 // Ekran za otključavanje mora biti dostupan i zaključanoj aplikaciji.
 Route::get('/unlock', [UnlockController::class, 'show'])->name('unlock');
-Route::post('/unlock', [UnlockController::class, 'store'])->name('unlock.store');
+Route::post('/unlock', [UnlockController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('unlock.store');
 
 Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::redirect('/', '/racuni');

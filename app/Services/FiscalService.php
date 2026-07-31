@@ -6,6 +6,7 @@ use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
 use App\Models\FiscalRecord;
 use App\Models\Invoice;
+use App\Models\TaxRate;
 use App\Settings\FiscalSettings;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -58,6 +59,11 @@ class FiscalService
             throw new RuntimeException('Ovaj račun nije storno nekog računa.');
         }
 
+        if ($refundInvoice->status !== InvoiceStatus::RefundCreated) {
+            // Bez ove brane ponovljen POST šalje uređaju drugu refundaciju.
+            throw new RuntimeException('Ovaj storno je već fiskalizovan.');
+        }
+
         $original = $this->requireOriginal($originalInvoice, 'Originalni račun mora biti fiskalizovan prije refundacije.');
 
         $record = $this->send($refundInvoice, 'Refund', 'Normal', FiscalRecordType::Refund, 'refund', $original);
@@ -88,7 +94,7 @@ class FiscalService
         string $requestPrefix,
         ?FiscalRecord $referent = null,
     ): FiscalRecord {
-        $invoice->loadMissing(['items', 'client']);
+        $invoice->loadMissing(['items.article', 'client']);
 
         if ($missing = $this->wholesaleBuyerMissing($invoice)) {
             throw new RuntimeException($missing);
@@ -147,18 +153,46 @@ class FiscalService
         $toBam = fn (int $pfening) => $this->converter->toBam($pfening, $invoice->currency, $invoice->date);
 
         return $invoice->items->map(function ($item) use ($toBam) {
-            // GTIN je obavezan, a artikl nema barkod — koristi se id dopunjen nulama.
-            $gtin = substr(str_pad((string) ($item->article_id ?? $item->id), 8, '0', STR_PAD_LEFT), 0, 14);
+            // GTIN je obavezan (8-14 znakova). Pravi barkod artikla ako ga ima,
+            // inače id dopunjen nulama — uređaj traži nešto jedinstveno.
+            $barcode = preg_replace('/\D/', '', (string) $item->article?->gtin);
+
+            $gtin = strlen($barcode) >= 8
+                ? substr($barcode, 0, 14)
+                : substr(str_pad((string) ($item->article_id ?? $item->id), 8, '0', STR_PAD_LEFT), 0, 14);
 
             return [
                 'name' => $item->name.' / '.$item->unit->value,
                 'gtin' => $gtin,
                 'quantity' => (float) $item->quantity,
-                'unitPrice' => abs($toBam($item->unit_price)) / 100,
+                // Jedinična cijena se izvodi iz preračunatog ukupnog, da uređaj ne
+                // odštampa red u kojem cijena × količina ne daje ukupno.
+                'unitPrice' => abs($toBam($item->total)) / max(1, (int) $item->quantity) / 100,
                 'totalAmount' => abs($toBam($item->total)) / 100,
-                'labels' => [$item->tax_label ?: 'A'],
+                'labels' => [$item->tax_label ?: $this->zeroRateLabel()],
             ];
         })->all();
+    }
+
+    /**
+     * Oznaka sa nultom stopom, za stavke bez poreza.
+     *
+     * Pogađanje ovdje košta: 'A' je 9% PDV-a, pa bi uređaj naplatio porez koji na
+     * računu ne stoji. Ako uređaj ne prijavljuje ni jednu nultu stopu, račun se ne
+     * fiskalizuje — bolje jasno odbijanje nego pogrešan fiskalni račun.
+     */
+    private function zeroRateLabel(): string
+    {
+        $label = TaxRate::where('rate', 0)->orderBy('label')->value('label');
+
+        if ($label === null) {
+            throw new RuntimeException(
+                'Stavka je bez poreske oznake, a uređaj ne prijavljuje nijednu nultu stopu. '.
+                'Dodijelite poresku oznaku stavci prije fiskalizacije.'
+            );
+        }
+
+        return $label;
     }
 
     private function payload(

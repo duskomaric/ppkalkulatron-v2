@@ -69,7 +69,7 @@ it('prihvata samo četiri cifre', function (string $candidate) {
 
 it('uklanja PIN i pušta bez zaključavanja', function () {
     setPin('1111');
-    $this->withSession([PinLock::SESSION_KEY => true]);
+    $this->withSession([PinLock::SESSION_KEY => true, PinLock::BOOT_KEY => PinLock::boot()]);
 
     $this->delete(route('settings.pin.destroy'))->assertRedirect(route('settings.pin.edit'));
 
@@ -125,7 +125,7 @@ it('ne zaključava kad je automatsko zaključavanje isključeno', function () {
 
 it('mijenja vrijeme automatskog zaključavanja', function () {
     setPin('1111');
-    $this->withSession([PinLock::SESSION_KEY => true]);
+    $this->withSession([PinLock::SESSION_KEY => true, PinLock::BOOT_KEY => PinLock::boot()]);
 
     $this->put(route('settings.pin.update-lock'), ['auto_lock_minutes' => 30])
         ->assertRedirect(route('settings.pin.edit'));
@@ -146,4 +146,43 @@ it('ostaje na ekranu za otključavanje kad je PIN pogrešan', function () {
 it('vraća na početak umjesto 405 kad se GET-om pogodi POST ruta', function () {
     $this->get('/lock')->assertRedirect(route('invoices.index'));
     $this->get('/podesavanja/fiskalizacija/provjera')->assertRedirect(route('invoices.index'));
+});
+
+it('traži PIN ponovo poslije restarta aplikacije', function () {
+    setPin('1111');
+    $this->post(route('unlock.store'), ['pin' => '1111']);
+    $this->get(route('invoices.index'))->assertStatus(200);
+
+    // Na uređaju i sesija i kolačići prežive restart, pa je oznaka procesa
+    // jedino što razlikuje „isto pokretanje" od „aplikacija je ponovo startovana".
+    $this->withSession([
+        PinLock::SESSION_KEY => true,
+        PinLock::BOOT_KEY => 'staro-pokretanje',
+    ]);
+
+    $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
+});
+
+it('ne pušta ni kad je automatsko zaključavanje isključeno a aplikacija restartovana', function () {
+    setPin('1111');
+    $settings = app(SecuritySettings::class);
+    $settings->auto_lock_minutes = 0;
+    $settings->save();
+
+    $this->withSession([
+        PinLock::SESSION_KEY => true,
+        PinLock::BOOT_KEY => 'staro-pokretanje',
+    ]);
+
+    $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
+});
+
+it('ograničava broj pokušaja PIN-a', function () {
+    setPin('1111');
+
+    foreach (range(1, 5) as $ignored) {
+        $this->post(route('unlock.store'), ['pin' => '9999']);
+    }
+
+    $this->post(route('unlock.store'), ['pin' => '9999'])->assertStatus(429);
 });

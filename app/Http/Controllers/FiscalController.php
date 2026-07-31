@@ -44,7 +44,7 @@ class FiscalController extends Controller
             $invoice->load('items');
 
             $refund = Invoice::create([
-                'invoice_number' => $numbers->next(),
+                'invoice_number' => $numbers->next((int) $invoice->date->year),
                 'client_id' => $invoice->client_id,
                 'status' => InvoiceStatus::RefundCreated,
                 'date' => $invoice->date,

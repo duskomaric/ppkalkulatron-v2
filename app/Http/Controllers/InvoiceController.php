@@ -80,18 +80,18 @@ class InvoiceController extends Controller
             $active[] = ['label' => 'Pretraga', 'value' => $filters['q'], 'clear' => $this->without($filters, ['q'])];
         }
 
-        if ($filters['status'] !== '') {
+        if ($status = InvoiceStatus::tryFrom($filters['status'])) {
             $active[] = [
                 'label' => 'Status',
-                'value' => InvoiceStatus::from($filters['status'])->label(),
+                'value' => $status->label(),
                 'clear' => $this->without($filters, ['status']),
             ];
         }
 
-        if ($filters['payment_type'] !== '') {
+        if ($paymentType = PaymentType::tryFrom($filters['payment_type'])) {
             $active[] = [
                 'label' => 'Plaćanje',
-                'value' => PaymentType::from($filters['payment_type'])->label(),
+                'value' => $paymentType->label(),
                 'clear' => $this->without($filters, ['payment_type']),
             ];
         }
@@ -171,7 +171,15 @@ class InvoiceController extends Controller
         }
 
         $number = $invoice->invoice_number;
+
+        // Storno se briše dok nije fiskalizovan; original se tada vraća u
+        // fiskalizovano stanje, inače ostane zaglavljen u „storno kreiran"
+        // i novi storno se ne bi mogao napraviti.
+        $original = $invoice->originalInvoice;
+
         $invoice->delete();
+
+        $original?->update(['status' => InvoiceStatus::Fiscalized]);
 
         return redirect()
             ->route('invoices.index')
@@ -192,7 +200,9 @@ class InvoiceController extends Controller
             return $pdf->download($invoice);
         }
 
-        $path = storage_path('app/private/'.$pdf->filename($invoice));
+        // Mora u NATIVEPHP_TEMPDIR (cacheDir): file_paths.xml izlaže samo njega
+        // FileProvideru, a sistem ga smije očistiti pa se PDF-ovi ne nakupljaju.
+        $path = rtrim(env('NATIVEPHP_TEMPDIR', storage_path('app/private')), '/').'/'.$pdf->filename($invoice);
         @mkdir(dirname($path), 0755, true);
         file_put_contents($path, $pdf->contents($invoice));
 

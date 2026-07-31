@@ -28,3 +28,4 @@ Thumbs.db
 
 # NativePHP radni folder za pakovanje
 /nativephp
+/dist

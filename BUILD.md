@@ -6,7 +6,7 @@
 |---|---|---|
 | macOS aplikacija (.app / .dmg) | `nativephp/electron` | **Nije moguće danas.** Paket podržava Laravel do 12, projekat je na 13 — Composer ga odbija. |
 | iPhone / iPad | `nativephp/mobile` | Moguće, traži **Xcode** (nije instaliran) |
-| Android | `nativephp/mobile` | Moguće, traži **Android Studio, Java, Gradle** (nije instalirano) |
+| Android APK | `nativephp/mobile` | **Radi.** JDK 21 i Android SDK su instalirani (bez Android Studija) |
 | Bilo koji preglednik, na mreži | ništa | Radi odmah — vidi *Slanje na test* |
 
 `php artisan native:debug` u svakom trenutku ispisuje šta je od alata prisutno.
@@ -59,24 +59,79 @@ potpisivanje, a `native:open` otvori Xcode projekat ako treba ručno dirati.
 
 ## Android
 
-Traži Android Studio (donosi SDK i Gradle) i Java 17+. Poslije instalacije u `.env`:
-
-```
-NATIVEPHP_ANDROID_SDK_LOCATION=/Users/<ti>/Library/Android/sdk
-NATIVEPHP_GRADLE_PATH=/Applications/Android Studio.app/Contents/gradle/gradle-8.x/bin/gradle
-```
-
-Zatim:
+Android Studio nije potreban. Dovoljni su JDK i SDK command-line tools, oboje bez
+`sudo`:
 
 ```bash
-npm run build
-php artisan native:run --target=android           # emulator ili priključen telefon
-php artisan native:build --target=android --release
-php artisan native:package                        # potpisani APK/AAB za distribuciju
+brew install openjdk@21
+
+mkdir -p ~/Library/Android/sdk/cmdline-tools
+curl -L -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-mac-13114758_latest.zip
+unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools
+mv /tmp/cmdtools/cmdline-tools ~/Library/Android/sdk/cmdline-tools/latest
+
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
+
+yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+    "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 ```
 
-Potpisivanje traži keystore; `native:credentials` ga napravi. **Keystore i njegove
-lozinke ne idu u git** — bez njih se izlazi iz Play Store-a ne mogu ažurirati.
+Gradle se ne instalira posebno — NativePHP projekat nosi svoj wrapper (`./gradlew`).
+U `.env` ide samo:
+
+```
+NATIVEPHP_ANDROID_SDK_LOCATION="/Users/<ti>/Library/Android/sdk"
+```
+
+### Potpisni ključ
+
+Pravi se jednom i **ne ide u git**. Bez njega se aplikacija u Play Store-u ne može
+ažurirati — ako se izgubi, mora nova aplikacija pod drugim imenom paketa.
+
+```bash
+keytool -genkeypair -v -keystore ~/.ppkalkulatron/release.keystore \
+    -alias ppkalkulatron -keyalg RSA -keysize 2048 -validity 10000 \
+    -dname "CN=PlusPlus IT, O=PlusPlus IT d.o.o., L=Banja Luka, C=BA"
+```
+
+### APK
+
+```bash
+npm run build     # obavezno, inače se pakuju stari CSS i JS
+
+php artisan native:package android --build-type=release \
+    --keystore="$HOME/.ppkalkulatron/release.keystore" \
+    --keystore-password=... --key-alias=ppkalkulatron --key-password=... \
+    --output="$PWD/dist"
+```
+
+`native:package` pripremi sve i na kraju pozove Gradle. Ako se javi
+**„TTY mode requires /dev/tty to be read/writable"** — komanda je pokrenuta bez
+terminala. Projekat je tada već spreman, pa se Gradle pozove ručno:
+
+```bash
+cd nativephp/android
+./gradlew assembleRelease --no-daemon \
+    -PMYAPP_UPLOAD_STORE_FILE="$HOME/.ppkalkulatron/release.keystore" \
+    -PMYAPP_UPLOAD_KEY_ALIAS=ppkalkulatron \
+    -PMYAPP_UPLOAD_STORE_PASSWORD=... \
+    -PMYAPP_UPLOAD_KEY_PASSWORD=...
+```
+
+APK završi u `nativephp/android/app/build/outputs/apk/release/`.
+
+`--build-type=bundle` pravi AAB, što Play Store traži; za slanje pojedincu je APK
+jednostavniji jer se instalira direktno.
+
+### Emulator i priključen telefon
+
+`php artisan native:run android` gradi **i pokreće** aplikaciju, pa traži uređaj —
+bez emulatora ili priključenog telefona samo čeka. Za emulator treba još
+`sdkmanager "system-images;android-36;google_apis;arm64-v8a"` i `avdmanager create avd`.
+Za samo APK koristi `native:package`.
 
 ## Slanje na test
 
@@ -102,9 +157,17 @@ testeri dobijaju pozivnicu mailom. Traži Apple Developer nalog.
 
 ### Android, pravi uređaj
 
-Najlakše: `native:build --target=android --release` napravi APK koji se pošalje kao
-datoteka; tester u podešavanjima dopusti instalaciju iz nepoznatih izvora. Uredniji
-put je Firebase App Distribution ili Play Console interna testna grupa (AAB).
+Pošalji APK iz `nativephp/android/app/build/outputs/apk/release/` kao običnu
+datoteku — mailom, preko WeTransfera, Drive-a, kako god. Tester ga otvori na
+telefonu i dopusti instalaciju iz nepoznatih izvora kad Android pita.
+
+APK je potpisan sopstvenim ključem, ne Play Store-ovim, pa Play Protect prikaže
+upozorenje „nepoznat programer" — na njemu se klikne *Ipak instaliraj*. To je
+očekivano za testni build.
+
+Uredniji put za više testera je Firebase App Distribution (besplatno, tester dobija
+mail sa linkom) ili interna testna grupa u Play Console-u, koja traži AAB
+(`--build-type=bundle`) i jednokratnih 25 USD za nalog.
 
 ## Kad se pojavi macOS
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\DocumentTemplate;
 use App\Enums\PaymentType;
 use App\Enums\Unit;
 use App\Models\TaxRate;
@@ -13,8 +14,10 @@ class InvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'client_id' => ['nullable', 'exists:clients,id'],
+            'client_id' => ['required', 'exists:clients,id'],
             'payment_type' => ['required', Rule::enum(PaymentType::class)],
+            'currency' => ['required', 'exists:currencies,code'],
+            'template' => ['required', Rule::enum(DocumentTemplate::class)],
             'date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:date'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -29,11 +32,23 @@ class InvoiceRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'due_date.after_or_equal' => 'Rok dospijeća ne može biti prije datuma računa.',
+            'items.required' => 'Račun mora imati bar jednu stavku.',
+            'items.min' => 'Račun mora imati bar jednu stavku.',
+            'items.*.name.required' => 'Svaka stavka mora imati odabran artikal.',
+        ];
+    }
+
     public function attributes(): array
     {
         return [
             'client_id' => 'klijent',
             'payment_type' => 'način plaćanja',
+            'currency' => 'valuta',
+            'template' => 'predložak',
             'date' => 'datum',
             'due_date' => 'rok dospijeća',
             'notes' => 'napomena',

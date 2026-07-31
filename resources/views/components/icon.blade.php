@@ -33,6 +33,7 @@
         'save' => '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
         'chevron-down' => '<path d="m6 9 6 6 6-6"/>',
         'chevron-up' => '<path d="m18 15-6-6-6 6"/>',
+        'currency-euro' => '<circle cx="12" cy="12" r="10"/><path d="M15.5 8.5a4.5 4.5 0 1 0 0 7"/><path d="M7 10.5h6"/><path d="M7 13.5h6"/>',
         'chevron-left' => '<path d="m15 18-6-6 6-6"/>',
         'chevron-right' => '<path d="m9 18 6-6-6-6"/>',
         'building' => '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',

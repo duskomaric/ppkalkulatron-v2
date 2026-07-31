@@ -14,6 +14,8 @@ function invoicePayload(array $overrides = []): array
     return $overrides + [
         'client_id' => Client::create(['name' => 'Kupac d.o.o.'])->id,
         'payment_type' => 'Cash',
+        'currency' => 'BAM',
+        'template' => 'classic',
         'date' => now()->format('Y-m-d'),
         'due_date' => now()->addDays(15)->format('Y-m-d'),
         'items' => [[

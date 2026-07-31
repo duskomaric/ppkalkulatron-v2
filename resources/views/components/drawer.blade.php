@@ -1,4 +1,4 @@
-@props(['title', 'state'])
+@props(['title', 'state', 'titleExpr' => null])
 
 {{-- Ista struktura kao v1: bottom sheet na telefonu, centrirano na desktopu. --}}
 <div x-cloak x-show="{{ $state }}" class="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -12,7 +12,8 @@
 
         <div class="px-6 py-4 flex items-center justify-between sticky top-0 z-10">
             <div class="flex flex-col">
-                <h2 class="text-lg font-black tracking-tight italic leading-tight">{{ $title }}</h2>
+                <h2 class="text-lg font-black tracking-tight italic leading-tight"
+                    @if ($titleExpr) x-text="{{ $titleExpr }}" @endif>{{ $title }}</h2>
                 <div class="h-0.5 w-8 bg-primary rounded-full mt-1 opacity-50"></div>
             </div>
 

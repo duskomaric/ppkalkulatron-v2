@@ -47,6 +47,8 @@ class InvoiceWriter
         return [
             'client_id' => $data['client_id'] ?: null,
             'payment_type' => $data['payment_type'],
+            'currency' => $data['currency'],
+            'template' => $data['template'],
             'date' => $data['date'],
             'due_date' => $data['due_date'],
             'notes' => $data['notes'] ?? null,

@@ -2,7 +2,7 @@
 
 <div class="space-y-1.5 w-full group">
     @if ($label)
-        <x-field-label :required="$required" :for="$name">{{ $label }}</x-field-label>
+        <x-field-label variant="settings" :required="$required" :for="$name">{{ $label }}</x-field-label>
     @endif
 
     <div class="relative flex items-center">

@@ -15,7 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Drawer šalje formu preko XHR-a i očekuje greške kao JSON; obična
+        // stranica i dalje dobija preusmjerenje nazad sa porukama u sesiji.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->expectsJson(),
         );
     })->create();

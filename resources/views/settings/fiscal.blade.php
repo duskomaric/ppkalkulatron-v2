@@ -35,7 +35,7 @@
                                x-model="layout" :options="['Slip' => 'Slip (termalni)', 'Invoice' => 'Invoice (A4)']" />
 
                 <div class="space-y-1.5 w-full">
-                    <x-field-label required for="receipt_image_format">Format slike</x-field-label>
+                    <x-field-label variant="settings" required for="receipt_image_format">Format slike</x-field-label>
                     <div class="relative">
                         <select id="receipt_image_format" name="receipt_image_format" required
                                 class="w-full h-12 px-4 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm appearance-none cursor-pointer">

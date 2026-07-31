@@ -7,8 +7,10 @@ use App\Enums\PaymentType;
 use App\Http\Requests\InvoiceRequest;
 use App\Models\Article;
 use App\Models\Client;
+use App\Models\Currency;
 use App\Models\Invoice;
 use App\Services\InvoiceWriter;
+use App\Settings\DocumentSettings;
 use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
@@ -104,18 +106,16 @@ class InvoiceController extends Controller
         ));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('invoices.create', $this->formData());
+        return $this->form($request, $this->formData(), 'invoices.create');
     }
 
     public function store(InvoiceRequest $request)
     {
         $invoice = $this->writer->create($request->validated());
 
-        return redirect()
-            ->route('invoices.show', $invoice)
-            ->with('status', "Račun {$invoice->invoice_number} je kreiran.");
+        return $this->saved($request, $invoice, "Račun {$invoice->invoice_number} je kreiran.");
     }
 
     public function show(Request $request, Invoice $invoice)
@@ -129,7 +129,7 @@ class InvoiceController extends Controller
             : view('invoices.show', ['invoice' => $invoice]);
     }
 
-    public function edit(Invoice $invoice)
+    public function edit(Request $request, Invoice $invoice)
     {
         if (! $invoice->isDeletable()) {
             return redirect()
@@ -137,7 +137,7 @@ class InvoiceController extends Controller
                 ->with('error', 'Fiskalizovan račun se ne može mijenjati.');
         }
 
-        return view('invoices.edit', $this->formData(['invoice' => $invoice->load('items')]));
+        return $this->form($request, $this->formData(['invoice' => $invoice->load('items')]), 'invoices.edit');
     }
 
     public function update(InvoiceRequest $request, Invoice $invoice)
@@ -150,9 +150,7 @@ class InvoiceController extends Controller
 
         $this->writer->update($invoice, $request->validated());
 
-        return redirect()
-            ->route('invoices.show', $invoice)
-            ->with('status', 'Izmjene su sačuvane.');
+        return $this->saved($request, $invoice, 'Izmjene su sačuvane.');
     }
 
     public function destroy(Invoice $invoice)
@@ -171,13 +169,39 @@ class InvoiceController extends Controller
             ->with('status', "Račun {$number} je obrisan.");
     }
 
+    /** Drawer traži samo tijelo forme; puna stranica ostaje za direktan link. */
+    private function form(Request $request, array $data, string $view)
+    {
+        return $request->boolean('partial')
+            ? view('invoices.form', $data)
+            : view($view, $data);
+    }
+
+    /** Iz drawera se šalje preko XHR-a, pa odgovor mora reći kuda dalje. */
+    private function saved(Request $request, Invoice $invoice, string $message)
+    {
+        session()->flash('status', $message);
+
+        if ($request->expectsJson()) {
+            return response()->json(['redirect' => route('invoices.index')]);
+        }
+
+        return redirect()->route('invoices.show', $invoice);
+    }
+
     private function formData(array $extra = []): array
     {
         return $extra + [
             'invoice' => null,
-            'clients' => Client::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'clients' => Client::where('is_active', true)->orderBy('name')
+                ->get(['id', 'name', 'email', 'phone']),
             'articles' => Article::where('is_active', true)->orderBy('name')
-                ->get(['id', 'name', 'unit', 'tax_label', 'last_unit_price']),
+                ->get(['id', 'name', 'description', 'unit', 'tax_label', 'last_unit_price']),
+            'currencies' => Currency::orderByDesc('is_default')->orderBy('code')->get(['code', 'name']),
+            'defaultTemplate' => app(DocumentSettings::class)->template,
+            'defaultCurrency' => Currency::where('is_default', true)->value('code') ?? 'BAM',
+            'defaultDueDays' => app(DocumentSettings::class)->invoice_due_days,
+            'defaultNotes' => app(DocumentSettings::class)->invoice_notes,
         ];
     }
 }

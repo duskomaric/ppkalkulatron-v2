@@ -32,12 +32,16 @@ const money = (cents) => new Intl.NumberFormat('de-DE', {
     maximumFractionDigits: 2,
 }).format((cents || 0) / 100);
 
-Alpine.data('invoiceForm', (initialItems, articles, taxRates, currency) => ({
-    items: initialItems.length ? initialItems.map((item) => ({ ...blankItem(), ...item })) : [blankItem()],
+Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, clientId, showMore }) => ({
+    items: items.length ? items.map((item) => ({ ...blankItem(), ...item })) : [blankItem()],
     articles,
+    clients,
     taxRates,
     currency,
-    extraOpen: false,
+    clientId: clientId ?? '',
+    clientOpen: false,
+    clientSearch: '',
+    showMore,
 
     addItem() {
         this.items.push(blankItem());
@@ -51,8 +55,30 @@ Alpine.data('invoiceForm', (initialItems, articles, taxRates, currency) => ({
         }
     },
 
-    /** Artikli koji odgovaraju pretrazi u redu stavke. */
-    matches(item) {
+    selectedClient() {
+        return this.clients.find((client) => String(client.id) === String(this.clientId)) || null;
+    },
+
+    matchingClients() {
+        const needle = this.clientSearch.toLowerCase().trim();
+
+        if (! needle) return this.clients;
+
+        return this.clients.filter((client) =>
+            `${client.name} ${client.email || ''} ${client.phone || ''}`.toLowerCase().includes(needle));
+    },
+
+    pickClient(client) {
+        this.clientId = client.id;
+        this.clientOpen = false;
+        this.clientSearch = '';
+    },
+
+    selectedArticle(item) {
+        return this.articles.find((article) => String(article.id) === String(item.article_id)) || null;
+    },
+
+    matchingArticles(item) {
         const needle = (item.search || '').toLowerCase().trim();
 
         if (! needle) return this.articles;
@@ -61,11 +87,8 @@ Alpine.data('invoiceForm', (initialItems, articles, taxRates, currency) => ({
             `${article.name} ${article.description || ''}`.toLowerCase().includes(needle));
     },
 
-    selected(item) {
-        return this.articles.find((article) => String(article.id) === String(item.article_id)) || null;
-    },
-
-    pick(item, article) {
+    /** Artikal nosi naziv, jedinicu, poresku oznaku i zadnju cijenu — kao u v1. */
+    pickArticle(item, article) {
         item.article_id = article.id;
         item.name = article.name;
         item.description = article.description || '';
@@ -77,17 +100,12 @@ Alpine.data('invoiceForm', (initialItems, articles, taxRates, currency) => ({
         item.search = '';
     },
 
-    clear(item) {
+    clearArticle(item) {
         Object.assign(item, blankItem(), { quantity: item.quantity });
     },
 
     rateOf(label) {
         return this.taxRates[label] ?? 0;
-    },
-
-    /** Porez se bira i ručno, pa stopa mora pratiti oznaku. */
-    syncRate(item) {
-        item.tax_rate = this.rateOf(item.tax_label);
     },
 
     lineTotal(item) {

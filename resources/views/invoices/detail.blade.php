@@ -108,7 +108,9 @@
                 @csrf @method('DELETE')
                 <x-drawer-action-button tone="danger" icon="trash" label="Obriši" class="w-full" />
             </form>
-            <x-drawer-action-button icon="pencil" label="Uredi" :href="route('invoices.edit', $invoice)" />
+            <x-drawer-action-button icon="pencil" label="Uredi" :href="route('invoices.edit', $invoice)"
+                                    :x-on:click="'$data.openForm && ($event.preventDefault(), '
+                                        .\App\Support\Js::call('$data.openForm', route('invoices.edit', [$invoice, 'partial' => 1]), 'Uredi račun').')'" />
         </x-slot:actions>
     @endif
 </x-detail-body>

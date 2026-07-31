@@ -44,6 +44,11 @@ class Invoice extends Model
         return $this->belongsTo(Client::class);
     }
 
+    public function fiscalRecords(): HasMany
+    {
+        return $this->hasMany(FiscalRecord::class)->orderBy('id');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);

@@ -9,6 +9,7 @@ use App\Models\Article;
 use App\Models\Client;
 use App\Models\Currency;
 use App\Models\Invoice;
+use App\Services\InvoicePdfService;
 use App\Services\InvoiceWriter;
 use App\Settings\DocumentSettings;
 use Illuminate\Http\Request;
@@ -167,6 +168,11 @@ class InvoiceController extends Controller
         return redirect()
             ->route('invoices.index')
             ->with('status', "Račun {$number} je obrisan.");
+    }
+
+    public function pdf(Invoice $invoice, InvoicePdfService $pdf)
+    {
+        return $pdf->download($invoice);
     }
 
     /** Drawer traži samo tijelo forme; puna stranica ostaje za direktan link. */

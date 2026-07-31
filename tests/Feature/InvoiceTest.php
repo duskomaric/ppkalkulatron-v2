@@ -5,6 +5,7 @@ use App\Models\Article;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Services\InvoiceNumber;
+use App\Services\InvoicePdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -176,4 +177,22 @@ it('servira detalje računa kao dio drawera', function () {
         ->assertSee($invoice->invoice_number)
         ->assertSee('Zatvori')
         ->assertDontSee('<!DOCTYPE html>', false);
+});
+
+it('generiše PDF na sva četiri predloška', function (string $template) {
+    $this->post(route('invoices.store'), invoicePayload(['template' => $template]));
+    $invoice = Invoice::firstOrFail();
+
+    $pdf = app(InvoicePdfService::class)->contents($invoice);
+
+    expect($pdf)->toStartWith('%PDF-')->and(strlen($pdf))->toBeGreaterThan(10000);
+})->with(['classic', 'modern', 'minimal', 'standard']);
+
+it('nudi PDF na preuzimanje', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $this->get(route('invoices.pdf', $invoice))
+        ->assertStatus(200)
+        ->assertHeader('content-type', 'application/pdf');
 });

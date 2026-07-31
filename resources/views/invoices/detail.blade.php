@@ -105,6 +105,13 @@
                 <span class="text-xl font-black text-primary tracking-tighter italic">{{ $invoice->formatted($invoice->total) }} {{ $invoice->currency }}</span>
             </div>
         </div>
+        {{-- PDF i mail, kao u v1 --}}
+        <div class="flex gap-2">
+            <a href="{{ route('invoices.pdf', $invoice) }}"
+               class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-primary/30 bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-all cursor-pointer min-h-[44px]">
+                <x-icon name="file-text" class="h-4 w-4" /> Preuzmi PDF
+            </a>
+        </div>
     </div>
 
     @if ($invoice->isDeletable())

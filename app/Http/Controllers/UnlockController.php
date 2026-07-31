@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\PinLock;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class UnlockController extends Controller
 {
@@ -28,7 +27,7 @@ class UnlockController extends Controller
         $validated = $request->validate(['pin' => ['required', 'string']]);
 
         if (! $this->pin->verify($validated['pin'])) {
-            throw ValidationException::withMessages(['pin' => 'Pogrešan PIN.']);
+            return redirect()->route('unlock')->withErrors(['pin' => 'Pogrešan PIN.']);
         }
 
         $request->session()->put(PinLock::SESSION_KEY, true);

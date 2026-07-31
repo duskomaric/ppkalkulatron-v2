@@ -335,3 +335,12 @@ it('ne ispisuje napomenu kad mali preduzetnik nije uključen', function () {
 
     expect($html)->not->toContain('Mali preduzetnik');
 });
+
+it('u pregledniku vraća PDF na preuzimanje', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+
+    // isMobile() je false van upakovane aplikacije, pa ostaje obično preuzimanje.
+    $this->get(route('invoices.pdf', Invoice::firstOrFail()))
+        ->assertStatus(200)
+        ->assertHeader('content-type', 'application/pdf');
+});

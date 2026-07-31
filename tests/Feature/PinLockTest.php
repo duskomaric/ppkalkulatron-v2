@@ -132,3 +132,18 @@ it('mijenja vrijeme automatskog zaključavanja', function () {
 
     expect(app(SecuritySettings::class)->auto_lock_minutes)->toBe(30);
 });
+
+it('ostaje na ekranu za otključavanje kad je PIN pogrešan', function () {
+    setPin('1111');
+
+    // Bez eksplicitnog preusmjerenja Laravel bi vratio na „prethodni URL", a to je
+    // u webviewu znala biti POST-only ruta — otud 405 na telefonu.
+    $this->post(route('unlock.store'), ['pin' => '9999'])
+        ->assertRedirect(route('unlock'))
+        ->assertSessionHasErrors('pin');
+});
+
+it('vraća na početak umjesto 405 kad se GET-om pogodi POST ruta', function () {
+    $this->get('/lock')->assertRedirect(route('invoices.index'));
+    $this->get('/podesavanja/fiskalizacija/provjera')->assertRedirect(route('invoices.index'));
+});

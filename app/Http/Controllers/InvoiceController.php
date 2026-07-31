@@ -19,6 +19,7 @@ use App\Services\MailService;
 use App\Settings\DocumentSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Native\Mobile\Facades\Share;
 
 class InvoiceController extends Controller
 {
@@ -177,9 +178,29 @@ class InvoiceController extends Controller
             ->with('status', "Račun {$number} je obrisan.");
     }
 
-    public function pdf(Invoice $invoice, InvoicePdfService $pdf)
+    /**
+     * PDF računa.
+     *
+     * U upakovanoj aplikaciji `Content-Disposition: attachment` ne radi ništa —
+     * WebView bez DownloadListener-a tiho ignoriše preuzimanje, a NativePHP ga ne
+     * postavlja. Zato se na telefonu PDF upiše u datoteku i preda sistemskom
+     * dijalogu za dijeljenje: odatle korisnik može sačuvati, odštampati ili poslati.
+     */
+    public function pdf(Request $request, Invoice $invoice, InvoicePdfService $pdf)
     {
-        return $pdf->download($invoice);
+        if (! isMobile()) {
+            return $pdf->download($invoice);
+        }
+
+        $path = storage_path('app/private/'.$pdf->filename($invoice));
+        @mkdir(dirname($path), 0755, true);
+        file_put_contents($path, $pdf->contents($invoice));
+
+        Share::file('Račun '.$invoice->invoice_number, 'Račun '.$invoice->invoice_number, $path);
+
+        return $request->expectsJson()
+            ? response()->json(['message' => 'Račun je pripremljen za dijeljenje.'])
+            : redirect()->route('invoices.show', $invoice);
     }
 
     /** Račun mailom, sa PDF-om i po želji fiskalnim računima kao prilozima. */

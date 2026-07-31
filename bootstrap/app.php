@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 /*
  * NativePHP izostavlja cijeli storage/framework iz paketa, a config/view.php
@@ -34,4 +35,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->expectsJson(),
         );
+
+        /*
+         * Zastarjelo preusmjerenje „nazad" može pogoditi rutu koja prima samo POST.
+         * U pregledniku se to riješi adresnom linijom; u aplikaciji na telefonu je
+         * to ćorsokak, pa se takav zahtjev vraća na početak.
+         */
+        $exceptions->render(function (MethodNotAllowedHttpException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            return redirect()->route('invoices.index');
+        });
     })->create();

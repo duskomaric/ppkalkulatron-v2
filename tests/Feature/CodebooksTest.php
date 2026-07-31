@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\Article;
 use App\Models\BankAccount;
 use App\Models\Client;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
+use App\Services\PinLock;
 use App\Settings\MenuSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -134,4 +136,23 @@ it('vraća greške validacije kao JSON za drawer', function () {
     $this->postJson(route('clients.store'), ['name' => ''])
         ->assertStatus(422)
         ->assertJsonValidationErrors('name');
+});
+
+it('prikazuje kartice po v1 rasporedu, za telefon i za desktop', function (string $route) {
+    Client::create(['name' => 'Kupac', 'city' => 'Doboj', 'is_active' => true]);
+    Article::create(['name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F', 'is_active' => true]);
+
+    $html = $this->get(route($route))->assertStatus(200)->getContent();
+
+    expect($html)->toContain('md:hidden')->and($html)->toContain('hidden md:block');
+})->with(['clients.index', 'articles.index']);
+
+it('otključava sa četiri polja za cifre', function () {
+    app(PinLock::class)->set('1111');
+
+    $html = $this->get(route('unlock'))->assertStatus(200)->getContent();
+
+    expect($html)->toContain('pinEntry()')
+        ->and($html)->toContain('autocomplete="one-time-code"')
+        ->and($html)->toContain('maxlength="1"');
 });

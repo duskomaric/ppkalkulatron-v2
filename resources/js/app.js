@@ -274,4 +274,86 @@ Alpine.data('entityIndex', () => ({
     },
 }));
 
+/**
+ * Unos PIN-a: jedno polje po cifri.
+ *
+ * Kucanje pomjera fokus naprijed, Backspace nazad, strelice biraju polje, a kad se
+ * unese četvrta cifra forma se šalje sama. Lijepljenje cijelog PIN-a takođe radi.
+ */
+Alpine.data('pinEntry', () => ({
+    digits: ['', '', '', ''],
+
+    init() {
+        this.$nextTick(() => this.box(0)?.focus());
+    },
+
+    box(index) {
+        return this.$refs.box ? this.$root.querySelectorAll('input[type=password]')[index] : null;
+    },
+
+    filled() {
+        return this.digits.every((digit) => digit !== '');
+    },
+
+    type(index, event) {
+        const digit = event.target.value.replace(/\D/g, '').slice(-1);
+
+        this.digits[index] = digit;
+        event.target.value = digit;
+
+        if (! digit) return;
+
+        if (index < 3) {
+            this.box(index + 1)?.focus();
+        }
+
+        this.submitWhenFilled();
+    },
+
+    key(index, event) {
+        if (event.key === 'Backspace' && ! this.digits[index] && index > 0) {
+            // Prazno polje: briši prethodnu cifru i vrati fokus na nju.
+            event.preventDefault();
+            this.digits[index - 1] = '';
+            const previous = this.box(index - 1);
+            previous.value = '';
+            previous.focus();
+
+            return;
+        }
+
+        if (event.key === 'ArrowLeft' && index > 0) {
+            event.preventDefault();
+            this.box(index - 1)?.focus();
+        }
+
+        if (event.key === 'ArrowRight' && index < 3) {
+            event.preventDefault();
+            this.box(index + 1)?.focus();
+        }
+    },
+
+    paste(event) {
+        const pasted = (event.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 4);
+
+        if (! pasted) return;
+
+        pasted.split('').forEach((digit, index) => {
+            this.digits[index] = digit;
+            const box = this.box(index);
+
+            if (box) box.value = digit;
+        });
+
+        this.box(Math.min(pasted.length, 3))?.focus();
+        this.submitWhenFilled();
+    },
+
+    submitWhenFilled() {
+        if (! this.filled()) return;
+
+        this.$nextTick(() => this.$root.requestSubmit());
+    },
+}));
+
 Alpine.start();

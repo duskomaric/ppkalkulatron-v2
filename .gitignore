@@ -29,3 +29,6 @@ Thumbs.db
 # NativePHP radni folder za pakovanje
 /nativephp
 /dist
+
+# Firebase konfiguracija — vidi firebase/README.md
+/firebase/google-services.json

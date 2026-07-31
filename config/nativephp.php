@@ -207,6 +207,10 @@ return [
         '*_SECRET',
         'DB_PASSWORD',
         'DB_USERNAME',
+        'APP_DEBUG',
+        'APP_ENV',
+        'MAIL_PASSWORD',
+        'MAIL_USERNAME',
     ],
 
     /*
@@ -225,6 +229,8 @@ return [
         'storage/framework/cache',
         'storage/framework/testing',
         'storage/logs/laravel.log',
+        'database/database.sqlite',
+        'dist',
     ],
 
     /*
@@ -297,8 +303,8 @@ return [
         |
         */
         'theme' => [
-            'color_primary' => env('NATIVEPHP_ANDROID_COLOR_PRIMARY', '#04ABA6'),
-            'color_primary_night' => env('NATIVEPHP_ANDROID_COLOR_PRIMARY_NIGHT', '#FFFFFF'),
+            'color_primary' => env('NATIVEPHP_ANDROID_COLOR_PRIMARY', '#F59E0B'),
+            'color_primary_night' => env('NATIVEPHP_ANDROID_COLOR_PRIMARY_NIGHT', '#F59E0B'),
             'color_on_primary' => env('NATIVEPHP_ANDROID_COLOR_ON_PRIMARY', '#FFFFFF'),
         ],
 

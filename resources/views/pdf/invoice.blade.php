@@ -357,15 +357,8 @@
     <div class="amount-in-words">
         Slovima:
         @php
-            $locale = $invoice->language?->value ?? 'sr_Latn_BA';
-            $spelled = null;
-            if (class_exists(\NumberFormatter::class)) {
-                try {
-                    $spelled = (new \NumberFormatter($locale, \NumberFormatter::SPELLOUT))->format(intdiv($invoice->total, 100));
-                } catch (\Throwable $e) {
-                    $spelled = null;
-                }
-            }
+            // PHP na uređaju je bez ICU-a, pa se iznos slovima računa sam.
+            $spelled = \App\Support\SpelledAmount::of(intdiv($invoice->total, 100));
         @endphp
         {{ $spelled ?? number_format(intdiv($invoice->total, 100), 0, ',', '.') }}
         {{ $currency }}

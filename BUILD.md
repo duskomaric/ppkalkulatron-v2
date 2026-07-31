@@ -190,6 +190,45 @@ php artisan native:build      # .app i .dmg
 
 Do tada se za Mac koristi preglednik uz `php artisan serve`.
 
+## Identitet aplikacije
+
+Ikona i splash ekrani se crtaju iz boja aplikacije, ne stoje kao neobjašnjivi
+binarni fajlovi:
+
+```bash
+php artisan app:brand-assets
+```
+
+Napravi `public/icon.png` (1024×1024), `public/splash.png` i
+`public/splash-dark.png` (1080×1920) — putanje koje NativePHP očekuje i sam
+skalira za sve gustine ekrana. Traži GD ekstenziju.
+
+Ostalo je u `config/nativephp.php` i `.env`:
+
+| Šta | Gdje | Vrijednost |
+|---|---|---|
+| Ime aplikacije | `.env` `APP_NAME` | ppKalkulatron |
+| Bundle ID | `.env` `NATIVEPHP_APP_ID` | com.plusplusit.ppkalkulatron |
+| Verzija | `.env` `NATIVEPHP_APP_VERSION` / `_CODE` | 0.1.0 / 1 |
+| Boja teme (Android) | `nativephp.android.theme.color_primary` | `#F59E0B` (amber 500) |
+| Orijentacija | `nativephp.orientation` | samo portret |
+| iPad | `nativephp.ipad` | isključen — jednom uključen u App Store-u ne može se povući |
+| Izgled sistema | `nativephp.appearance` | `system` |
+
+Tema u aplikaciji (svijetla/tamna/sistemska) se bira u profilu i pamti u
+pregledniku. `appearance` pokriva samo sistemske trake i tastaturu, i ne prati taj
+izbor — ako korisnik u aplikaciji izabere svijetlu a telefon je taman, sistemske
+trake ostaju tamne.
+
+## Firebase
+
+`google-services.json` stoji u `firebase/`, **ne** u korijenu — vidi
+[firebase/README.md](firebase/README.md). U korijenu bi ga NativePHP kopirao u
+Android projekat i build bi pao na `Plugin with id 'com.google.gms.google-services'
+not found`, jer taj Gradle plugin dolazi tek sa `nativephp/mobile-firebase`.
+
+Za App Distribution (slanje APK-a testerima) Firebase u aplikaciji uopšte ne treba.
+
 ## Zamke koje su već pregažene
 
 - **`storage/framework` ne ide u paket.** NativePHP ga izostavlja, a `config/view.php`
@@ -197,5 +236,11 @@ Do tada se za Mac koristi preglednik uz `php artisan serve`.
   path". `bootstrap/app.php` sada napravi te foldere prije nego što se aplikacija podigne.
 - **`npm run build` u Sail kontejneru ne radi**: `node_modules` su instalirani na
   hostu pa rolldown nema `linux-arm64` binding. Gradi se na hostu.
+- **PHP na uređaju je bez ICU-a** (`nativephp.lock` → `php.icu: false`). Iznos
+  slovima na PDF-u se zato računa u `App\Support\SpelledAmount`, ne kroz
+  `NumberFormatter` — inače bi telefon ispisao „330" umjesto „trista trideset".
+- **`APP_DEBUG` i `APP_ENV` se brišu iz paketa** (`cleanup_env_keys`), pa upakovana
+  aplikacija uzima podrazumijevano `production` i `debug=false`. Bez toga bi
+  korisnik na telefonu vidio Laravel stack trace.
 - **Verzija** se diže u `.env` (`NATIVEPHP_APP_VERSION`, `NATIVEPHP_APP_VERSION_CODE`)
   ili komandom `native:release`. Play Store odbija isti `version_code` dva puta.

@@ -24,6 +24,8 @@
                 <x-form-input label="Serijski broj" name="serial_number" :value="$settings->serial_number"
                               hint="Samo za cloud." />
                 <x-form-input label="PAK" name="pac" :value="$settings->pac" hint="Samo za cloud." />
+                <x-form-input label="Blagajnik" name="cashier" :value="$settings->cashier" required
+                              hint="Ime koje se ispisuje na fiskalnom računu." />
             </div>
         </x-section-block>
 

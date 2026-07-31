@@ -31,11 +31,11 @@
                     </span>
                 </div>
 
-                @if ($invoice->refundInvoice)
+                @if ($invoice->originalInvoice)
                     <div class="flex items-center gap-2">
                         <x-icon name="repeat" class="w-3 h-3 text-red-500 shrink-0" />
                         <span class="text-[10px] font-bold text-[var(--color-text-dim)] tracking-tight truncate">
-                            Storno od: {{ $invoice->refundInvoice->invoice_number }}
+                            Storno od: {{ $invoice->originalInvoice->invoice_number }}
                         </span>
                     </div>
                 @endif
@@ -91,10 +91,10 @@
                                 <span class="truncate">{{ $invoice->client?->name ?? 'Nepoznat klijent' }}</span>
                             </div>
 
-                            @if ($invoice->refundInvoice)
+                            @if ($invoice->originalInvoice)
                                 <div class="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-[var(--color-text-dim)] min-w-0">
                                     <x-icon name="repeat" class="w-3 h-3 text-red-500 shrink-0" />
-                                    <span class="truncate">Storno od: {{ $invoice->refundInvoice->invoice_number }}</span>
+                                    <span class="truncate">Storno od: {{ $invoice->originalInvoice->invoice_number }}</span>
                                 </div>
                             @endif
                         </div>

@@ -3,6 +3,37 @@ import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 
 /**
+ * Tema: svijetla, tamna ili po sistemu. Izbor se pamti u pregledniku jer je vezan
+ * za uređaj, ne za podatke aplikacije. Klase su iste kao u v1 — `light` na <html>.
+ */
+Alpine.store('theme', {
+    choice: 'dark',
+
+    init() {
+        this.choice = localStorage.getItem('theme') || 'dark';
+        this.apply();
+
+        window.matchMedia('(prefers-color-scheme: dark)')
+            .addEventListener('change', () => this.choice === 'system' && this.apply());
+    },
+
+    set(choice) {
+        this.choice = choice;
+        localStorage.setItem('theme', choice);
+        this.apply();
+    },
+
+    apply() {
+        const dark = this.choice === 'system'
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+            : this.choice === 'dark';
+
+        document.documentElement.classList.toggle('dark', dark);
+        document.documentElement.classList.toggle('light', ! dark);
+    },
+});
+
+/**
  * Forma računa. Iznosi se drže u fenizima, kao u v1: cijena je sa porezom,
  * osnovica i porez se iz nje izvode. Preglednik računa samo prikaz — server
  * na kraju sve preračuna, pa ovo nije izvor istine.

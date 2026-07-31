@@ -35,6 +35,9 @@ class FiscalSettings extends Settings
 
     public string $default_payment_type;
 
+    /** Ime na računu; v1 ga uzima od prijavljenog korisnika, v2 nema korisnike. */
+    public string $cashier;
+
     public static function group(): string
     {
         return 'fiscal';

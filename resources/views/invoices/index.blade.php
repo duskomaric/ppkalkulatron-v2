@@ -20,6 +20,8 @@
         </x-drawer>
 
         <x-email-modal />
+        <x-receipt-modal />
+        <x-confirm-modal />
 
         <x-drawer title="Novi račun" state="formDrawer" title-expr="formTitle">
             <div x-show="formLoading" class="flex justify-center py-10">
@@ -56,6 +58,11 @@
                 emailReceipts: [],
                 emailForm: { to: '', subject: '', body: '', attach_pdf: true, attach_fiscal_record_ids: [] },
 
+                receiptModal: false,
+                receiptUrl: '',
+
+                confirm: { open: false, message: '', running: false, action: null },
+
                 // Detalji i forma se dovlače sa servera pa u v2 postoji samo jedan
                 // izvor izgleda računa — isti Blade koji servira i puna stranica.
                 async openDetail(url) {
@@ -75,6 +82,49 @@
                     this.formDrawer = true;
                     this.formHtml = await this.load(url, failure);
                     this.formLoading = false;
+                },
+
+                openReceipt(url) {
+                    this.receiptUrl = url;
+                    this.receiptModal = true;
+                },
+
+                /** Fiskalne radnje traže potvrdu, pa se izvrše i osvježe prikaz. */
+                fiscalAction(url, message) {
+                    this.confirm = { open: true, message, running: false, action: url };
+                },
+
+                async runConfirmed() {
+                    if (this.confirm.running) return;
+
+                    this.confirm.running = true;
+
+                    try {
+                        const response = await fetch(this.confirm.action, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            },
+                        });
+
+                        const data = await response.json().catch(() => ({}));
+
+                        this.confirm.open = false;
+                        this.flash(data.message || (response.ok ? 'Gotovo.' : 'Radnja nije uspjela.'),
+                            response.ok ? 'success' : 'error');
+
+                        if (response.ok) {
+                            // Status, zapisi i dostupne radnje se mijenjaju — lista se osvježava.
+                            setTimeout(() => window.location.reload(), 1200);
+                        }
+                    } catch {
+                        this.confirm.open = false;
+                        this.flash('Radnja nije uspjela.', 'error');
+                    } finally {
+                        this.confirm.running = false;
+                    }
                 },
 
                 openEmail(defaults) {
@@ -129,8 +179,8 @@
                 },
 
                 /** Poruka poslije radnje iz drawera; stranica se ne osvježava. */
-                flash(message) {
-                    window.dispatchEvent(new CustomEvent('app-flash', { detail: message }));
+                flash(message, type = 'success') {
+                    window.dispatchEvent(new CustomEvent('app-flash', { detail: { message, type } }));
                 },
 
                 closeForm() {

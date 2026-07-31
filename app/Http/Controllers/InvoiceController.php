@@ -35,7 +35,7 @@ class InvoiceController extends Controller
             'year' => (int) ($request->integer('year') ?: date('Y')),
         ];
 
-        $invoices = Invoice::with('client', 'refundInvoice')
+        $invoices = Invoice::with('client', 'originalInvoice')
             ->search($filters['q'])
             ->whereYear('date', $filters['year'])
             ->when($filters['status'], fn ($q, $status) => $q->where('status', $status))
@@ -127,7 +127,7 @@ class InvoiceController extends Controller
 
     public function show(Request $request, Invoice $invoice)
     {
-        $invoice->load('client', 'items', 'refundInvoice');
+        $invoice->load('client', 'items', 'originalInvoice');
 
         // Lista otvara detalje u draweru i dovlači samo njegov sadržaj; puna
         // stranica ostaje za direktan link i za rad bez JavaScripta.

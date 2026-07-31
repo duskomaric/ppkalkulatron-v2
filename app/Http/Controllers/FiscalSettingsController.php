@@ -23,6 +23,7 @@ class FiscalSettingsController extends Controller
             'api_key' => ['nullable', 'string', 'max:255'],
             'serial_number' => ['nullable', 'string', 'max:255'],
             'pac' => ['nullable', 'string', 'max:32'],
+            'cashier' => ['required', 'string', 'max:64'],
             'device_mode' => ['required', Rule::in(['cloud', 'local'])],
             'receipt_layout' => ['required', Rule::in(['Slip', 'Invoice'])],
             'receipt_image_format' => ['required', Rule::in(['Png', 'Pdf', 'Html'])],

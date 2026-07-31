@@ -3,6 +3,7 @@
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CurrencyController;
+use App\Http\Controllers\FiscalController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\FiscalSettingsController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\GeneralSettingsController;
 use App\Http\Controllers\MailSettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PinSettingsController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UnlockController;
 use App\Http\Middleware\EnsureUnlocked;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +27,10 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
 
     Route::get('/racuni/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
     Route::post('/racuni/{invoice}/mail', [InvoiceController::class, 'email'])->name('invoices.email');
+    Route::post('/racuni/{invoice}/fiskalizuj', [FiscalController::class, 'fiscalize'])->name('invoices.fiscalize');
+    Route::post('/racuni/{invoice}/fiskalna-kopija', [FiscalController::class, 'copy'])->name('invoices.fiscal-copy');
+    Route::post('/racuni/{invoice}/storno', [FiscalController::class, 'createRefund'])->name('invoices.create-refund');
+    Route::post('/racuni/{invoice}/fiskalni-storno', [FiscalController::class, 'refund'])->name('invoices.fiscal-refund');
     Route::get('/fiskalni-racun/{record}', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
     Route::resource('racuni', InvoiceController::class)->parameters(['racuni' => 'invoice'])->names('invoices');
     Route::resource('klijenti', ClientController::class)->parameters(['klijenti' => 'client'])->names('clients')->except('show');
@@ -32,6 +38,9 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
 
     Route::resource('bankovni-racuni', BankAccountController::class)->parameters(['bankovni-racuni' => 'bankAccount'])->names('bank-accounts')->except('show');
     Route::resource('valute', CurrencyController::class)->parameters(['valute' => 'currency'])->names('currencies')->except('show');
+
+    Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::view('/pomoc', 'help')->name('help');
 

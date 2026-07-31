@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DocumentLanguage;
 use App\Enums\DocumentTemplate;
+use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentType;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Invoice extends Model
 {
@@ -42,6 +44,17 @@ class Invoice extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /** Račun čiji je ovo storno; obrnuta strana refund_invoice_id. */
+    public function originalInvoice(): HasOne
+    {
+        return $this->hasOne(self::class, 'refund_invoice_id');
+    }
+
+    public function originalFiscalRecord(): ?FiscalRecord
+    {
+        return $this->fiscalRecords->firstWhere('type', FiscalRecordType::Original);
     }
 
     public function fiscalRecords(): HasMany

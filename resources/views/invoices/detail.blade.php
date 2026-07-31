@@ -17,8 +17,8 @@
                                 color="bg-purple-500/10 text-purple-500" />
                 <x-details-item icon="calendar" label="Datum" :value="$invoice->date->format('d.m.Y.')"
                                 color="bg-green-500/10 text-green-500" />
-                @if ($invoice->refundInvoice)
-                    <x-details-item icon="repeat" label="Storno od" :value="$invoice->refundInvoice->invoice_number"
+                @if ($invoice->originalInvoice)
+                    <x-details-item icon="repeat" label="Storno od" :value="$invoice->originalInvoice->invoice_number"
                                     color="bg-red-500/10 text-red-500" />
                 @endif
                 <x-details-item icon="clock" label="Dospijeće" :value="$invoice->due_date->format('d.m.Y.')"
@@ -131,6 +131,8 @@
                 <x-icon name="mail" class="h-4 w-4" /> Pošalji mail
             </button>
         </div>
+
+        @include('invoices.fiscal')
     </div>
 
     @if ($invoice->isDeletable())

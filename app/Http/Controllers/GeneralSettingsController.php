@@ -22,10 +22,6 @@ class GeneralSettingsController extends Controller
             'pad_zeros' => ['required', 'integer', 'min:1', 'max:10'],
             'invoice_prefix' => ['nullable', 'string', 'max:16'],
             'invoice_starting_number' => ['required', 'integer', 'min:1'],
-            'proforma_prefix' => ['nullable', 'string', 'max:16'],
-            'proforma_starting_number' => ['required', 'integer', 'min:1'],
-            'quote_prefix' => ['nullable', 'string', 'max:16'],
-            'quote_starting_number' => ['required', 'integer', 'min:1'],
             'template' => ['required', Rule::enum(DocumentTemplate::class)],
             'language' => ['required', Rule::enum(DocumentLanguage::class)],
             'invoice_due_days' => ['required', 'integer', 'min:0', 'max:365'],
@@ -37,7 +33,6 @@ class GeneralSettingsController extends Controller
 
         $numbering->fill(collect($data)->only([
             'pad_zeros', 'invoice_prefix', 'invoice_starting_number',
-            'proforma_prefix', 'proforma_starting_number', 'quote_prefix', 'quote_starting_number',
         ])->map(fn ($v, $k) => str_contains($k, 'prefix') ? (string) $v : $v)->all());
         $numbering->reset_yearly = $request->boolean('reset_yearly');
         $numbering->save();

@@ -103,7 +103,7 @@ it('zaključava poslije neaktivnosti', function () {
     $this->post(route('unlock.store'), ['pin' => '1111']);
     $this->get(route('invoices.index'))->assertStatus(200);
 
-    $this->travel(6)->minutes();
+    $this->travel(16)->minutes();
 
     $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
 });
@@ -113,7 +113,7 @@ it('ne zaključava dok se koristi', function () {
     $this->post(route('unlock.store'), ['pin' => '1111']);
 
     foreach (range(1, 3) as $ignored) {
-        $this->travel(4)->minutes();
+        $this->travel(14)->minutes();
         $this->get(route('invoices.index'))->assertStatus(200);
     }
 });

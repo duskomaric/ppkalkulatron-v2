@@ -309,3 +309,22 @@ it('brisanje storna vraća original u fiskalizovano stanje', function () {
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized)
         ->and($invoice->fresh()->refund_invoice_id)->toBeNull();
 });
+
+it('traži serijski broj i PAK za cloud uređaj', function () {
+    $this->withSession([PinLock::SESSION_KEY => true, PinLock::BOOT_KEY => PinLock::boot()]);
+
+    // Način uređaja je do sada bio samo dekoracija; sada odlučuje šta je obavezno.
+    $this->put(route('settings.fiscal.update'), [
+        'base_url' => 'https://pos.ofs.ba', 'device_mode' => 'cloud', 'cashier' => 'Prodavac',
+        'receipt_layout' => 'Slip', 'receipt_image_format' => 'Png', 'default_payment_type' => 'Cash',
+    ])->assertSessionHasErrors(['serial_number', 'pac']);
+});
+
+it('lokalni uređaj ne traži serijski broj', function () {
+    $this->withSession([PinLock::SESSION_KEY => true, PinLock::BOOT_KEY => PinLock::boot()]);
+
+    $this->put(route('settings.fiscal.update'), [
+        'base_url' => 'http://192.168.31.103:3566', 'device_mode' => 'local', 'cashier' => 'Prodavac',
+        'receipt_layout' => 'Slip', 'receipt_image_format' => 'Png', 'default_payment_type' => 'Cash',
+    ])->assertSessionHasNoErrors();
+});

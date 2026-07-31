@@ -219,6 +219,8 @@ Alpine.data('entityIndex', () => ({
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
 
+            if (wentToUnlock(response)) return failure;
+
             return response.ok ? await response.text() : failure;
         } catch {
             return failure;
@@ -249,6 +251,8 @@ Alpine.data('entityIndex', () => ({
                 body: new FormData(form),
                 headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
             });
+
+            if (wentToUnlock(response)) return;
 
             if (response.status === 422) {
                 this.formErrors = (await response.json()).errors || {};
@@ -359,6 +363,26 @@ Alpine.data('pinEntry', () => ({
 }));
 
 /**
+ * Zaključavanje usred rada u draweru.
+ *
+ * Kad automatsko zaključavanje udari, POST dobije preusmjerenje na ekran za PIN.
+ * `fetch` ga isprati, vrati 200 sa HTML-om, `response.json()` pukne i korisnik
+ * dobije „Čuvanje nije uspjelo" na sasvim ispravnom unosu — a ništa nije sačuvano.
+ * Zato se to prepozna i korisnik se pošalje na PIN.
+ */
+const wentToUnlock = (response) => {
+    if (! response.redirected || ! response.url.includes('/unlock')) {
+        return false;
+    }
+
+    window.location = response.url;
+
+    return true;
+};
+
+window.wentToUnlock = wentToUnlock;
+
+/**
  * Radnje nad računom: fiskalizacija, kopija, storno, slika računa i mail.
  *
  * Živi ovdje, a ne u opisu liste, jer isti partial detalja koristi i puna stranica
@@ -404,6 +428,8 @@ const invoiceActions = () => ({
                     'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
                 },
             });
+
+            if (wentToUnlock(response)) return;
 
             const data = await response.json().catch(() => ({}));
 
@@ -458,6 +484,8 @@ const invoiceActions = () => ({
                 },
                 body: JSON.stringify(this.emailForm),
             });
+
+            if (wentToUnlock(response)) return;
 
             const data = await response.json().catch(() => ({}));
 

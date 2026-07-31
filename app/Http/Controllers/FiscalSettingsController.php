@@ -22,8 +22,10 @@ class FiscalSettingsController extends Controller
         $data = $request->validate([
             'base_url' => ['required', 'string', 'max:255'],
             'api_key' => ['nullable', 'string', 'max:255'],
-            'serial_number' => ['nullable', 'string', 'max:255'],
-            'pac' => ['nullable', 'string', 'max:32'],
+            // Cloud uređaj bez serijskog broja i PAK-a ne odgovara — bolje odbiti
+            // pri čuvanju nego dati korisniku da otkriva zašto fiskalizacija pada.
+            'serial_number' => ['nullable', 'string', 'max:255', 'required_if:device_mode,cloud'],
+            'pac' => ['nullable', 'string', 'max:32', 'required_if:device_mode,cloud'],
             'cashier' => ['required', 'string', 'max:64'],
             'device_mode' => ['required', Rule::in(['cloud', 'local'])],
             'receipt_layout' => ['required', Rule::in(['Slip', 'Invoice'])],
@@ -32,6 +34,7 @@ class FiscalSettingsController extends Controller
             'receipt_header_text_lines' => ['nullable', 'string'],
         ], [], [
             'base_url' => 'base URL', 'device_mode' => 'način uređaja',
+            'serial_number' => 'serijski broj', 'pac' => 'PAK',
             'receipt_layout' => 'izgled računa', 'receipt_image_format' => 'format slike',
         ]);
 

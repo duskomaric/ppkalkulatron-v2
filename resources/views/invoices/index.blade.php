@@ -122,6 +122,8 @@
                             headers: { 'X-Requested-With': 'XMLHttpRequest' },
                         });
 
+                        if (window.wentToUnlock(response)) return fallback;
+
                         return response.ok ? await response.text() : fallback;
                     } catch {
                         return fallback;
@@ -142,6 +144,8 @@
                             body: new FormData(form),
                             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                         });
+
+                        if (window.wentToUnlock(response)) return;
 
                         if (response.status === 422) {
                             this.formErrors = (await response.json()).errors || {};

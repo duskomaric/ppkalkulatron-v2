@@ -16,13 +16,10 @@
 
             <x-form-input label="Broj nula (padding)" name="pad_zeros" type="number" :value="$numbering->pad_zeros" required />
 
+            {{-- Predračuni i ponude još ne postoje, pa njihova numeracija nije ni ovdje. --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <x-form-input label="Prefiks računa" name="invoice_prefix" :value="$numbering->invoice_prefix" placeholder="npr. INV" />
                 <x-form-input label="Početni broj računa" name="invoice_starting_number" type="number" :value="$numbering->invoice_starting_number" required />
-                <x-form-input label="Prefiks predračuna" name="proforma_prefix" :value="$numbering->proforma_prefix" placeholder="npr. PRO" />
-                <x-form-input label="Početni broj predračuna" name="proforma_starting_number" type="number" :value="$numbering->proforma_starting_number" required />
-                <x-form-input label="Prefiks ponude" name="quote_prefix" :value="$numbering->quote_prefix" placeholder="npr. PON" />
-                <x-form-input label="Početni broj ponude" name="quote_starting_number" type="number" :value="$numbering->quote_starting_number" required />
             </div>
         </x-section-block>
 

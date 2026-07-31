@@ -6,7 +6,7 @@ return new class extends SettingsMigration
 {
     public function up(): void
     {
-        $this->migrator->add('security.auto_lock_minutes', 5);
+        $this->migrator->add('security.auto_lock_minutes', 15);
     }
 
     public function down(): void

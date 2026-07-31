@@ -2,6 +2,7 @@
     $formatAmount = fn ($pfening) => number_format($pfening / 100, 2, ',', '.');
     $currency = $invoice->currency ?: 'BAM';
     $showVat = $company->is_vat_obligor ?? true;
+    $smallNote = ($company->is_small_entrepreneur ?? false) ? trim((string) $company->small_entrepreneur_note) : '';
 @endphp
 <!DOCTYPE html>
 <html lang="sr">
@@ -463,5 +464,8 @@
     </div>
 
 </div>
+@if($smallNote)
+    <div style="padding: 0 28px 16px 28px; font-size: 7pt; font-style: italic;">{{ $smallNote }}</div>
+@endif
 </body>
 </html>

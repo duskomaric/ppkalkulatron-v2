@@ -49,18 +49,11 @@
             </div>
 
             <div class="flex flex-col gap-2 pt-2">
-                <label class="flex items-center justify-between gap-3 p-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] cursor-pointer">
-                    <span class="text-xs font-bold text-[var(--color-text-main)]">Priloži PDF računa</span>
-                    <input type="checkbox" x-model="emailForm.attach_pdf" class="h-5 w-5 rounded-md accent-[var(--color-primary)]">
-                </label>
+                <x-switch model="emailForm.attach_pdf" label="Priloži PDF računa" />
 
                 <template x-for="record in emailReceipts" :key="record.id">
-                    <label class="flex items-center justify-between gap-3 p-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] cursor-pointer">
-                        <span class="text-xs font-bold text-[var(--color-text-main)]"
-                              x-text="'Priloži fiskalni račun (' + record.type_label + ')'"></span>
-                        <input type="checkbox" :value="record.id" x-model="emailForm.attach_fiscal_record_ids"
-                               class="h-5 w-5 rounded-md accent-[var(--color-primary)]">
-                    </label>
+                    <x-switch model="emailForm.attach_fiscal_record_ids" ::value="record.id"
+                              label-expr="'Priloži fiskalni račun (' + record.type_label + ')'" />
                 </template>
             </div>
 

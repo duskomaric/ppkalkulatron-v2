@@ -6,6 +6,8 @@ use App\Models\ExchangeRate;
 use App\Models\Invoice;
 use App\Services\FiscalService;
 use App\Services\InvoiceWriter;
+use App\Services\NetworkScanner;
+use App\Services\PinLock;
 use App\Settings\FiscalSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -190,4 +192,44 @@ it('ne dozvoljava dva storna istog računa', function () {
     $this->postJson(route('invoices.create-refund', $invoice->fresh()))
         ->assertStatus(422)
         ->assertJson(['message' => 'Storno za ovaj račun već postoji.']);
+});
+
+it('čita opseg adresa iz teksta', function () {
+    $scanner = app(NetworkScanner::class);
+
+    expect($scanner->parseRange('192.168.31.100-103'))
+        ->toBe(['192.168.31.100', '192.168.31.101', '192.168.31.102', '192.168.31.103'])
+        ->and($scanner->parseRange('192.168.31.'))->toHaveCount(254)
+        ->and($scanner->parseRange('192.168.31.10-5'))->toBe([])
+        ->and($scanner->parseRange('bilo šta'))->toBe([]);
+});
+
+it('prijavljuje uređaj koji odgovori na attention', function () {
+    Http::fake([
+        'http://10.0.0.5:3566/api/attention' => Http::response('', 200),
+        'http://10.0.0.6:3566/api/attention' => Http::response('', 401),
+        '*' => Http::response('', 500),
+    ]);
+
+    $found = app(NetworkScanner::class)->scan('10.0.0.1-10');
+
+    expect($found)->toBe(['http://10.0.0.5:3566', 'http://10.0.0.6:3566']);
+});
+
+it('šalje PIN sigurnosnog elementa kao goli tekst', function () {
+    Http::fake(['*/api/pin' => Http::response('"0100"', 200)]);
+    $this->withSession([PinLock::SESSION_KEY => true]);
+
+    $this->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
+        ->assertSessionHas('status', 'PIN je prihvaćen. Uređaj je spreman za fiskalizaciju.');
+
+    Http::assertSent(fn ($request) => $request->body() === '1234');
+});
+
+it('prevodi kod greške sa PIN-a u poruku', function () {
+    Http::fake(['*/api/pin' => Http::response('"1300"', 200)]);
+    $this->withSession([PinLock::SESSION_KEY => true]);
+
+    $this->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
+        ->assertSessionHas('error', 'Sigurnosni element nije prisutan u uređaju.');
 });

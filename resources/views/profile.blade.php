@@ -18,12 +18,14 @@
                 </div>
                 <div class="min-w-0">
                     <h2 class="text-xl font-black text-[var(--color-text-main)] tracking-tighter italic truncate">
-                        {{ $user->fullName() ?: 'Bez imena' }}
+                        {{ $user->fullName() ?: 'Korisnik' }}
                     </h2>
-                    <div class="flex items-center gap-1.5 text-[var(--color-text-dim)] mt-0.5">
-                        <x-icon name="mail" class="h-3 w-3" />
-                        <p class="text-[11px] font-bold tracking-tight truncate">{{ $user->email ?: 'Bez email adrese' }}</p>
-                    </div>
+                    @if ($user->email)
+                        <div class="flex items-center gap-1.5 text-[var(--color-text-dim)] mt-0.5">
+                            <x-icon name="mail" class="h-3 w-3" />
+                            <p class="text-[11px] font-bold tracking-tight truncate">{{ $user->email }}</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

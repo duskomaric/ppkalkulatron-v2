@@ -45,6 +45,32 @@
     <x-flash />
 </div>
 
+@php($autoLockMinutes = app(\App\Services\PinLock::class)->isEnabled() ? app(\App\Services\PinLock::class)->autoLockMinutes() : 0)
+
+@if ($autoLockMinutes > 0)
+    <script>
+        (() => {
+            const limit = {{ $autoLockMinutes }} * 60 * 1000;
+            let hiddenAt = null;
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    hiddenAt = Date.now();
+
+                    return;
+                }
+
+                // Zaključan telefon ne šalje zahtjeve, pa server ne zna da je vrijeme isteklo.
+                if (hiddenAt && Date.now() - hiddenAt >= limit) {
+                    window.location.reload();
+                }
+
+                hiddenAt = null;
+            });
+        })();
+    </script>
+@endif
+
 @stack('scripts')
 </body>
 </html>

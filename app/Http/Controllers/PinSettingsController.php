@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\PinLock;
+use App\Settings\SecuritySettings;
 use Illuminate\Http\Request;
 
 /**
@@ -15,7 +16,23 @@ class PinSettingsController extends Controller
 
     public function edit()
     {
-        return view('settings.pin', ['enabled' => $this->pin->isEnabled()]);
+        return view('settings.pin', [
+            'enabled' => $this->pin->isEnabled(),
+            'autoLockMinutes' => $this->pin->autoLockMinutes(),
+        ]);
+    }
+
+    public function updateLock(Request $request, SecuritySettings $settings)
+    {
+        $data = $request->validate(
+            ['auto_lock_minutes' => ['required', 'integer', 'in:0,1,5,15,30,60']],
+            [], ['auto_lock_minutes' => 'zaključavanje']
+        );
+
+        $settings->auto_lock_minutes = $data['auto_lock_minutes'];
+        $settings->save();
+
+        return redirect()->route('settings.pin.edit')->with('status', 'Podešavanje je sačuvano.');
     }
 
     public function update(Request $request)

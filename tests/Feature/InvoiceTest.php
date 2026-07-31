@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Services\FiscalReceiptStore;
 use App\Services\InvoiceNumber;
 use App\Services\InvoicePdfService;
+use App\Settings\CompanySettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 
@@ -300,4 +301,37 @@ it('ne stavlja kosu crtu u ime priloga', function () {
     expect($name)->toBe('racun_0001-'.date('Y').'.pdf');
 
     @unlink($path);
+});
+
+it('ispisuje napomenu malog preduzetnika na PDF-u', function () {
+    $company = app(CompanySettings::class);
+    $company->is_small_entrepreneur = true;
+    $company->small_entrepreneur_note = 'Mali preduzetnik — nije u sistemu PDV-a.';
+    $company->save();
+
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $html = view('pdf.invoice', [
+        'invoice' => $invoice->load('client', 'items', 'fiscalRecords'),
+        'company' => $company,
+        'bankAccounts' => collect(),
+    ])->render();
+
+    expect($html)->toContain('Mali preduzetnik');
+});
+
+it('ne ispisuje napomenu kad mali preduzetnik nije uključen', function () {
+    $company = app(CompanySettings::class);
+
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $html = view('pdf.invoice', [
+        'invoice' => $invoice->load('client', 'items', 'fiscalRecords'),
+        'company' => $company,
+        'bankAccounts' => collect(),
+    ])->render();
+
+    expect($html)->not->toContain('Mali preduzetnik');
 });

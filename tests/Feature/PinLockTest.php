@@ -90,3 +90,45 @@ it('zaključava na zahtjev', function () {
     $this->post(route('unlock.destroy'))->assertRedirect(route('unlock'));
     $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
 });
+
+it('zaključava poslije neaktivnosti', function () {
+    setPin('1111');
+    $this->post(route('unlock.store'), ['pin' => '1111']);
+    $this->get(route('invoices.index'))->assertStatus(200);
+
+    $this->travel(6)->minutes();
+
+    $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
+});
+
+it('ne zaključava dok se koristi', function () {
+    setPin('1111');
+    $this->post(route('unlock.store'), ['pin' => '1111']);
+
+    foreach (range(1, 3) as $ignored) {
+        $this->travel(4)->minutes();
+        $this->get(route('invoices.index'))->assertStatus(200);
+    }
+});
+
+it('ne zaključava kad je automatsko zaključavanje isključeno', function () {
+    setPin('1111');
+    $settings = app(SecuritySettings::class);
+    $settings->auto_lock_minutes = 0;
+    $settings->save();
+
+    $this->post(route('unlock.store'), ['pin' => '1111']);
+    $this->travel(3)->hours();
+
+    $this->get(route('invoices.index'))->assertStatus(200);
+});
+
+it('mijenja vrijeme automatskog zaključavanja', function () {
+    setPin('1111');
+    $this->withSession([PinLock::SESSION_KEY => true]);
+
+    $this->put(route('settings.pin.update-lock'), ['auto_lock_minutes' => 30])
+        ->assertRedirect(route('settings.pin.edit'));
+
+    expect(app(SecuritySettings::class)->auto_lock_minutes)->toBe(30);
+});

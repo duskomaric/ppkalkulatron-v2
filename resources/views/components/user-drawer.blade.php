@@ -8,11 +8,13 @@
         </div>
         <div class="z-10 min-w-0">
             <p class="font-black text-base text-[var(--color-text-main)] leading-tight italic tracking-tight truncate">
-                {{ $user->fullName() ?: 'Bez imena' }}
+                {{ $user->fullName() ?: 'Korisnik' }}
             </p>
-            <p class="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-wider mt-0.5 truncate">
-                {{ $user->email ?: 'Bez email adrese' }}
-            </p>
+            @if ($user->email)
+                <p class="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-wider mt-0.5 truncate">
+                    {{ $user->email }}
+                </p>
+            @endif
         </div>
     </div>
 

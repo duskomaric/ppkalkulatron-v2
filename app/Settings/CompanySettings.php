@@ -36,6 +36,11 @@ class CompanySettings extends Settings
     /** Bez ovoga se PDV ne prikazuje na dokumentima. */
     public bool $is_vat_obligor;
 
+    /** Mali preduzetnik (paušalac) — nije u sistemu PDV-a, pa dokument nosi napomenu. */
+    public bool $is_small_entrepreneur;
+
+    public ?string $small_entrepreneur_note;
+
     public static function group(): string
     {
         return 'company';

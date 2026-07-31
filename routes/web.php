@@ -9,6 +9,7 @@ use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\GeneralSettingsController;
 use App\Http\Controllers\MailSettingsController;
+use App\Http\Controllers\MenuSettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PinSettingsController;
 use App\Http\Controllers\ProfileController;
@@ -57,10 +58,15 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::get('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'edit'])->name('settings.fiscal.edit');
     Route::put('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'update'])->name('settings.fiscal.update');
     Route::post('/podesavanja/fiskalizacija/provjera', [FiscalSettingsController::class, 'test'])->name('settings.fiscal.test');
+    Route::post('/podesavanja/fiskalizacija/skeniraj', [FiscalSettingsController::class, 'scan'])->name('settings.fiscal.scan');
     Route::post('/podesavanja/fiskalizacija/pin', [FiscalSettingsController::class, 'pin'])->name('settings.fiscal.pin');
     Route::post('/podesavanja/fiskalizacija/zahtjev', [FiscalSettingsController::class, 'findRequest'])->name('settings.fiscal.find-request');
 
+    Route::get('/podesavanja/meni', [MenuSettingsController::class, 'edit'])->name('settings.menu.edit');
+    Route::put('/podesavanja/meni', [MenuSettingsController::class, 'update'])->name('settings.menu.update');
+
     Route::get('/podesavanja/pin', [PinSettingsController::class, 'edit'])->name('settings.pin.edit');
     Route::put('/podesavanja/pin', [PinSettingsController::class, 'update'])->name('settings.pin.update');
+    Route::put('/podesavanja/pin/zakljucavanje', [PinSettingsController::class, 'updateLock'])->name('settings.pin.update-lock');
     Route::delete('/podesavanja/pin', [PinSettingsController::class, 'destroy'])->name('settings.pin.destroy');
 });

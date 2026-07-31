@@ -58,7 +58,7 @@
                            :value="$settings->default_payment_type" required :options="\App\Enums\PaymentType::options()" />
 
             <x-form-textarea label="Linije u zaglavlju računa" name="receipt_header_text_lines" rows="3"
-                             :value="implode(\"\n\", $settings->receipt_header_text_lines)" />
+                             :value="implode(PHP_EOL, $settings->receipt_header_text_lines)" />
 
             <x-toggle name="render_receipt_image" :checked="$settings->render_receipt_image" label="Generiši sliku računa" />
             <x-toggle name="print_receipt" :checked="$settings->print_receipt" label="Štampaj račun pri fiskalizaciji" />
@@ -90,6 +90,40 @@
 
     {{-- Servisne radnje prema uređaju, van forme sa podešavanjima. --}}
     <div class="mt-8 space-y-8 max-w-3xl">
+        <x-section-block variant="card" x-data="networkScan()">
+            <x-section-header icon="search" title="Skeniranje mreže" />
+
+            <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
+                Traži ESIR na portu {{ \App\Services\NetworkScanner::PORT }}. Opseg se čita sa mrežnog
+                interfejsa uređaja, pa ga ne morate unositi — polje ispod je za slučaj da je kasa
+                na drugoj podmreži.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
+                <div class="grow">
+                    <x-form-input label="Opseg (opciono)" name="scan_range" x-model="range"
+                                  placeholder="192.168.31.100-105" />
+                </div>
+                <x-button variant="ghost" type="button" class="!py-3.5 shrink-0" x-on:click="run()"
+                          ::disabled="scanning">
+                    <span x-show="scanning" class="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></span>
+                    <span x-text="scanning ? 'Skeniram...' : 'Skeniraj mrežu'"></span>
+                </x-button>
+            </div>
+
+            <template x-if="devices.length">
+                <div class="space-y-1.5 pt-2">
+                    <template x-for="device in devices" :key="device">
+                        <button type="button" x-on:click="use(device)"
+                                class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-primary/40 transition-all cursor-pointer">
+                            <span class="text-xs font-bold text-[var(--color-text-main)]" x-text="device"></span>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-primary">Koristi</span>
+                        </button>
+                    </template>
+                </div>
+            </template>
+        </x-section-block>
+
         <x-section-block variant="card">
             <x-section-header icon="lock" title="PIN sigurnosnog elementa" />
 
@@ -125,3 +159,56 @@
         </x-section-block>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        function networkScan() {
+            return {
+                range: '',
+                scanning: false,
+                devices: [],
+
+                async run() {
+                    if (this.scanning) return;
+
+                    this.scanning = true;
+                    this.devices = [];
+
+                    try {
+                        const response = await fetch(@js(route('settings.fiscal.scan')), {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            },
+                            body: JSON.stringify({ range: this.range }),
+                        });
+
+                        const data = await response.json().catch(() => ({}));
+                        this.devices = data.devices || [];
+
+                        window.dispatchEvent(new CustomEvent('app-flash', {
+                            detail: { message: data.message || 'Skeniranje nije uspjelo.', type: response.ok ? 'success' : 'error' },
+                        }));
+                    } catch {
+                        window.dispatchEvent(new CustomEvent('app-flash', {
+                            detail: { message: 'Skeniranje nije uspjelo.', type: 'error' },
+                        }));
+                    } finally {
+                        this.scanning = false;
+                    }
+                },
+
+                /** Upiši adresu u Base URL i vrati korisnika na to polje. */
+                use(device) {
+                    const field = document.querySelector('input[name=base_url]');
+                    field.value = device;
+                    field.dispatchEvent(new Event('input'));
+                    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    field.focus();
+                },
+            };
+        }
+    </script>
+@endpush

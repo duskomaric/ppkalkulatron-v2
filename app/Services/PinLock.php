@@ -16,6 +16,9 @@ class PinLock
 {
     public const SESSION_KEY = 'pin_unlocked';
 
+    /** Vrijeme posljednje aktivnosti; po njemu se mjeri automatsko zaključavanje. */
+    public const SEEN_KEY = 'pin_last_seen';
+
     public function __construct(private SecuritySettings $settings) {}
 
     public function isEnabled(): bool
@@ -33,6 +36,11 @@ class PinLock
     {
         $this->settings->pin_hash = null;
         $this->settings->save();
+    }
+
+    public function autoLockMinutes(): int
+    {
+        return max(0, $this->settings->auto_lock_minutes);
     }
 
     public function verify(string $pin): bool

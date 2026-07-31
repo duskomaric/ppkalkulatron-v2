@@ -3,6 +3,7 @@
 use App\Models\BankAccount;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
+use App\Settings\MenuSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -82,4 +83,22 @@ it('nema kursa za podrazumijevanu valutu', function () {
 
     $this->post(route('currencies.rates.store', $bam), ['rate_to_bam' => '1', 'rate_date' => '2026-07-31'])
         ->assertSessionHas('error');
+});
+
+it('otvara sve sekcije pomoći na koje podešavanja upućuju', function () {
+    $help = $this->get(route('help'))->assertStatus(200)->getContent();
+
+    foreach (['profil-kompanije', 'fiskalizacija', 'numeracija', 'meni', 'pin', 'mail'] as $anchor) {
+        expect($help)->toContain('id="'.$anchor.'"');
+    }
+});
+
+it('premješta modul iz menija u drawer', function () {
+    $this->put(route('settings.menu.update'), ['menu_modules' => ['invoices', 'currencies']])
+        ->assertRedirect(route('settings.menu.edit'));
+
+    $settings = app(MenuSettings::class);
+
+    expect($settings->menu_modules)->toBe(['invoices', 'currencies'])
+        ->and($settings->drawerModules())->toBe(['clients', 'articles', 'bank-accounts']);
 });

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentType;
+use App\Services\NetworkScanner;
 use App\Services\OFSService;
 use App\Settings\FiscalSettings;
 use Illuminate\Http\Request;
@@ -101,6 +102,34 @@ class FiscalSettingsController extends Controller
         '2800' => 'PIN nije u ispravnom formatu — očekuje se 4 cifre.',
         '2806' => 'PIN nije u ispravnom formatu — očekuje se 4 cifre.',
     ];
+
+    /** Potraga za ESIR-om na lokalnoj mreži; odgovor je JSON jer traje. */
+    public function scan(Request $request, NetworkScanner $scanner, FiscalSettings $settings)
+    {
+        $data = $request->validate(['range' => ['nullable', 'string', 'max:32']]);
+        $range = trim((string) ($data['range'] ?? ''));
+
+        if ($range !== '' && $scanner->parseRange($range) === []) {
+            return response()->json([
+                'message' => 'Opseg nije prepoznat. Primjer: 192.168.31.100-105 ili 192.168.31.',
+            ], 422);
+        }
+
+        if ($range === '' && ! $scanner->localIp()) {
+            return response()->json([
+                'message' => 'Nije moguće pročitati lokalnu adresu uređaja. Unesite opseg ručno.',
+            ], 422);
+        }
+
+        $found = $scanner->scan($range ?: null, $settings->api_key);
+
+        return response()->json([
+            'devices' => $found,
+            'message' => $found === []
+                ? 'Nijedan uređaj nije pronađen na mreži.'
+                : 'Pronađeno uređaja: '.count($found).'.',
+        ]);
+    }
 
     /** PIN sigurnosnog elementa; uređaj ga traži poslije napajanja. */
     public function pin(Request $request, FiscalSettings $settings)

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\DocumentLanguage;
 use App\Enums\DocumentTemplate;
 use App\Enums\PaymentType;
 use App\Enums\Unit;
@@ -18,6 +19,7 @@ class InvoiceRequest extends FormRequest
             'payment_type' => ['required', Rule::enum(PaymentType::class)],
             'currency' => ['required', 'exists:currencies,code'],
             'template' => ['required', Rule::enum(DocumentTemplate::class)],
+            'language' => ['required', Rule::enum(DocumentLanguage::class)],
             'date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:date'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -49,6 +51,7 @@ class InvoiceRequest extends FormRequest
             'payment_type' => 'način plaćanja',
             'currency' => 'valuta',
             'template' => 'predložak',
+            'language' => 'jezik',
             'date' => 'datum',
             'due_date' => 'rok dospijeća',
             'notes' => 'napomena',

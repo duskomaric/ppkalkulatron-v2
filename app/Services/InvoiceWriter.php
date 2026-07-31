@@ -49,6 +49,7 @@ class InvoiceWriter
             'payment_type' => $data['payment_type'],
             'currency' => $data['currency'],
             'template' => $data['template'],
+            'language' => $data['language'],
             'date' => $data['date'],
             'due_date' => $data['due_date'],
             'notes' => $data['notes'] ?? null,

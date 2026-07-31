@@ -199,6 +199,7 @@ class InvoiceController extends Controller
                 ->get(['id', 'name', 'description', 'unit', 'tax_label', 'last_unit_price']),
             'currencies' => Currency::orderByDesc('is_default')->orderBy('code')->get(['code', 'name']),
             'defaultTemplate' => app(DocumentSettings::class)->template,
+            'defaultLanguage' => app(DocumentSettings::class)->language,
             'defaultCurrency' => Currency::where('is_default', true)->value('code') ?? 'BAM',
             'defaultDueDays' => app(DocumentSettings::class)->invoice_due_days,
             'defaultNotes' => app(DocumentSettings::class)->invoice_notes,

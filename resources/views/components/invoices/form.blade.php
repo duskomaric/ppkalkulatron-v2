@@ -4,6 +4,7 @@
     'articles',
     'currencies',
     'defaultTemplate' => 'classic',
+    'defaultLanguage' => 'sr_Latn',
     'defaultCurrency' => 'BAM',
     'defaultDueDays' => 15,
     'defaultNotes' => null,
@@ -15,8 +16,8 @@
     artikla, količinu i cijenu — naziv, jedinica i poreska oznaka dolaze sa artikla
     i serveru idu kao skrivena polja.
 
-    Izostavljeno u odnosu na v1, namjerno: Jezik (v2 ima jedan jezik) i Ponavljajući
-    račun (v2 nema ponavljanja).
+    Izostavljen je samo Ponavljajući račun — v2 nema ponavljanja. Jezik se čuva i
+    prikazuje, ali PDF za sada izlazi na jednom jeziku.
 --}}
 
 @php
@@ -182,6 +183,10 @@
                 <x-select-field label="Valuta" name="currency" icon="credit-card" :value="$currencyCode"
                                 x-on:change="currency = $event.target.value"
                                 :options="$currencies->pluck('code', 'code')->all()" />
+
+                <x-select-field label="Jezik" name="language" icon="globe"
+                                :value="$invoice?->language?->value ?? $defaultLanguage"
+                                :options="\App\Enums\DocumentLanguage::options()" />
 
                 <x-select-field label="Predložak" name="template" icon="file-text"
                                 :value="$invoice?->template?->value ?? $defaultTemplate"

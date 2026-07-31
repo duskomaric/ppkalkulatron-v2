@@ -8,11 +8,13 @@
         <x-section-block>
             <x-section-header icon="file-text" title="Osnovni podaci" />
 
-            {{-- Redoslijed i boje pločica prate v1. Izostavljeni su Jezik, Izvor i
-                 Ponavljanje — v2 ima jedan jezik, nema konverzije ni ponavljanja. --}}
+            {{-- Redoslijed i boje pločica prate v1. Izostavljeni su Izvor i Ponavljanje —
+                 v2 nema konverzije dokumenata ni ponavljajućih računa. --}}
             <x-details-grid :columns="2">
                 <x-details-item icon="contact" label="Klijent" :value="$invoice->client?->name"
                                 color="bg-blue-500/10 text-blue-500" />
+                <x-details-item icon="globe" label="Jezik" :value="$invoice->language->label()"
+                                color="bg-purple-500/10 text-purple-500" />
                 <x-details-item icon="calendar" label="Datum" :value="$invoice->date->format('d.m.Y.')"
                                 color="bg-green-500/10 text-green-500" />
                 @if ($invoice->refundInvoice)

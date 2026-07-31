@@ -10,6 +10,9 @@ class DocumentSettings extends Settings
     /** classic | modern | minimal | standard */
     public string $template;
 
+    /** Vrijednost iz App\Enums\DocumentLanguage. */
+    public string $language;
+
     public int $invoice_due_days;
 
     public int $proforma_due_days;

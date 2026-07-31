@@ -16,6 +16,7 @@ function invoicePayload(array $overrides = []): array
         'payment_type' => 'Cash',
         'currency' => 'BAM',
         'template' => 'classic',
+        'language' => 'sr_Latn',
         'date' => now()->format('Y-m-d'),
         'due_date' => now()->addDays(15)->format('Y-m-d'),
         'items' => [[

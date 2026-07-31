@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DocumentLanguage;
 use App\Enums\DocumentTemplate;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentType;
@@ -17,7 +18,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'invoice_number', 'client_id', 'status', 'date', 'due_date', 'notes',
-        'currency', 'template', 'payment_type', 'refund_invoice_id',
+        'currency', 'template', 'language', 'payment_type', 'refund_invoice_id',
         'is_fiscalized', 'fiscal_invoice_number', 'fiscal_counter',
         'fiscal_verification_url', 'fiscal_request_id', 'fiscalized_at',
         'subtotal', 'tax_total', 'discount_total', 'total',
@@ -27,6 +28,7 @@ class Invoice extends Model
         'status' => InvoiceStatus::class,
         'payment_type' => PaymentType::class,
         'template' => DocumentTemplate::class,
+        'language' => DocumentLanguage::class,
         'date' => 'date',
         'due_date' => 'date',
         'fiscalized_at' => 'datetime',

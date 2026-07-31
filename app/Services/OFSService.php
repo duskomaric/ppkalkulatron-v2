@@ -86,6 +86,22 @@ class OFSService
         return $this->request('GET', '/api/settings');
     }
 
+    /**
+     * POST /api/pin — PIN sigurnosnog elementa ide kao goli tekst, ne kao JSON.
+     * Uređaj odgovara kodom: "0100" znači da je prihvaćen.
+     */
+    public function enterPin(string $pin): Response
+    {
+        $endpoint = $this->baseUrl.'/api/pin';
+
+        Log::info('OFS request', ['method' => 'POST', 'url' => $endpoint]);
+
+        $headers = $this->headers();
+        unset($headers['Content-Type']);
+
+        return Http::withHeaders($headers)->withBody($pin, 'text/plain')->timeout(15)->post($endpoint);
+    }
+
     public function createInvoice(array $payload, ?string $requestId = null): Response
     {
         return $this->request('POST', '/api/invoices', $payload, $requestId);

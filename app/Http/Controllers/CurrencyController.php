@@ -20,7 +20,7 @@ class CurrencyController extends Controller
 
     public function create()
     {
-        return view('currencies.form', ['currency' => null]);
+        return view('currencies.form', ['currency' => null, 'rates' => collect()]);
     }
 
     public function store(Request $request)
@@ -32,7 +32,11 @@ class CurrencyController extends Controller
 
     public function edit(Currency $currency)
     {
-        return view('currencies.form', ['currency' => $currency]);
+        return view('currencies.form', [
+            'currency' => $currency,
+            'rates' => ExchangeRate::where('currency', $currency->code)
+                ->orderByDesc('rate_date')->limit(10)->get(),
+        ]);
     }
 
     public function update(Request $request, Currency $currency)
@@ -51,6 +55,26 @@ class CurrencyController extends Controller
         $currency->delete();
 
         return redirect()->route('currencies.index')->with('status', 'Valuta je obrisana.');
+    }
+
+    /** Kurs prema KM na određeni dan; fiskalizacija ga traži za strane valute. */
+    public function storeRate(Request $request, Currency $currency)
+    {
+        if ($currency->is_default) {
+            return back()->with('error', 'Podrazumijevana valuta nema kurs prema samoj sebi.');
+        }
+
+        $data = $request->validate([
+            'rate_to_bam' => ['required', 'numeric', 'min:0.00001'],
+            'rate_date' => ['required', 'date'],
+        ], [], ['rate_to_bam' => 'kurs', 'rate_date' => 'datum']);
+
+        ExchangeRate::updateOrCreate(
+            ['currency' => $currency->code, 'rate_date' => $data['rate_date']],
+            ['rate_to_bam' => $data['rate_to_bam']],
+        );
+
+        return redirect()->route('currencies.edit', $currency)->with('status', 'Kurs je sačuvan.');
     }
 
     private function save(Request $request, Currency $currency): void

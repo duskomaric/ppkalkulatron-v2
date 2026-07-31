@@ -37,6 +37,7 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::resource('artikli', ArticleController::class)->parameters(['artikli' => 'article'])->names('articles')->except('show');
 
     Route::resource('bankovni-racuni', BankAccountController::class)->parameters(['bankovni-racuni' => 'bankAccount'])->names('bank-accounts')->except('show');
+    Route::post('/valute/{currency}/kurs', [CurrencyController::class, 'storeRate'])->name('currencies.rates.store');
     Route::resource('valute', CurrencyController::class)->parameters(['valute' => 'currency'])->names('currencies')->except('show');
 
     Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -56,6 +57,8 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::get('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'edit'])->name('settings.fiscal.edit');
     Route::put('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'update'])->name('settings.fiscal.update');
     Route::post('/podesavanja/fiskalizacija/provjera', [FiscalSettingsController::class, 'test'])->name('settings.fiscal.test');
+    Route::post('/podesavanja/fiskalizacija/pin', [FiscalSettingsController::class, 'pin'])->name('settings.fiscal.pin');
+    Route::post('/podesavanja/fiskalizacija/zahtjev', [FiscalSettingsController::class, 'findRequest'])->name('settings.fiscal.find-request');
 
     Route::get('/podesavanja/pin', [PinSettingsController::class, 'edit'])->name('settings.pin.edit');
     Route::put('/podesavanja/pin', [PinSettingsController::class, 'update'])->name('settings.pin.update');

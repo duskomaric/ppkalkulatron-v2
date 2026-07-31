@@ -87,4 +87,63 @@ class FiscalSettingsController extends Controller
             return back()->with('error', 'Greška: '.$e->getMessage());
         }
     }
+
+    /** Uređaj vraća „0100" kada je PIN prihvaćen. */
+    public const PIN_OK = '0100';
+
+    /** Kod 1500 u /api/status → „gsc" znači da uređaj traži PIN. */
+    public const PIN_REQUIRED_CODE = '1500';
+
+    /** @var array<string, string> Kodovi koje /api/pin vraća na grešku. */
+    public const PIN_ERRORS = [
+        '1300' => 'Sigurnosni element nije prisutan u uređaju.',
+        '2400' => 'Lokalni ESIR (LPFR) nije spreman.',
+        '2800' => 'PIN nije u ispravnom formatu — očekuje se 4 cifre.',
+        '2806' => 'PIN nije u ispravnom formatu — očekuje se 4 cifre.',
+    ];
+
+    /** PIN sigurnosnog elementa; uređaj ga traži poslije napajanja. */
+    public function pin(Request $request, FiscalSettings $settings)
+    {
+        $data = $request->validate(['security_pin' => ['required', 'digits:4']], [], ['security_pin' => 'PIN']);
+
+        try {
+            $ofs = new OFSService($settings->base_url, $settings->api_key, $settings->serial_number, $settings->pac);
+            $response = $ofs->enterPin($data['security_pin']);
+            $code = trim($response->body(), " \t\n\r\0\x0B\"");
+
+            if ($response->successful() && $code === self::PIN_OK) {
+                return back()->with('status', 'PIN je prihvaćen. Uređaj je spreman za fiskalizaciju.');
+            }
+
+            return back()->with('error', self::PIN_ERRORS[$code] ?? "Uređaj je odbio PIN (kod {$code}).");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Greška: '.$e->getMessage());
+        }
+    }
+
+    /** Potraga za izgubljenim odgovorom uređaja po RequestId-u. */
+    public function findRequest(Request $request, FiscalSettings $settings)
+    {
+        $data = $request->validate(
+            ['request_id' => ['required', 'string', 'max:32']], [], ['request_id' => 'RequestId']
+        );
+
+        try {
+            $ofs = new OFSService($settings->base_url, $settings->api_key, $settings->serial_number, $settings->pac);
+            $response = $ofs->getInvoiceByRequestId($data['request_id']);
+
+            if (! $response->successful()) {
+                return back()->with('error', "Uređaj nije odgovorio (HTTP {$response->status()}).");
+            }
+
+            $found = (array) $response->json();
+
+            return back()->with('status', empty($found)
+                ? 'Zahtjev nije pronađen — fiskalizacija vjerovatno nije prošla.'
+                : 'Pronađen račun '.($found['invoiceNumber'] ?? '—').', brojač '.($found['invoiceCounter'] ?? '—').'.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Greška: '.$e->getMessage());
+        }
+    }
 }

@@ -2,6 +2,7 @@
 
 use App\Enums\InvoiceStatus;
 use App\Models\Client;
+use App\Models\ExchangeRate;
 use App\Models\Invoice;
 use App\Services\FiscalService;
 use App\Services\InvoiceWriter;
@@ -151,13 +152,28 @@ it('storno prebacuje original u storniran', function () {
     });
 });
 
-it('odbija račun u stranoj valuti dok preračun ne postoji', function () {
+it('preračuna stranu valutu u KM po kursu', function () {
+    fakeDevice();
+    ExchangeRate::create([
+        'currency' => 'EUR', 'rate_to_bam' => 1.95583, 'rate_date' => now()->subDay(),
+    ]);
+
+    $invoice = makeInvoice();
+    $invoice->update(['currency' => 'EUR']);
+
+    app(FiscalService::class)->fiscalize($invoice->fresh());
+
+    // 1,00 EUR × 1,95583 = 1,96 KM
+    Http::assertSent(fn ($request) => (float) $request['invoiceRequest']['items'][0]['totalAmount'] === 1.96);
+});
+
+it('odbija fiskalizaciju bez kursa za tu valutu', function () {
     fakeDevice();
     $invoice = makeInvoice();
     $invoice->update(['currency' => 'EUR']);
 
     app(FiscalService::class)->fiscalize($invoice->fresh());
-})->throws(RuntimeException::class, 'Fiskalizacija je za sada moguća samo za račune u KM.');
+})->throws(RuntimeException::class, 'Nema kursa za EUR');
 
 it('vraća poruku uređaja kad odbije račun', function () {
     Http::fake(['*/api/invoices' => Http::response('Neispravan PIN', 400)]);

@@ -26,6 +26,7 @@ class FiscalService
     public function __construct(
         private FiscalSettings $settings,
         private FiscalReceiptStore $receipts,
+        private CurrencyConverter $converter,
     ) {}
 
     public function fiscalize(Invoice $invoice): FiscalRecord
@@ -89,12 +90,6 @@ class FiscalService
     ): FiscalRecord {
         $invoice->loadMissing(['items', 'client']);
 
-        // Uređaju idu iznosi u KM. Preračun stranih valuta još nije prenesen iz v1,
-        // pa se račun u drugoj valuti odbija umjesto da se pošalje pogrešan iznos.
-        if ($invoice->currency !== 'BAM') {
-            throw new RuntimeException('Fiskalizacija je za sada moguća samo za račune u KM.');
-        }
-
         if ($missing = $this->wholesaleBuyerMissing($invoice)) {
             throw new RuntimeException($missing);
         }
@@ -148,7 +143,10 @@ class FiscalService
      */
     private function items(Invoice $invoice): array
     {
-        return $invoice->items->map(function ($item) {
+        // Uređaju iznosi idu u KM, po kursu na datum računa.
+        $toBam = fn (int $pfening) => $this->converter->toBam($pfening, $invoice->currency, $invoice->date);
+
+        return $invoice->items->map(function ($item) use ($toBam) {
             // GTIN je obavezan, a artikl nema barkod — koristi se id dopunjen nulama.
             $gtin = substr(str_pad((string) ($item->article_id ?? $item->id), 8, '0', STR_PAD_LEFT), 0, 14);
 
@@ -156,8 +154,8 @@ class FiscalService
                 'name' => $item->name.' / '.$item->unit->value,
                 'gtin' => $gtin,
                 'quantity' => (float) $item->quantity,
-                'unitPrice' => abs($item->unit_price) / 100,
-                'totalAmount' => abs($item->total) / 100,
+                'unitPrice' => abs($toBam($item->unit_price)) / 100,
+                'totalAmount' => abs($toBam($item->total)) / 100,
                 'labels' => [$item->tax_label ?: 'A'],
             ];
         })->all();

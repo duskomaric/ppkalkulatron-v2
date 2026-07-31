@@ -2,6 +2,7 @@
 
 use App\Models\BankAccount;
 use App\Models\Currency;
+use App\Models\ExchangeRate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -53,4 +54,32 @@ it('ne briše podrazumijevanu valutu', function () {
     $this->delete(route('currencies.destroy', $bam))->assertSessionHas('error');
 
     expect($bam->fresh())->not->toBeNull();
+});
+
+it('čuva kurs valute prema KM', function () {
+    $eur = Currency::where('code', 'EUR')->sole();
+
+    $this->post(route('currencies.rates.store', $eur), [
+        'rate_to_bam' => '1.95583', 'rate_date' => '2026-07-31',
+    ])->assertRedirect(route('currencies.edit', $eur));
+
+    expect((float) ExchangeRate::where('currency', 'EUR')->value('rate_to_bam'))->toBe(1.95583);
+});
+
+it('prepisuje kurs za isti dan umjesto da doda drugi', function () {
+    $eur = Currency::where('code', 'EUR')->sole();
+
+    foreach (['1.90000', '1.95583'] as $rate) {
+        $this->post(route('currencies.rates.store', $eur), ['rate_to_bam' => $rate, 'rate_date' => '2026-07-31']);
+    }
+
+    expect(ExchangeRate::where('currency', 'EUR')->count())->toBe(1)
+        ->and((float) ExchangeRate::where('currency', 'EUR')->value('rate_to_bam'))->toBe(1.95583);
+});
+
+it('nema kursa za podrazumijevanu valutu', function () {
+    $bam = Currency::where('code', 'BAM')->sole();
+
+    $this->post(route('currencies.rates.store', $bam), ['rate_to_bam' => '1', 'rate_date' => '2026-07-31'])
+        ->assertSessionHas('error');
 });

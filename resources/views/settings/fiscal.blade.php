@@ -87,4 +87,41 @@
     </form>
 
     <form id="test-device" method="POST" action="{{ route('settings.fiscal.test') }}" class="hidden">@csrf</form>
+
+    {{-- Servisne radnje prema uređaju, van forme sa podešavanjima. --}}
+    <div class="mt-8 space-y-8 max-w-3xl">
+        <x-section-block variant="card">
+            <x-section-header icon="lock" title="PIN sigurnosnog elementa" />
+
+            <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
+                Lokalni uređaj traži PIN poslije uključivanja. Dok ga ne dobije, fiskalizacija ne prolazi.
+            </p>
+
+            <form method="POST" action="{{ route('settings.fiscal.pin') }}" class="flex flex-col sm:flex-row gap-3 sm:items-end">
+                @csrf
+                <div class="grow">
+                    <x-form-input label="PIN" name="security_pin" type="password" inputmode="numeric"
+                                  maxlength="4" autocomplete="off" required hint="Četiri cifre." />
+                </div>
+                <x-button variant="ghost" class="!py-3.5 shrink-0">Pošalji PIN</x-button>
+            </form>
+        </x-section-block>
+
+        <x-section-block variant="card">
+            <x-section-header icon="search" title="Potraga po RequestId" />
+
+            <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
+                Ako je veza pukla usred fiskalizacije, uređaj i dalje zna šta je snimio.
+                Unesi RequestId iz fiskalnog zapisa da provjeriš je li račun prošao.
+            </p>
+
+            <form method="POST" action="{{ route('settings.fiscal.find-request') }}" class="flex flex-col sm:flex-row gap-3 sm:items-end">
+                @csrf
+                <div class="grow">
+                    <x-form-input label="RequestId" name="request_id" maxlength="32" required />
+                </div>
+                <x-button variant="ghost" class="!py-3.5 shrink-0">Provjeri</x-button>
+            </form>
+        </x-section-block>
+    </div>
 @endsection

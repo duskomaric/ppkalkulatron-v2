@@ -35,6 +35,34 @@
     </form>
 
     @if ($currency && ! $currency->is_default)
+        <x-section title="Kursevi prema KM" icon="credit-card" class="mt-5 max-w-3xl">
+            <form method="POST" action="{{ route('currencies.rates.store', $currency) }}"
+                  class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+                @csrf
+                <x-field label="Kurs" name="rate_to_bam" type="number" step="0.00001" required
+                         hint="Koliko KM vrijedi 1 {{ $currency->code }}." />
+                <x-field label="Datum" name="rate_date" type="date" :value="now()->format('Y-m-d')" required />
+                <x-button variant="ghost" class="shrink-0">Sačuvaj kurs</x-button>
+            </form>
+
+            @if ($rates->isNotEmpty())
+                <div class="space-y-1.5 pt-2">
+                    @foreach ($rates as $rate)
+                        <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--color-bg)]/40 text-xs font-bold">
+                            <span class="text-[var(--color-text-muted)]">{{ $rate->rate_date->format('d.m.Y.') }}</span>
+                            <span class="tabular-nums">{{ number_format($rate->rate_to_bam, 5, ',', '.') }} KM</span>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-[11px] text-[var(--color-text-dim)] ml-1">
+                    Bez kursa se račun u ovoj valuti ne može fiskalizovati.
+                </p>
+            @endif
+        </x-section>
+    @endif
+
+    @if ($currency && ! $currency->is_default)
         <form id="delete-currency" method="POST" action="{{ route('currencies.destroy', $currency) }}" class="hidden"
               onsubmit="return confirm('Obrisati valutu {{ $currency->code }}?')">
             @csrf @method('DELETE')

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PinSettingsController;
 use App\Http\Controllers\UnlockController;
@@ -22,6 +23,9 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::resource('artikli', ArticleController::class)->parameters(['artikli' => 'article'])->names('articles')->except('show');
 
     Route::view('/pomoc', 'help')->name('help');
+
+    Route::get('/podesavanja/kompanija', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
+    Route::put('/podesavanja/kompanija', [CompanySettingsController::class, 'update'])->name('settings.company.update');
 
     Route::get('/podesavanja/pin', [PinSettingsController::class, 'edit'])->name('settings.pin.edit');
     Route::put('/podesavanja/pin', [PinSettingsController::class, 'update'])->name('settings.pin.update');

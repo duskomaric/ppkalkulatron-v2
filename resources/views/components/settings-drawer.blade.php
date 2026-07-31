@@ -1,6 +1,19 @@
+{{--
+    Struktura prati v1 SettingsDrawer: naslovi grupa pa DrawerNavItem sa opisom.
+    Bez licence i vizuelnih podešavanja — nema pretplate, a svi moduli su vidljivi.
+--}}
 <x-drawer title="Podešavanja" state="settingsDrawer">
     <div class="flex flex-col gap-3">
         <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)] px-1 pb-1">
+            Zajednička podešavanja
+        </p>
+
+        <x-drawer-nav-item :href="route('settings.company.edit')" icon="building" title="Profil kompanije"
+                           description="Podaci o firmi, adresa i JIB/PIB" />
+
+
+
+        <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)] px-1 pt-4 pb-1">
             Šifarnici
         </p>
 

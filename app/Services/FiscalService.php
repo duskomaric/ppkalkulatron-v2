@@ -6,7 +6,6 @@ use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
 use App\Models\FiscalRecord;
 use App\Models\Invoice;
-use App\Models\TaxRate;
 use App\Settings\FiscalSettings;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -23,7 +22,7 @@ class FiscalService
     public function __construct(
         private FiscalSettings $settings,
         private FiscalReceiptStore $receipts,
-        private CurrencyConverter $converter,
+        private FiscalPayloadFactory $payloads,
         private OFSService $ofs,
         private Diagnostics $diagnostics,
     ) {}
@@ -98,9 +97,13 @@ class FiscalService
             throw new RuntimeException($missing);
         }
 
-        $items = $this->items($invoice);
-        $payload = $this->payload($invoice, $items, (float) array_sum(array_column($items, 'totalAmount')),
-            $transactionType, $invoiceType, $referent);
+        $payload = $this->payloads->create(
+            $invoice,
+            $transactionType,
+            $invoiceType,
+            $referent,
+            $this->resolveBuyerId($invoice),
+        );
 
         [$record, $isRetry] = $this->pendingRecord($invoice, $type, $requestPrefix);
 
@@ -183,122 +186,6 @@ class FiscalService
         }
 
         return $record;
-    }
-
-    /**
-     * Po dokumentaciji OFS-a obavezni su name, gtin (8-14 znakova), labels, unitPrice,
-     * quantity i totalAmount; iznosi su sa porezom, uređaj sam izvodi osnovicu.
-     */
-    private function items(Invoice $invoice): array
-    {
-        // Uređaju iznosi idu u KM, po kursu na datum računa.
-        $toBam = fn (int $pfening) => $this->converter->toBam($pfening, $invoice->currency, $invoice->date);
-        $zeroRateLabel = null;
-
-        return $invoice->items->map(function ($item) use ($toBam, &$zeroRateLabel) {
-            // GTIN je obavezan (8-14 znakova). Pravi barkod artikla ako ga ima,
-            // inače id dopunjen nulama — uređaj traži nešto jedinstveno.
-            $barcode = preg_replace('/\D/', '', (string) $item->article?->gtin);
-
-            $gtin = strlen($barcode) >= 8
-                ? substr($barcode, 0, 14)
-                : substr(str_pad((string) ($item->article_id ?? $item->id), 8, '0', STR_PAD_LEFT), 0, 14);
-
-            return [
-                'name' => $item->name.' / '.$item->unit->value,
-                'gtin' => $gtin,
-                'quantity' => (float) $item->quantity,
-                // Jedinična cijena se izvodi iz preračunatog ukupnog, da uređaj ne
-                // odštampa red u kojem cijena × količina ne daje ukupno.
-                'unitPrice' => abs($toBam($item->total)) / max(1, (int) $item->quantity) / 100,
-                'totalAmount' => abs($toBam($item->total)) / 100,
-                'labels' => [$item->tax_label ?: ($zeroRateLabel ??= $this->zeroRateLabel())],
-            ];
-        })->all();
-    }
-
-    /**
-     * Oznaka sa nultom stopom, za stavke bez poreza.
-     *
-     * Pogađanje ovdje košta: 'A' je 9% PDV-a, pa bi uređaj naplatio porez koji na
-     * računu ne stoji. Ako uređaj ne prijavljuje ni jednu nultu stopu, račun se ne
-     * fiskalizuje — bolje jasno odbijanje nego pogrešan fiskalni račun.
-     */
-    private function zeroRateLabel(): string
-    {
-        $label = TaxRate::where('rate', 0)->orderBy('label')->value('label');
-
-        if ($label === null) {
-            throw new RuntimeException(
-                'Stavka je bez poreske oznake, a uređaj ne prijavljuje nijednu nultu stopu. '.
-                'Dodijelite poresku oznaku stavci prije fiskalizacije.'
-            );
-        }
-
-        return $label;
-    }
-
-    private function payload(
-        Invoice $invoice,
-        array $items,
-        float $total,
-        string $transactionType,
-        string $invoiceType,
-        ?FiscalRecord $referent,
-    ): array {
-        $layout = $this->settings->receipt_layout;
-
-        $payload = [
-            'print' => $this->settings->print_receipt,
-            'renderReceiptImage' => true,
-            'receiptImageFormat' => $this->documentFormat($layout),
-            'receiptLayout' => $layout,
-            'receiptHeaderTextLines' => $this->settings->receipt_header_text_lines,
-            'invoiceRequest' => [
-                'invoiceType' => $invoiceType,
-                'transactionType' => $transactionType,
-                'payment' => [[
-                    'amount' => $total,
-                    'paymentType' => $invoice->payment_type?->value ?: $this->settings->default_payment_type,
-                ]],
-                'items' => $items,
-                'cashier' => $this->settings->cashier ?: 'Prodavac',
-            ],
-        ];
-
-        if ($referent?->fiscal_invoice_number) {
-            $payload['invoiceRequest']['referentDocumentNumber'] = $referent->fiscal_invoice_number;
-            $payload['invoiceRequest']['referentDocumentDT'] = $referent->fiscalized_at?->format('c');
-        }
-
-        if ($buyerId = $this->resolveBuyerId($invoice)) {
-            $payload['invoiceRequest']['buyerId'] = $buyerId;
-        }
-
-        return $payload;
-    }
-
-    /**
-     * Format koji izabrani raspored zaista može iscrtati.
-     *
-     * Podešavanja to već spriječavaju, ali ranije sačuvana kombinacija Invoice + Png
-     * daje prazan račun od jednog piksela. Radije se vrati na format koji se iscrta
-     * nego da fiskalizacija padne zbog izbora slike.
-     */
-    private function documentFormat(string $layout): string
-    {
-        $format = $this->settings->receipt_document_format;
-        $allowed = $this->settings->allowedDocumentFormats();
-
-        if (in_array($format, $allowed, true)) {
-            return $format;
-        }
-
-        $this->diagnostics->error('Format fiskalnog dokumenta nije podržan za raspored', [
-            'layout' => $layout, 'configured' => $format, 'used' => $allowed[0],
-        ]);
-
-        return $allowed[0];
     }
 
     /**

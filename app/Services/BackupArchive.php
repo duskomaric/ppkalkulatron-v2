@@ -111,9 +111,7 @@ class BackupArchive
         $attachments = [];
         $invoiceCount = 0;
         $fiscalDocumentCount = 0;
-        $manifest = [[
-            'broj_racuna', 'datum', 'kupac', 'iznos_km', 'status', 'fiskalni_broj', 'tip_fiskalnog_dokumenta', 'format', 'url_za_provjeru',
-        ]];
+        $manifest = new BackupManifest;
 
         Invoice::query()
             ->with(['client', 'items', 'fiscalRecords.receipt'])
@@ -149,12 +147,12 @@ class BackupArchive
                     }
 
                     if ($contents['manifest']) {
-                        $manifest[] = [$invoice->invoice_number, $invoice->date->format('Y-m-d'), $invoice->client?->name ?? '', number_format($invoice->total / 100, 2, '.', ''), $invoice->status->value, $record->fiscal_invoice_number ?? '', $record->type->value, $binary === null || ! $contents['fiscal_documents'] ? '' : $extension, $record->verification_url ?? ''];
+                        $manifest->add($invoice, $record, $binary === null || ! $contents['fiscal_documents'] ? null : $extension);
                     }
                 }
 
                 if ($contents['manifest'] && $invoice->fiscalRecords->isEmpty()) {
-                    $manifest[] = [$invoice->invoice_number, $invoice->date->format('Y-m-d'), $invoice->client?->name ?? '', number_format($invoice->total / 100, 2, '.', ''), $invoice->status->value, '', '', '', ''];
+                    $manifest->add($invoice);
                 }
             });
 
@@ -162,7 +160,7 @@ class BackupArchive
             $attachments[] = [
                 'path' => 'manifest.csv',
                 'mime' => 'text/csv; charset=UTF-8',
-                'contents' => $this->csv($manifest),
+                'contents' => $manifest->csv(),
             ];
         }
 
@@ -176,22 +174,6 @@ class BackupArchive
     private function safeInvoiceNumber(string $number): string
     {
         return Str::of($number)->replace('/', '-')->replaceMatches('/[^A-Za-z0-9._-]/', '-')->value();
-    }
-
-    /** @param array<int, array<int, string>> $rows */
-    private function csv(array $rows): string
-    {
-        $stream = fopen('php://temp', 'r+');
-
-        foreach ($rows as $row) {
-            fputcsv($stream, $row, ';', '"', '');
-        }
-
-        rewind($stream);
-        $contents = stream_get_contents($stream) ?: '';
-        fclose($stream);
-
-        return "\xEF\xBB\xBF".$contents;
     }
 
     private function mimeForExtension(string $extension): string

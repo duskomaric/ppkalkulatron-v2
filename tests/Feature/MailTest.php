@@ -4,6 +4,7 @@ use App\Mail\BackupMail;
 use App\Mail\InvoiceMail;
 use App\Models\Invoice;
 use App\Services\BackupArchive;
+use App\Services\BackupManifest;
 use App\Services\Diagnostics;
 use App\Services\FiscalReceiptStore;
 use App\Services\MailService;
@@ -290,6 +291,23 @@ it('pravi samostalan ZIP sa PDF računima, fiskalnim dokumentima i manifestom', 
 
     $zip->close();
     unlink($backup['path']);
+});
+
+it('gradi UTF-8 manifest sa jednim redom po fiskalnom dokumentu', function () {
+    $invoice = makeInvoice();
+    $record = $invoice->fiscalRecords()->create([
+        'type' => 'original',
+        'fiscal_invoice_number' => 'F;1',
+        'verification_url' => 'https://example.test/verify',
+    ]);
+
+    $manifest = new BackupManifest;
+    $manifest->add($invoice->fresh('client'), $record, 'html');
+    $csv = $manifest->csv();
+
+    expect($csv)
+        ->toStartWith("\xEF\xBB\xBF")
+        ->toContain('"F;1"', '0001/2026', 'html', 'https://example.test/verify');
 });
 
 it('uključuje svaki račun u backup i kada datumi nisu redom upisa', function () {

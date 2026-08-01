@@ -12,6 +12,7 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use LogicException;
 
 class InvoiceMail extends Mailable
 {
@@ -27,6 +28,9 @@ class InvoiceMail extends Mailable
         public array $attachFiscalRecordIds = [],
         public ?string $fromAddress = null,
         public ?string $fromName = null,
+        public ?CompanySettings $company = null,
+        public ?FiscalReceiptStore $receipts = null,
+        public ?Diagnostics $diagnostics = null,
     ) {}
 
     public function envelope(): Envelope
@@ -43,7 +47,7 @@ class InvoiceMail extends Mailable
     public function content(): Content
     {
         return new Content(view: 'emails.invoice', with: [
-            'company' => app(CompanySettings::class),
+            'company' => $this->company ?? throw new LogicException('Podaci kompanije nisu dostupni za e-mail računa.'),
         ]);
     }
 
@@ -68,7 +72,7 @@ class InvoiceMail extends Mailable
         // zapisu, jednim upitom za svaki.
         $this->invoice->loadMissing('fiscalRecords.receipt');
 
-        $receipts = app(FiscalReceiptStore::class);
+        $receipts = $this->receipts ?? throw new LogicException('Pohrana fiskalnih dokumenata nije dostupna za e-mail računa.');
 
         foreach ($this->attachFiscalRecordIds as $recordId) {
             $record = $this->invoice->fiscalRecords->firstWhere('id', $recordId);
@@ -80,7 +84,7 @@ class InvoiceMail extends Mailable
             $binary = $receipts->binary($record);
 
             if ($binary === null) {
-                app(Diagnostics::class)->error('Fiskalni račun nije priložen, sadržaja nema', [
+                ($this->diagnostics ?? throw new LogicException('Dijagnostika nije dostupna za e-mail računa.'))->error('Fiskalni račun nije priložen, sadržaja nema', [
                     'invoice_id' => $this->invoice->id,
                     'fiscal_record_id' => $record->id,
                 ]);

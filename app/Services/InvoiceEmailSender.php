@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\InvoiceMail;
 use App\Models\Invoice;
+use App\Settings\CompanySettings;
 use Illuminate\Support\Str;
 
 class InvoiceEmailSender
@@ -12,6 +13,8 @@ class InvoiceEmailSender
         private MailService $mail,
         private InvoicePdfService $pdf,
         private FiscalReceiptStore $receipts,
+        private CompanySettings $company,
+        private Diagnostics $diagnostics,
     ) {}
 
     /** @return array{missing_fiscal_documents: bool} */
@@ -38,6 +41,9 @@ class InvoiceEmailSender
                 attachFiscalRecordIds: $available->pluck('id')->values()->all(),
                 fromAddress: $fromAddress,
                 fromName: $fromName,
+                company: $this->company,
+                receipts: $this->receipts,
+                diagnostics: $this->diagnostics,
             ));
         } finally {
             if ($pdfPath && is_file($pdfPath)) {

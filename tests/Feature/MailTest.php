@@ -165,6 +165,7 @@ it('imenuje prilog fiskalnog računa po tipu i formatu zapisa', function (string
     $attachment = (new InvoiceMail(
         invoice: $invoice->load('fiscalRecords.receipt'), emailSubject: 'Račun', body: 'Tekst',
         attachFiscalRecordIds: [$record->id],
+        receipts: app(FiscalReceiptStore::class),
     ))->attachments()[0];
 
     expect($attachment->as)->toBe('fiskalni-racun_0001-'.date('Y').$expected.'.'.$extension);
@@ -188,6 +189,7 @@ it('gradi sadržaj i pošiljaoca računa bez priloga koji ne postoji', function 
         pdfPath: '/tmp/nepostojeci-racun.pdf',
         fromAddress: 'racuni@firma.ba',
         fromName: 'Firma d.o.o.',
+        company: $company,
     );
 
     expect($mail->envelope()->subject)->toBe('Račun '.$invoice->invoice_number)
@@ -218,6 +220,8 @@ it('ne prilaže tuđi ili nedostajući fiskalni dokument i ostavlja zapis u logu
         emailSubject: 'Račun',
         body: 'Tekst',
         attachFiscalRecordIds: [$missing->id, $foreign->id],
+        receipts: app(FiscalReceiptStore::class),
+        diagnostics: app(Diagnostics::class),
     ))->attachments();
 
     expect($attachments)->toBe([]);

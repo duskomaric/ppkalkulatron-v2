@@ -357,6 +357,7 @@ it('prilaže PDF i fiskalni račun sa pravim sadržajem', function () {
     $attachments = (new InvoiceMail(
         invoice: $invoice, emailSubject: 'Račun', body: 'Tekst',
         pdfPath: $path, attachFiscalRecordIds: [$record->id],
+        receipts: app(FiscalReceiptStore::class),
     ))->attachments();
 
     expect($attachments)->toHaveCount(2);

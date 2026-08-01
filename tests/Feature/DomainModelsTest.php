@@ -51,7 +51,7 @@ it('izvodi stope u baznim poenima za obračun računa', function () {
     FiscalTaxRate::factory()->create(['label' => 'E', 'rate' => 0, 'category_name' => 'Oslobođeno']);
 
     expect($rate->basisPoints())->toBe(1100)
-        ->and(FiscalTaxRate::currentBasisPointsByLabel())->toBe(['F' => 1100, 'E' => 0]);
+        ->and(FiscalTaxRate::basisPointsByLabel())->toBe(['F' => 1100, 'E' => 0]);
 });
 
 it('čuva obje strane veze originalnog računa i storna', function () {

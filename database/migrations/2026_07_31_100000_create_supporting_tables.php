@@ -41,16 +41,11 @@ return new class extends Migration
         // Katalog puni isključivo fiskalni uređaj kroz /api/status.
         Schema::create('fiscal_tax_rates', function (Blueprint $table) {
             $table->id();
-            $table->string('label', 16);
+            $table->string('label', 16)->unique();
             $table->decimal('rate', 5, 2);
             $table->string('category_name', 120);
-            $table->unsignedInteger('group_id');
             $table->unsignedTinyInteger('category_type')->nullable();
-            $table->timestampTz('valid_from')->nullable();
-            $table->boolean('is_current')->default(false)->index();
-            $table->timestampTz('synced_at');
             $table->timestamps();
-            $table->unique(['group_id', 'label']);
         });
 
         DB::table('currencies')->insert([

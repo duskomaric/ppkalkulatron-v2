@@ -21,11 +21,7 @@ class FiscalTaxRateFactory extends Factory
             'label' => 'F',
             'rate' => 11,
             'category_name' => 'ECAL',
-            'group_id' => 1,
             'category_type' => 0,
-            'valid_from' => now(),
-            'is_current' => true,
-            'synced_at' => now(),
         ];
     }
 }

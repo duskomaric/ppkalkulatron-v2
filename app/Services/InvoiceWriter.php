@@ -66,7 +66,7 @@ class InvoiceWriter
         $subtotal = 0;
         $taxTotal = 0;
 
-        $taxRates = FiscalTaxRate::currentBasisPointsByLabel();
+        $taxRates = FiscalTaxRate::basisPointsByLabel();
 
         foreach ($items as $row) {
             $line = $this->line($row, $taxRates);

@@ -13,7 +13,7 @@
 
 @php
     $isEdit = $invoice !== null;
-    $taxRates = \App\Models\FiscalTaxRate::currentBasisPointsByLabel();
+    $taxRates = \App\Models\FiscalTaxRate::basisPointsByLabel();
 
     $oldItems = old('items', $isEdit
         ? $invoice->items->map(fn ($item) => [

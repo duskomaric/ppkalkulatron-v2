@@ -34,7 +34,7 @@ class InvoiceRequest extends FormRequest
             'items.*.name' => ['required', 'string', 'max:255'],
             'items.*.description' => ['nullable', 'string', 'max:500'],
             'items.*.unit' => ['required', Rule::enum(Unit::class)],
-            'items.*.tax_label' => ['required', Rule::in(array_keys(FiscalTaxRate::currentBasisPointsByLabel()))],
+            'items.*.tax_label' => ['required', Rule::in(array_keys(FiscalTaxRate::basisPointsByLabel()))],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ];

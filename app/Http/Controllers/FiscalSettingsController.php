@@ -25,7 +25,7 @@ class FiscalSettingsController extends Controller
         return view('settings.fiscal', [
             'settings' => $settings,
             'fiscalHealth' => $health->current(),
-            'taxRates' => FiscalTaxRate::query()->current()->orderBy('category_name')->orderBy('label')->get(),
+            'taxRates' => FiscalTaxRate::query()->orderBy('category_name')->orderBy('label')->get(),
         ]);
     }
 

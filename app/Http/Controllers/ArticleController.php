@@ -19,7 +19,7 @@ class ArticleController extends Controller
                 ->paginate(20)
                 ->withQueryString(),
             'q' => $request->string('q')->toString(),
-            'taxRates' => FiscalTaxRate::query()->current()->pluck('rate', 'label')->all(),
+            'taxRates' => FiscalTaxRate::query()->pluck('rate', 'label')->all(),
         ]);
     }
 
@@ -68,7 +68,7 @@ class ArticleController extends Controller
     {
         return [
             'article' => $article,
-            'taxRateOptions' => FiscalTaxRate::query()->current()
+            'taxRateOptions' => FiscalTaxRate::query()
                 ->orderBy('label')
                 ->get(['label', 'rate', 'category_name'])
                 ->mapWithKeys(fn (FiscalTaxRate $taxRate): array => [

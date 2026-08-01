@@ -20,7 +20,7 @@ class ArticleRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'unit' => ['required', Rule::enum(Unit::class)],
-            'tax_label' => ['required', Rule::in(array_keys(FiscalTaxRate::currentBasisPointsByLabel()))],
+            'tax_label' => ['required', Rule::in(array_keys(FiscalTaxRate::basisPointsByLabel()))],
             'gtin' => ['nullable', 'string', 'min:8', 'max:14'],
             'last_unit_price' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],

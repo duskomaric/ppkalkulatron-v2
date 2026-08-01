@@ -76,7 +76,7 @@ it('ručna provjera ne preuzima stope bez izričite radnje', function () {
         ->assertRedirect(route('settings.fiscal.edit'))
         ->assertSessionHas('status', 'Uređaj je dostupan. UID esir-123.');
 
-    expect(FiscalTaxRate::query()->current()->count())->toBe(1);
+    expect(FiscalTaxRate::query()->count())->toBe(1);
 });
 
 it('preuzima poreske oznake bez promjene ćirilice', function () {
@@ -107,10 +107,12 @@ it('preuzima poreske oznake bez promjene ćirilice', function () {
         ->assertRedirect(route('settings.fiscal.edit'))
         ->assertSessionHas('status', 'Preuzeto poreskih stopa: 1.');
 
-    expect(FiscalTaxRate::query()->current()->sole())
+    expect(FiscalTaxRate::query()->sole())
         ->label->toBe('Ђ')
         ->category_name->toBe('О-ПДВ')
-        ->rate->toBe('20.00');
+        ->rate->toBe('20.00')
+        ->and(FiscalTaxRate::query()->count())->toBe(1)
+        ->and(FiscalTaxRate::query()->where('label', 'F')->exists())->toBeFalse();
 });
 
 it('ne mijenja katalog kada kasa nije dostupna', function () {
@@ -120,7 +122,7 @@ it('ne mijenja katalog kada kasa nije dostupna', function () {
         ->assertRedirect()
         ->assertSessionHas('error', 'Fiskalni uređaj nije dostupan (HTTP 503).');
 
-    expect(FiscalTaxRate::query()->current()->count())->toBe(1);
+    expect(FiscalTaxRate::query()->count())->toBe(1);
 });
 
 it('ne mijenja katalog kada status kase nije dostupan', function () {

@@ -91,12 +91,12 @@ it('prima svaku jedinicu mjere iz šifarnika', function (Unit $unit) {
 })->with(fn () => Unit::cases());
 
 it('prima svaku poresku oznaku koju uređaj prijavljuje', function () {
-    foreach (FiscalTaxRate::query()->current()->pluck('label') as $label) {
+    foreach (FiscalTaxRate::query()->pluck('label') as $label) {
         $this->post(route('articles.store'), ['name' => 'Usluga '.$label, 'unit' => 'kom', 'tax_label' => $label])
             ->assertSessionHasNoErrors();
     }
 
-    expect(Article::count())->toBe(FiscalTaxRate::query()->current()->count());
+    expect(Article::count())->toBe(FiscalTaxRate::query()->count());
 });
 
 it('čuva cijenu artikla u pfeningima', function () {

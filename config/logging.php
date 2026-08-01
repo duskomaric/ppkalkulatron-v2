@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => 'diagnostics',
 
     /*
     |--------------------------------------------------------------------------
@@ -86,6 +86,14 @@ return [
             'path' => storage_path('logs/mobile-preview.log'),
             'level' => 'info',
             'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
+        'diagnostics' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/diagnostics.log'),
+            'level' => 'debug',
+            'days' => 7,
             'replace_placeholders' => true,
         ],
 

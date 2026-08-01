@@ -8,7 +8,6 @@ use App\Models\FiscalRecord;
 use App\Models\Invoice;
 use App\Models\TaxRate;
 use App\Settings\FiscalSettings;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -26,6 +25,7 @@ class FiscalService
         private FiscalReceiptStore $receipts,
         private CurrencyConverter $converter,
         private OFSService $ofs,
+        private Diagnostics $diagnostics,
     ) {}
 
     public function fiscalize(Invoice $invoice): FiscalRecord
@@ -118,12 +118,12 @@ class FiscalService
             }
         }
 
-        Log::info('Fiskalizacija računa', ['invoice_id' => $invoice->id, 'request_id' => $record->request_id, 'type' => $type->value]);
+        $this->diagnostics->debug('Fiskalizacija računa', ['invoice_id' => $invoice->id, 'request_id' => $record->request_id, 'type' => $type->value]);
 
         $response = $this->ofs->createInvoice($payload, $record->request_id);
 
         if (! $response->successful()) {
-            Log::error('Fiskalizacija nije uspjela', [
+            $this->diagnostics->error('Fiskalizacija nije uspjela', [
                 'invoice_id' => $invoice->id, 'status' => $response->status(), 'body' => $response->body(),
             ]);
 
@@ -294,7 +294,7 @@ class FiscalService
             return $format;
         }
 
-        Log::warning('Format fiskalnog dokumenta nije podržan za raspored', [
+        $this->diagnostics->error('Format fiskalnog dokumenta nije podržan za raspored', [
             'layout' => $layout, 'configured' => $format, 'used' => $allowed[0],
         ]);
 

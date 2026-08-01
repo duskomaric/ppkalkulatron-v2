@@ -6,6 +6,7 @@ use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CurrencyController;
+use App\Http\Controllers\DiagnosticsController;
 use App\Http\Controllers\FiscalController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\GeneralSettingsController;
@@ -63,6 +64,10 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::get('/podesavanja/backup', [BackupController::class, 'edit'])->name('settings.backup.edit');
     Route::put('/podesavanja/backup', [BackupController::class, 'update'])->name('settings.backup.update');
     Route::post('/podesavanja/backup/posalji', [BackupController::class, 'send'])->name('settings.backup.send');
+
+    Route::get('/podesavanja/dijagnostika', [DiagnosticsController::class, 'edit'])->name('settings.diagnostics.edit');
+    Route::put('/podesavanja/dijagnostika', [DiagnosticsController::class, 'update'])->name('settings.diagnostics.update');
+    Route::post('/podesavanja/dijagnostika/posalji', [DiagnosticsController::class, 'send'])->name('settings.diagnostics.send');
 
     Route::get('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'edit'])->name('settings.fiscal.edit');
     Route::get('/podesavanja/fiskalizacija/status', [FiscalSettingsController::class, 'status'])->name('settings.fiscal.status');

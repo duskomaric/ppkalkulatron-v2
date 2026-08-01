@@ -2,6 +2,7 @@
 
 use App\Settings\BackupSettings;
 use App\Settings\CompanySettings;
+use App\Settings\DiagnosticsSettings;
 use App\Settings\DocumentSettings;
 use App\Settings\FiscalSettings;
 use App\Settings\MailSettings;
@@ -26,6 +27,7 @@ return [
         NumberingSettings::class,
         MailSettings::class,
         DocumentSettings::class,
+        DiagnosticsSettings::class,
         SecuritySettings::class,
         MenuSettings::class,
         UserSettings::class,

@@ -4,13 +4,13 @@ use App\Mail\BackupMail;
 use App\Mail\InvoiceMail;
 use App\Models\Invoice;
 use App\Services\BackupArchive;
+use App\Services\Diagnostics;
 use App\Services\FiscalReceiptStore;
 use App\Services\MailService;
 use App\Settings\BackupSettings;
 use App\Settings\CompanySettings;
 use App\Settings\MailSettings;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /*
@@ -204,7 +204,14 @@ it('ne prilaže tuđi ili nedostajući fiskalni dokument i ostavlja zapis u logu
     $invoice = makeInvoice();
     $missing = $invoice->fiscalRecords()->create(['type' => 'original']);
     $foreign = makeInvoice()->fiscalRecords()->create(['type' => 'copy']);
-    Log::spy();
+    $this->mock(Diagnostics::class, function ($mock) use ($invoice, $missing): void {
+        $mock->shouldReceive('error')
+            ->once()
+            ->with('Fiskalni račun nije priložen, sadržaja nema', [
+                'invoice_id' => $invoice->id,
+                'fiscal_record_id' => $missing->id,
+            ]);
+    });
 
     $attachments = (new InvoiceMail(
         invoice: $invoice,
@@ -214,12 +221,6 @@ it('ne prilaže tuđi ili nedostajući fiskalni dokument i ostavlja zapis u logu
     ))->attachments();
 
     expect($attachments)->toBe([]);
-    Log::shouldHaveReceived('warning')
-        ->once()
-        ->with('Fiskalni račun nije priložen, sadržaja nema', [
-            'invoice_id' => $invoice->id,
-            'fiscal_record_id' => $missing->id,
-        ]);
 });
 
 it('čuva mail podešavanja', function () {

@@ -7,7 +7,6 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -35,6 +34,7 @@ class OFSService
         protected ?string $apiKey = null,
         protected ?string $serialNumber = null,
         protected ?string $pac = null,
+        private ?Diagnostics $diagnostics = null,
     ) {
         $settings = app(FiscalSettings::class);
 
@@ -43,6 +43,7 @@ class OFSService
         $this->apiKey ??= $settings->api_key;
         $this->serialNumber ??= $settings->serial_number;
         $this->pac ??= $settings->pac;
+        $this->diagnostics ??= app(Diagnostics::class);
     }
 
     /** Cloud traži dodatne identifikatore; lokalnom ESIR-u se šalje samo API ključ. */
@@ -77,7 +78,7 @@ class OFSService
         try {
             return $call();
         } catch (ConnectionException $e) {
-            Log::warning('OFS uređaj nije dostupan', ['url' => $this->baseUrl, 'error' => $e->getMessage()]);
+            $this->diagnostics->error('OFS uređaj nije dostupan', ['url' => $this->baseUrl, 'error' => $e->getMessage()]);
 
             throw new RuntimeException(
                 'Fiskalni uređaj nije dostupan na '.$this->baseUrl.'. '.
@@ -95,7 +96,7 @@ class OFSService
             $headers['RequestId'] = $requestId;
         }
 
-        Log::info('OFS request', ['method' => $method, 'url' => $endpoint, 'request_id' => $requestId]);
+        $this->diagnostics->debug('OFS request', ['method' => $method, 'url' => $endpoint, 'request_id' => $requestId]);
 
         $http = $this->client($headers, $timeout);
 
@@ -103,7 +104,7 @@ class OFSService
             ? $http->get($endpoint)
             : $http->send($method, $endpoint, ['json' => $payload]));
 
-        Log::info('OFS response', ['status' => $response->status(), 'successful' => $response->successful()]);
+        $this->diagnostics->debug('OFS response', ['status' => $response->status(), 'successful' => $response->successful()]);
 
         return $response;
     }
@@ -132,7 +133,7 @@ class OFSService
     {
         $endpoint = $this->baseUrl.'/api/pin';
 
-        Log::info('OFS request', ['method' => 'POST', 'url' => $endpoint]);
+        $this->diagnostics->debug('OFS request', ['method' => 'POST', 'url' => $endpoint]);
 
         $headers = $this->headers();
         unset($headers['Content-Type']);

@@ -12,6 +12,7 @@ use App\Models\Client;
 use App\Models\Currency;
 use App\Models\FiscalRecord;
 use App\Models\Invoice;
+use App\Services\Diagnostics;
 use App\Services\FiscalDeviceHealth;
 use App\Services\FiscalReceiptStore;
 use App\Services\InvoicePdfService;
@@ -20,7 +21,6 @@ use App\Services\MailService;
 use App\Settings\DocumentSettings;
 use App\Settings\FiscalSettings;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Native\Mobile\Facades\Share;
 
@@ -30,6 +30,7 @@ class InvoiceController extends Controller
         private InvoiceWriter $writer,
         private DocumentSettings $documents,
         private FiscalSettings $fiscalSettings,
+        private Diagnostics $diagnostics,
     ) {}
 
     public function index(Request $request, FiscalDeviceHealth $health)
@@ -199,7 +200,7 @@ class InvoiceController extends Controller
     {
         $mobile = isMobile();
 
-        Log::channel('mobile')->info('Invoice PDF requested', [
+        $this->diagnostics->debug('Invoice PDF requested', [
             'invoice_id' => $invoice->id,
             'jump' => getenv('JUMP_BRIDGE_PORT') !== false,
             'mobile' => $mobile,
@@ -228,7 +229,7 @@ class InvoiceController extends Controller
         @mkdir(dirname($path), 0755, true);
         file_put_contents($path, $pdf->contents($invoice));
 
-        Log::channel('mobile')->info('Invoice PDF handed to native share', [
+        $this->diagnostics->debug('Invoice PDF handed to native share', [
             'invoice_id' => $invoice->id,
             'bytes' => filesize($path),
         ]);
@@ -304,7 +305,7 @@ class InvoiceController extends Controller
     {
         $record->load('receipt');
 
-        Log::channel('mobile')->info('Fiscal receipt requested', [
+        $this->diagnostics->debug('Fiscal receipt requested', [
             'fiscal_record_id' => $record->id,
             'extension' => $record->receipt?->extension,
             'bytes' => $record->receipt?->size,

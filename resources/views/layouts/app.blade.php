@@ -40,6 +40,7 @@
             request()->routeIs('settings.fiscal.*') => 'fiskalizacija',
             request()->routeIs('settings.mail.*') => 'mail',
             request()->routeIs('settings.backup.*') => 'backup',
+            request()->routeIs('settings.diagnostics.*') => 'dijagnostika',
             request()->routeIs('settings.general.*') => 'numeracija',
             request()->routeIs('settings.menu.*') => 'meni',
             request()->routeIs('settings.pin.*', 'unlock.*') => 'pin',

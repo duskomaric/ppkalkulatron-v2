@@ -34,6 +34,7 @@
                     'skeniranje' => 'Skeniranje mreže',
                     'mail' => 'Mail (SMTP)',
                     'backup' => 'Email backup',
+                    'dijagnostika' => 'Dijagnostika',
                     'numeracija' => 'Numeracija dokumenata',
                     'stampa-racuna' => 'Štampa računa',
                     'napomene' => 'Napomene',
@@ -269,6 +270,18 @@
                 Dugme <strong>Napravi i pošalji backup</strong> pripremi jedan ZIP sa PDF-om svakog računa,
                 originalnim fiskalnim dokumentima (PNG, PDF ili HTML) i <strong>manifest.csv</strong>.
                 Poslije uspješnog slanja aplikacija prikaže datum i broj uključenih dokumenata.
+            </p>
+        </x-help-section>
+
+        <x-help-section id="dijagnostika" title="Sigurna dijagnostika" icon="activity">
+            <p>
+                U <strong>Podešavanja → Dijagnostika</strong> možete uključiti detaljne tehničke događaje na
+                24 sata kada podrška traži dodatne informacije. Poslije tog vremena opcija se sama isključuje.
+            </p>
+            <p>
+                Greške se uvijek bilježe, ali se nikada ne šalju računi, fiskalni dokumenti, podaci kupaca,
+                API ključ, PAK, PIN niti SMTP lozinka. Dugme <strong>Pošalji sigurni log</strong> šalje samo
+                sanitizovan tekstualni tehnički izvještaj na adresu koju sami odaberete.
             </p>
         </x-help-section>
 

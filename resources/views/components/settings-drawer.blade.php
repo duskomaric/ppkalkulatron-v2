@@ -10,6 +10,8 @@
                            description="Slanje računa, SMTP" />
         <x-drawer-nav-item :href="route('settings.backup.edit')" icon="archive" title="Backup"
                            description="ZIP računa i fiskalnih dokumenata" />
+        <x-drawer-nav-item :href="route('settings.diagnostics.edit')" icon="activity" title="Dijagnostika"
+                           description="Sigurno slanje tehničkog loga" />
 
         <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)] px-1 pt-4 pb-1">
             Podešavanja dokumenata

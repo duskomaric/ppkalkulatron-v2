@@ -6,9 +6,9 @@ use App\Http\Requests\SendBackupRequest;
 use App\Http\Requests\UpdateBackupSettingsRequest;
 use App\Mail\BackupMail;
 use App\Services\BackupArchive;
+use App\Services\Diagnostics;
 use App\Services\MailService;
 use App\Settings\BackupSettings;
-use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -30,7 +30,7 @@ class BackupController extends Controller
         return redirect()->route('settings.backup.edit')->with('status', 'Email za backup je sačuvan.');
     }
 
-    public function send(SendBackupRequest $request, BackupSettings $settings, BackupArchive $archive, MailService $mail)
+    public function send(SendBackupRequest $request, BackupSettings $settings, BackupArchive $archive, MailService $mail, Diagnostics $diagnostics)
     {
         if (blank($settings->email)) {
             return redirect()->route('settings.backup.edit')->with('error', 'Prvo unesite email na koji se šalje backup.');
@@ -45,13 +45,13 @@ class BackupController extends Controller
         ];
         $startedAt = microtime(true);
 
-        Log::channel('backup')->info('Backup started');
+        $diagnostics->debug('Backup started');
 
         try {
             $backup = $deliveryFormat === 'raw'
                 ? $archive->raw($contents)
                 : $archive->create($contents);
-            Log::channel('backup')->info('Backup documents created', [
+            $diagnostics->debug('Backup documents created', [
                 'invoice_count' => $backup['invoice_count'],
                 'fiscal_document_count' => $backup['fiscal_document_count'],
                 'delivery_format' => $deliveryFormat,
@@ -59,7 +59,7 @@ class BackupController extends Controller
             ]);
 
             [$fromAddress, $fromName] = $mail->from();
-            Log::channel('backup')->info('Backup SMTP send started');
+            $diagnostics->debug('Backup SMTP send started');
 
             $mail->send($settings->email, new BackupMail(
                 archivePath: $backup['path'] ?? '',
@@ -78,7 +78,7 @@ class BackupController extends Controller
             $settings->last_backup_checksum = $backup['checksum'];
             $settings->save();
 
-            Log::channel('backup')->info('Backup sent', [
+            $diagnostics->debug('Backup sent', [
                 'invoice_count' => $backup['invoice_count'],
                 'fiscal_document_count' => $backup['fiscal_document_count'],
                 'elapsed_ms' => (int) round((microtime(true) - $startedAt) * 1000),
@@ -87,7 +87,7 @@ class BackupController extends Controller
             return redirect()->route('settings.backup.edit')
                 ->with('status', "Backup je poslat: {$backup['invoice_count']} računa i {$backup['fiscal_document_count']} fiskalnih dokumenata.");
         } catch (RuntimeException $exception) {
-            Log::channel('backup')->warning('Backup failed', [
+            $diagnostics->error('Backup failed', [
                 'stage' => $backup === null ? 'archive' : 'mail',
                 'exception' => $exception::class,
                 'elapsed_ms' => (int) round((microtime(true) - $startedAt) * 1000),
@@ -96,7 +96,7 @@ class BackupController extends Controller
 
             return redirect()->route('settings.backup.edit')->with('error', 'Slanje backupa nije uspjelo: '.$exception->getMessage());
         } catch (Throwable $exception) {
-            Log::channel('backup')->warning('Backup failed', [
+            $diagnostics->error('Backup failed', [
                 'stage' => $backup === null ? 'archive' : 'mail',
                 'exception' => $exception::class,
                 'elapsed_ms' => (int) round((microtime(true) - $startedAt) * 1000),

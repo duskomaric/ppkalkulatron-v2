@@ -5,7 +5,6 @@ namespace App\Services;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Potraga za fiskalnim uređajem na lokalnoj mreži.
@@ -63,7 +62,7 @@ class NetworkScanner
         $ip = $this->localIp();
 
         if (! $ip) {
-            Log::warning('Skeniranje mreže: lokalna adresa nije pronađena.');
+            app(Diagnostics::class)->error('Skeniranje mreže: lokalna adresa nije pronađena.');
 
             return [];
         }

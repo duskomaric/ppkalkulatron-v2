@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Invoice;
+use App\Services\Diagnostics;
 use App\Services\FiscalReceiptStore;
 use App\Settings\CompanySettings;
 use Illuminate\Bus\Queueable;
@@ -11,7 +12,6 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 class InvoiceMail extends Mailable
 {
@@ -80,7 +80,7 @@ class InvoiceMail extends Mailable
             $binary = $receipts->binary($record);
 
             if ($binary === null) {
-                Log::warning('Fiskalni račun nije priložen, sadržaja nema', [
+                app(Diagnostics::class)->error('Fiskalni račun nije priložen, sadržaja nema', [
                     'invoice_id' => $this->invoice->id,
                     'fiscal_record_id' => $record->id,
                 ]);

@@ -7,6 +7,27 @@
 
 @section('content')
     <div>
+        @if ($taxRates === [])
+            <x-section-block variant="accent" class="mb-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <x-icon name="currency-euro" class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="text-sm font-black text-[var(--color-text-main)]">Poreske stope nisu preuzete</p>
+                            <p class="mt-1 text-xs text-[var(--color-text-dim)]">Artikli se mogu dodati tek kada se preuzmu stope sa dostupne fiskalne kase.</p>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ route('settings.fiscal.tax-rates.sync') }}">
+                        @csrf
+                        <input type="hidden" name="return_to" value="articles">
+                        <x-button variant="primary" class="w-full sm:w-auto">Preuzmi stope sa kase</x-button>
+                    </form>
+                </div>
+            </x-section-block>
+        @endif
+
         <x-search-bar :value="$q" placeholder="Pretraži artikle…" />
 
         <div>

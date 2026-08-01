@@ -38,23 +38,20 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Oznake koje uređaj priznaje. Prave vrijednosti dolaze iz /api/status →
-        // currentTaxRates; ovo su one koje je testna kasa javila.
-        Schema::create('tax_rates', function (Blueprint $table) {
+        // Katalog puni isključivo fiskalni uređaj kroz /api/status.
+        Schema::create('fiscal_tax_rates', function (Blueprint $table) {
             $table->id();
-            $table->string('label', 4)->unique();
-            $table->unsignedTinyInteger('rate')->default(0);
-            $table->string('category_name', 32)->nullable();
+            $table->string('label', 16);
+            $table->decimal('rate', 5, 2);
+            $table->string('category_name', 120);
+            $table->unsignedInteger('group_id');
+            $table->unsignedTinyInteger('category_type')->nullable();
+            $table->timestampTz('valid_from')->nullable();
+            $table->boolean('is_current')->default(false)->index();
+            $table->timestampTz('synced_at');
             $table->timestamps();
+            $table->unique(['group_id', 'label']);
         });
-
-        DB::table('tax_rates')->insert(collect([
-            ['F', 11, 'ECAL'], ['N', 0, 'N-TAX'], ['P', 40, 'PBL'], ['E', 6, 'STT'],
-            ['T', 2, 'TOTL'], ['A', 9, 'VAT'], ['B', 0, 'VAT'], ['C', 0, 'VAT-EXCL'],
-        ])->map(fn ($r) => [
-            'label' => $r[0], 'rate' => $r[1], 'category_name' => $r[2],
-            'created_at' => now(), 'updated_at' => now(),
-        ])->all());
 
         DB::table('currencies')->insert([
             ['code' => 'BAM', 'name' => 'Konvertibilna marka', 'symbol' => 'KM', 'is_default' => true, 'created_at' => now(), 'updated_at' => now()],
@@ -64,7 +61,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('tax_rates');
+        Schema::dropIfExists('fiscal_tax_rates');
         Schema::dropIfExists('exchange_rates');
         Schema::dropIfExists('bank_accounts');
         Schema::dropIfExists('currencies');

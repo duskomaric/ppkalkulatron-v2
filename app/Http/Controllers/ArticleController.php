@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ArticleRequest;
 use App\Models\Article;
-use App\Models\TaxRate;
+use App\Models\FiscalTaxRate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,7 +19,7 @@ class ArticleController extends Controller
                 ->paginate(20)
                 ->withQueryString(),
             'q' => $request->string('q')->toString(),
-            'taxRates' => TaxRate::query()->pluck('rate', 'label')->all(),
+            'taxRates' => FiscalTaxRate::query()->current()->pluck('rate', 'label')->all(),
         ]);
     }
 
@@ -68,11 +68,11 @@ class ArticleController extends Controller
     {
         return [
             'article' => $article,
-            'taxRateOptions' => ['' => '—'] + TaxRate::query()
+            'taxRateOptions' => FiscalTaxRate::query()->current()
                 ->orderBy('label')
-                ->get(['label', 'rate'])
-                ->mapWithKeys(fn (TaxRate $taxRate): array => [
-                    $taxRate->label => $taxRate->label.' — '.$taxRate->rate.'%',
+                ->get(['label', 'rate', 'category_name'])
+                ->mapWithKeys(fn (FiscalTaxRate $taxRate): array => [
+                    $taxRate->label => $taxRate->label.' — '.$taxRate->category_name.' ('.$taxRate->rate.'%)',
                 ])
                 ->all(),
         ];

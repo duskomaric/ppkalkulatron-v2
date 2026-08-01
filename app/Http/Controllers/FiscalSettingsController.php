@@ -6,12 +6,15 @@ use App\Http\Requests\EnterFiscalPinRequest;
 use App\Http\Requests\FindFiscalRequestRequest;
 use App\Http\Requests\ScanFiscalNetworkRequest;
 use App\Http\Requests\UpdateFiscalSettingsRequest;
+use App\Models\FiscalTaxRate;
 use App\Services\FiscalDeviceHealth;
+use App\Services\FiscalTaxRateSynchronizer;
 use App\Services\NetworkScanner;
 use App\Services\OFSService;
 use App\Settings\FiscalSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
 use Throwable;
 
@@ -22,6 +25,7 @@ class FiscalSettingsController extends Controller
         return view('settings.fiscal', [
             'settings' => $settings,
             'fiscalHealth' => $health->current(),
+            'taxRates' => FiscalTaxRate::query()->current()->orderBy('category_name')->orderBy('label')->get(),
         ]);
     }
 
@@ -50,7 +54,7 @@ class FiscalSettingsController extends Controller
     }
 
     /** Provjera dostupnosti i poreskih oznaka uređaja. */
-    public function test(FiscalDeviceHealth $health, OFSService $ofs)
+    public function test(FiscalDeviceHealth $health, OFSService $ofs, FiscalTaxRateSynchronizer $taxRates): RedirectResponse
     {
         try {
             $attention = $ofs->testAttention();
@@ -80,17 +84,33 @@ class FiscalSettingsController extends Controller
 
             $health->markReady();
 
-            $labels = collect($data['currentTaxRates']['taxCategories'] ?? [])
-                ->flatMap(fn ($c) => $c['taxRates'] ?? [])
-                ->map(fn ($r) => ($r['label'] ?? '?').' '.($r['rate'] ?? '?').'%')
-                ->implode(', ');
+            $synced = $taxRates->sync($data);
 
             return redirect()->route('settings.fiscal.edit')->with('status', 'Uređaj je dostupan. UID '.($data['uid'] ?? '—').
-                ($labels ? '. Oznake: '.$labels : ''));
+                ". Preuzeto poreskih stopa: {$synced['count']}.");
         } catch (Throwable $e) {
             $health->markUnavailable();
 
             return $this->fiscalError($e);
+        }
+    }
+
+    public function syncTaxRates(Request $request, FiscalDeviceHealth $health, FiscalTaxRateSynchronizer $taxRates): RedirectResponse
+    {
+        try {
+            $synced = $taxRates->syncFromDevice();
+            $health->markReady();
+
+            return redirect()->route($request->input('return_to') === 'articles' ? 'articles.create' : 'settings.fiscal.edit')
+                ->with('status', "Preuzeto poreskih stopa: {$synced['count']}.");
+        } catch (RuntimeException $exception) {
+            $health->markUnavailable();
+
+            return redirect()->back()->with('error', $exception->getMessage());
+        } catch (Throwable $exception) {
+            $health->markUnavailable();
+
+            return $this->fiscalError($exception);
         }
     }
 

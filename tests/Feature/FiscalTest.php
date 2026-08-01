@@ -2,19 +2,14 @@
 
 use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
-use App\Models\Client;
 use App\Models\ExchangeRate;
 use App\Models\Invoice;
-use App\Models\TaxRate;
 use App\Services\Diagnostics;
 use App\Services\FiscalReceiptStore;
 use App\Services\FiscalService;
-use App\Services\InvoiceWriter;
 use App\Services\NetworkScanner;
 use App\Services\OFSService;
 use App\Settings\FiscalSettings;
-use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -311,64 +306,6 @@ it('ne otkriva tehnički detalj greške fiskalnog uređaja', function () {
 
     unlocked()->post(route('settings.fiscal.test'))
         ->assertSessionHas('error', 'Fiskalni uređaj trenutno nije dostupan. Pokušajte ponovo.');
-});
-
-it('stavku bez poreza šalje sa nultom stopom, ne sa 9%', function () {
-    fakeDevice();
-
-    $invoice = app(InvoiceWriter::class)->create([
-        'client_id' => Client::create(['name' => 'Kupac'])->id,
-        'payment_type' => 'Cash', 'currency' => 'BAM', 'template' => 'classic', 'language' => 'sr_Latn',
-        'date' => now()->format('Y-m-d'), 'due_date' => now()->addDay()->format('Y-m-d'),
-        'items' => [[
-            'article_id' => null, 'name' => 'Bez poreza', 'unit' => 'kom',
-            'tax_label' => null, 'quantity' => 1, 'unit_price' => '100.00',
-        ]],
-    ]);
-
-    app(FiscalService::class)->fiscalize($invoice);
-
-    Http::assertSent(function ($request) {
-        $label = $request['invoiceRequest']['items'][0]['labels'][0];
-
-        return (int) TaxRate::where('label', $label)->value('rate') === 0;
-    });
-});
-
-it('odbija stavku bez poreske oznake kada uređaj nema nultu stopu', function () {
-    TaxRate::query()->where('rate', 0)->delete();
-    $invoice = makeInvoice();
-    $invoice->items()->update(['tax_label' => null, 'tax_rate' => 0]);
-
-    app(FiscalService::class)->fiscalize($invoice->fresh());
-})->throws(RuntimeException::class, 'Stavka je bez poreske oznake, a uređaj ne prijavljuje nijednu nultu stopu.');
-
-it('nultu poresku oznaku čita samo jednom za više stavki bez poreza', function () {
-    fakeDevice();
-
-    $invoice = makeInvoice();
-    $invoice->items()->update(['tax_label' => null, 'tax_rate' => 0]);
-    $invoice->items()->create([
-        'name' => 'Druga stavka bez poreza',
-        'unit' => 'kom',
-        'quantity' => 1,
-        'unit_price' => 100,
-        'subtotal' => 100,
-        'tax_rate' => 0,
-        'tax_amount' => 0,
-        'total' => 100,
-    ]);
-
-    $zeroRateQueries = 0;
-    DB::listen(function (QueryExecuted $query) use (&$zeroRateQueries): void {
-        if (str_contains($query->sql, '"tax_rates"') && in_array(0, $query->bindings, true)) {
-            $zeroRateQueries++;
-        }
-    });
-
-    app(FiscalService::class)->fiscalize($invoice->fresh());
-
-    expect($zeroRateQueries)->toBe(1);
 });
 
 it('cijena × količina daje ukupno i poslije preračuna valute', function () {

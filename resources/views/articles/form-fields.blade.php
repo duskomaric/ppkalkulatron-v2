@@ -30,7 +30,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <x-form-select label="Poreska oznaka" name="tax_label" :value="$article?->tax_label"
                            :options="$taxRateOptions"
-                           hint="Uređaj javlja koje oznake priznaje." />
+                           required
+                           hint="Preuzeta direktno sa trenutno dostupne fiskalne kase." />
 
             <x-form-input label="GTIN" name="gtin" :value="$article?->gtin"
                           hint="Barkod, 8 do 14 cifara." />

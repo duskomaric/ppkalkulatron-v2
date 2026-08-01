@@ -4,9 +4,7 @@ namespace App\Services;
 
 use App\Models\FiscalRecord;
 use App\Models\Invoice;
-use App\Models\TaxRate;
 use App\Settings\FiscalSettings;
-use RuntimeException;
 
 class FiscalPayloadFactory
 {
@@ -65,9 +63,8 @@ class FiscalPayloadFactory
     private function items(Invoice $invoice): array
     {
         $toBam = fn (int $pfening): int => $this->converter->toBam($pfening, $invoice->currency, $invoice->date);
-        $zeroRateLabel = null;
 
-        return $invoice->items->map(function ($item) use ($toBam, &$zeroRateLabel): array {
+        return $invoice->items->map(function ($item) use ($toBam): array {
             $barcode = preg_replace('/\D/', '', (string) $item->article?->gtin);
             $gtin = strlen($barcode) >= 8
                 ? substr($barcode, 0, 14)
@@ -80,23 +77,9 @@ class FiscalPayloadFactory
                 'quantity' => (float) $item->quantity,
                 'unitPrice' => $total / max(1, (int) $item->quantity) / 100,
                 'totalAmount' => $total / 100,
-                'labels' => [$item->tax_label ?: ($zeroRateLabel ??= $this->zeroRateLabel())],
+                'labels' => [$item->tax_label],
             ];
         })->all();
-    }
-
-    private function zeroRateLabel(): string
-    {
-        $label = TaxRate::query()->where('rate', 0)->orderBy('label')->value('label');
-
-        if ($label === null) {
-            throw new RuntimeException(
-                'Stavka je bez poreske oznake, a uređaj ne prijavljuje nijednu nultu stopu. '.
-                'Dodijelite poresku oznaku stavci prije fiskalizacije.'
-            );
-        }
-
-        return $label;
     }
 
     private function documentFormat(string $layout): string

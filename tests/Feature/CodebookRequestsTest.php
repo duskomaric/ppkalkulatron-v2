@@ -19,7 +19,7 @@ use App\Models\Article;
 use App\Models\BankAccount;
 use App\Models\Client;
 use App\Models\Currency;
-use App\Models\TaxRate;
+use App\Models\FiscalTaxRate;
 
 /*
  * Form Requesti šifarnika: ArticleRequest, BankAccountRequest, ClientRequest i
@@ -30,7 +30,7 @@ use App\Models\TaxRate;
 it('traži obavezna polja šifarnika', function (string $route, array $errors) {
     $this->post(route($route), [])->assertSessionHasErrors($errors);
 })->with([
-    'artikal' => ['articles.store', ['name', 'unit']],
+    'artikal' => ['articles.store', ['name', 'unit', 'tax_label']],
     'bankovni račun' => ['bank-accounts.store', ['bank_name', 'account_number']],
     'klijent' => ['clients.store', ['name']],
     'valuta' => ['currencies.store', ['code', 'name', 'symbol']],
@@ -70,7 +70,7 @@ it('validira preostale konfiguracione zahtjeve prije rada kontrolera', function 
 });
 
 it('odbija neispravan artikal', function (array $payload, string $error) {
-    $this->post(route('articles.store'), $payload + ['name' => 'Usluga', 'unit' => 'kom'])
+    $this->post(route('articles.store'), $payload + ['name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F'])
         ->assertSessionHasErrors($error);
 })->with([
     'predug naziv' => [['name' => str_repeat('a', 256)], 'name'],
@@ -84,24 +84,24 @@ it('odbija neispravan artikal', function (array $payload, string $error) {
 ]);
 
 it('prima svaku jedinicu mjere iz šifarnika', function (Unit $unit) {
-    $this->post(route('articles.store'), ['name' => 'Usluga', 'unit' => $unit->value])
+    $this->post(route('articles.store'), ['name' => 'Usluga', 'unit' => $unit->value, 'tax_label' => 'F'])
         ->assertSessionHasNoErrors();
 
     expect(Article::sole()->unit)->toBe($unit);
 })->with(fn () => Unit::cases());
 
 it('prima svaku poresku oznaku koju uređaj prijavljuje', function () {
-    foreach (TaxRate::pluck('label') as $label) {
+    foreach (FiscalTaxRate::query()->current()->pluck('label') as $label) {
         $this->post(route('articles.store'), ['name' => 'Usluga '.$label, 'unit' => 'kom', 'tax_label' => $label])
             ->assertSessionHasNoErrors();
     }
 
-    expect(Article::count())->toBe(TaxRate::count());
+    expect(Article::count())->toBe(FiscalTaxRate::query()->current()->count());
 });
 
 it('čuva cijenu artikla u pfeningima', function () {
     $this->post(route('articles.store'), [
-        'name' => 'Usluga', 'unit' => 'sat', 'last_unit_price' => '80.55',
+        'name' => 'Usluga', 'unit' => 'sat', 'tax_label' => 'F', 'last_unit_price' => '80.55',
     ])->assertRedirect(route('articles.index'));
 
     expect(Article::sole()->last_unit_price)->toBe(8055);
@@ -164,7 +164,7 @@ it('gasi prekidač koji forma nije poslala', function (string $route, string $fi
 
     expect($model::sole()->{$field})->toBeFalse();
 })->with([
-    'artikal' => ['articles.store', 'is_active', Article::class, ['name' => 'Usluga', 'unit' => 'kom']],
+    'artikal' => ['articles.store', 'is_active', Article::class, ['name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F']],
     'klijent' => ['clients.store', 'is_active', Client::class, ['name' => 'Kupac']],
     'bankovni račun' => [
         'bank-accounts.store', 'show_on_documents', BankAccount::class,

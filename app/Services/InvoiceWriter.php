@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Article;
+use App\Models\FiscalTaxRate;
 use App\Models\Invoice;
-use App\Models\TaxRate;
 use App\Settings\DocumentSettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -66,9 +66,7 @@ class InvoiceWriter
         $subtotal = 0;
         $taxTotal = 0;
 
-        // Šifarnik stopa se čita jednom, a ne po stavci: račun sa deset stavki je
-        // inače značio deset istih upita na `tax_rates`.
-        $taxRates = TaxRate::basisPointsByLabel();
+        $taxRates = FiscalTaxRate::currentBasisPointsByLabel();
 
         foreach ($items as $row) {
             $line = $this->line($row, $taxRates);
@@ -97,8 +95,8 @@ class InvoiceWriter
     {
         $quantity = max(1, (int) $row['quantity']);
         $unitPrice = (int) round(((float) $row['unit_price']) * 100);
-        $taxLabel = $row['tax_label'] ?: null;
-        $taxRate = $taxLabel ? (int) ($taxRates[$taxLabel] ?? 0) : 0;
+        $taxLabel = $row['tax_label'];
+        $taxRate = (int) ($taxRates[$taxLabel] ?? throw new \RuntimeException('Izabrana poreska oznaka više nije dostupna na fiskalnom uređaju.'));
 
         $total = $quantity * $unitPrice;
         $subtotal = (int) round($total / (1 + $taxRate / 10000));

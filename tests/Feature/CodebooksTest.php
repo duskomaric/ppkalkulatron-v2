@@ -5,7 +5,7 @@ use App\Models\BankAccount;
 use App\Models\Client;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
-use App\Models\TaxRate;
+use App\Models\FiscalTaxRate;
 use App\Services\PinLock;
 use App\Settings\CompanySettings;
 use App\Settings\DocumentSettings;
@@ -417,18 +417,18 @@ it('prikazuje prilagodljive kartice za telefon i desktop', function (string $rou
 })->with(['clients.index', 'articles.index']);
 
 it('priprema porezne stope u kontroleru artikala', function () {
-    TaxRate::query()->where('label', 'F')->update(['rate' => 11]);
+    FiscalTaxRate::query()->where('label', 'F')->update(['rate' => 11]);
     $article = Article::create(['name' => 'Usluga s porezom', 'unit' => 'kom', 'tax_label' => 'F']);
 
     $this->get(route('articles.index'))
         ->assertSuccessful()
-        ->assertViewHas('taxRates', fn (array $taxRates): bool => $taxRates['F'] === 11)
+        ->assertViewHas('taxRates', fn (array $taxRates): bool => (float) $taxRates['F'] === 11.0)
         ->assertSee($article->name)
-        ->assertSee('F (11%)');
+        ->assertSee('F (11.00%)');
 
     $this->get(route('articles.create'))
         ->assertSuccessful()
-        ->assertViewHas('taxRateOptions', fn (array $options): bool => $options['F'] === 'F — 11%');
+        ->assertViewHas('taxRateOptions', fn (array $options): bool => $options['F'] === 'F — ECAL (11.00%)');
 });
 
 it('mijenja cijenu artikla u pfeninge i briše artikl', function () {

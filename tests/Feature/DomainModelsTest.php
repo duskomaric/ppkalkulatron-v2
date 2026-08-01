@@ -3,7 +3,7 @@
 use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
 use App\Models\Article;
-use App\Models\TaxRate;
+use App\Models\FiscalTaxRate;
 use App\Services\FiscalReceiptStore;
 
 it('povezuje stavku sa računom i artiklom uz ispravne castove', function () {
@@ -46,12 +46,12 @@ it('povezuje fiskalni zapis, sadržaj računa i njegov izvorni račun', function
 });
 
 it('izvodi stope u baznim poenima za obračun računa', function () {
-    TaxRate::query()->delete();
-    $rate = TaxRate::create(['label' => 'F', 'rate' => 11, 'category_name' => 'Standardna']);
-    TaxRate::create(['label' => 'E', 'rate' => 0, 'category_name' => 'Oslobođeno']);
+    FiscalTaxRate::query()->delete();
+    $rate = FiscalTaxRate::factory()->create(['label' => 'F', 'rate' => 11, 'category_name' => 'Standardna']);
+    FiscalTaxRate::factory()->create(['label' => 'E', 'rate' => 0, 'category_name' => 'Oslobođeno']);
 
     expect($rate->basisPoints())->toBe(1100)
-        ->and(TaxRate::basisPointsByLabel())->toBe(['F' => 1100, 'E' => 0]);
+        ->and(FiscalTaxRate::currentBasisPointsByLabel())->toBe(['F' => 1100, 'E' => 0]);
 });
 
 it('čuva obje strane veze originalnog računa i storna', function () {

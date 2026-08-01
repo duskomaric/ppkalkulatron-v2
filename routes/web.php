@@ -19,6 +19,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UnlockController;
 use App\Http\Middleware\EnsureUnlocked;
 use App\Http\Middleware\LogDiagnosticAction;
+use App\Http\Middleware\SyncFiscalTaxRates;
 use Illuminate\Support\Facades\Route;
 
 // Ekran za otključavanje mora biti dostupan i zaključanoj aplikaciji.
@@ -40,9 +41,16 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
     Route::post('/racuni/{invoice}/storno', [FiscalController::class, 'createRefund'])->name('invoices.create-refund');
     Route::post('/racuni/{invoice}/fiskalni-storno', [FiscalController::class, 'refund'])->name('invoices.fiscal-refund');
     Route::get('/fiskalni-racun/{record}', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
-    Route::resource('racuni', InvoiceController::class)->parameters(['racuni' => 'invoice'])->names('invoices');
+    Route::resource('racuni', InvoiceController::class)
+        ->parameters(['racuni' => 'invoice'])
+        ->names('invoices')
+        ->middlewareFor(['create', 'store', 'edit', 'update'], SyncFiscalTaxRates::class);
     Route::resource('klijenti', ClientController::class)->parameters(['klijenti' => 'client'])->names('clients')->except('show');
-    Route::resource('artikli', ArticleController::class)->parameters(['artikli' => 'article'])->names('articles')->except('show');
+    Route::resource('artikli', ArticleController::class)
+        ->parameters(['artikli' => 'article'])
+        ->names('articles')
+        ->except('show')
+        ->middlewareFor(['create', 'store', 'edit', 'update'], SyncFiscalTaxRates::class);
 
     Route::resource('bankovni-racuni', BankAccountController::class)->parameters(['bankovni-racuni' => 'bankAccount'])->names('bank-accounts')->except('show');
     Route::post('/valute/{currency}/kurs', [CurrencyController::class, 'storeRate'])->name('currencies.rates.store');
@@ -74,6 +82,7 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
     Route::get('/podesavanja/fiskalizacija/status', [FiscalSettingsController::class, 'status'])->name('settings.fiscal.status');
     Route::put('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'update'])->name('settings.fiscal.update');
     Route::post('/podesavanja/fiskalizacija/provjera', [FiscalSettingsController::class, 'test'])->name('settings.fiscal.test');
+    Route::post('/podesavanja/fiskalizacija/stope', [FiscalSettingsController::class, 'syncTaxRates'])->name('settings.fiscal.tax-rates.sync');
     Route::post('/podesavanja/fiskalizacija/skeniraj', [FiscalSettingsController::class, 'scan'])->name('settings.fiscal.scan');
     Route::post('/podesavanja/fiskalizacija/pin', [FiscalSettingsController::class, 'pin'])->name('settings.fiscal.pin');
     Route::post('/podesavanja/fiskalizacija/zahtjev', [FiscalSettingsController::class, 'findRequest'])->name('settings.fiscal.find-request');

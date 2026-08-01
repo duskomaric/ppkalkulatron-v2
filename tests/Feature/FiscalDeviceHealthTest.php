@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\FiscalTaxRate;
 use App\Services\FiscalDeviceHealth;
 use App\Services\NetworkScanner;
 use App\Settings\FiscalSettings;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -42,7 +44,12 @@ it('prijavljuje uređaj koji traži PIN', function () {
 it('ažurira indikator nakon ručne provjere uređaja', function () {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
-        '*/api/status' => Http::response(['gsc' => [], 'uid' => 'test-device'], 200),
+        '*/api/status' => Http::response([
+            'gsc' => [], 'uid' => 'test-device',
+            'currentTaxRates' => ['groupId' => 1, 'taxCategories' => [[
+                'name' => 'ECAL', 'taxRates' => [['label' => 'F', 'rate' => 11]],
+            ]]],
+        ], 200),
     ]);
 
     unlocked()->post(route('settings.fiscal.test'))
@@ -59,7 +66,7 @@ it('iz ručne provjere prikazuje poreske oznake i UID uređaja', function () {
         '*/api/status' => Http::response([
             'gsc' => [],
             'uid' => 'esir-123',
-            'currentTaxRates' => ['taxCategories' => [[
+            'currentTaxRates' => ['groupId' => 1, 'taxCategories' => [[
                 'taxRates' => [['label' => 'F', 'rate' => 11]],
             ]]],
         ], 200),
@@ -67,7 +74,114 @@ it('iz ručne provjere prikazuje poreske oznake i UID uređaja', function () {
 
     unlocked()->post(route('settings.fiscal.test'))
         ->assertRedirect(route('settings.fiscal.edit'))
-        ->assertSessionHas('status', 'Uređaj je dostupan. UID esir-123. Oznake: F 11%');
+        ->assertSessionHas('status', 'Uređaj je dostupan. UID esir-123. Preuzeto poreskih stopa: 1.');
+});
+
+it('preuzima poreske oznake bez promjene ćirilice', function () {
+    Http::fake([
+        '*/api/attention' => Http::response('', 200),
+        '*/api/status' => Http::response([
+            'currentTaxRates' => [
+                'groupId' => 7,
+                'taxCategories' => [[
+                    'categoryType' => 0,
+                    'name' => 'О-ПДВ',
+                    'taxRates' => [['label' => 'Ђ', 'rate' => 20]],
+                ]],
+            ],
+            'allTaxRates' => [[
+                'groupId' => 7,
+                'validFrom' => '2026-01-01T00:00:00+01:00',
+                'taxCategories' => [[
+                    'categoryType' => 0,
+                    'name' => 'О-ПДВ',
+                    'taxRates' => [['label' => 'Ђ', 'rate' => 20]],
+                ]],
+            ]],
+        ]),
+    ]);
+
+    unlocked()->post(route('settings.fiscal.tax-rates.sync'))
+        ->assertRedirect(route('settings.fiscal.edit'))
+        ->assertSessionHas('status', 'Preuzeto poreskih stopa: 1.');
+
+    expect(FiscalTaxRate::query()->current()->sole())
+        ->label->toBe('Ђ')
+        ->category_name->toBe('О-ПДВ')
+        ->rate->toBe('20.00');
+});
+
+it('ne mijenja katalog kada kasa nije dostupna', function () {
+    Http::fake(['*/api/attention' => Http::response('', 503)]);
+
+    unlocked()->post(route('settings.fiscal.tax-rates.sync'))
+        ->assertRedirect()
+        ->assertSessionHas('error', 'Fiskalni uređaj nije dostupan (HTTP 503).');
+
+    expect(FiscalTaxRate::query()->current()->count())->toBe(1);
+});
+
+it('ne mijenja katalog kada status kase nije dostupan', function () {
+    Http::fake([
+        '*/api/attention' => Http::response('', 200),
+        '*/api/status' => Http::response('', 503),
+    ]);
+
+    unlocked()->post(route('settings.fiscal.tax-rates.sync'))
+        ->assertRedirect()
+        ->assertSessionHas('error', 'Fiskalni uređaj nije dostupan (HTTP 503).');
+});
+
+it('odbija katalog bez trenutno važećih stopa', function () {
+    Http::fake([
+        '*/api/attention' => Http::response('', 200),
+        '*/api/status' => Http::response(['currentTaxRates' => ['groupId' => 1]], 200),
+    ]);
+
+    unlocked()->post(route('settings.fiscal.tax-rates.sync'))
+        ->assertRedirect()
+        ->assertSessionHas('error', 'Fiskalni uređaj nije poslao trenutno važeće poreske stope.');
+});
+
+it('ne dozvoljava unos artikla kada kasa nije dostupna', function () {
+    $this->app['env'] = 'production';
+    $this->withoutMiddleware(PreventRequestForgery::class);
+    Http::fake(['*/api/attention' => Http::response('', 503)]);
+
+    unlocked()->post(route('articles.store'), [
+        'name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F',
+    ])->assertRedirect()
+        ->assertSessionHas('error', 'Fiskalni uređaj nije dostupan (HTTP 503).');
+});
+
+it('vraća JSON grešku kada fiskalna kasa nije dostupna', function () {
+    $this->app['env'] = 'production';
+    $this->withoutMiddleware(PreventRequestForgery::class);
+    Http::fake(['*/api/attention' => Http::response('', 503)]);
+
+    unlocked()->postJson(route('articles.store'), [
+        'name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F',
+    ])->assertUnprocessable()
+        ->assertJson(['message' => 'Fiskalni uređaj nije dostupan (HTTP 503).']);
+});
+
+it('sinhronizuje stope prije spremanja artikla', function () {
+    $this->app['env'] = 'production';
+    $this->withoutMiddleware(PreventRequestForgery::class);
+    Http::fake([
+        '*/api/attention' => Http::response('', 200),
+        '*/api/status' => Http::response([
+            'currentTaxRates' => ['groupId' => 2, 'taxCategories' => [[
+                'name' => 'О-ПДВ', 'taxRates' => [['label' => 'Ђ', 'rate' => 20]],
+            ]]],
+        ]),
+    ]);
+
+    unlocked()->post(route('articles.store'), [
+        'name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'Ђ',
+    ])->assertRedirect(route('articles.index'));
+
+    expect(FiscalTaxRate::query()->current()->sole()->label)->toBe('Ђ');
 });
 
 it('označava uređaj nedostupnim kada ručna provjera ne prođe', function () {

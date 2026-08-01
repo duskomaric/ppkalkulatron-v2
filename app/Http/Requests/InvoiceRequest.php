@@ -6,7 +6,7 @@ use App\Enums\DocumentLanguage;
 use App\Enums\DocumentTemplate;
 use App\Enums\PaymentType;
 use App\Enums\Unit;
-use App\Models\TaxRate;
+use App\Models\FiscalTaxRate;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -34,7 +34,7 @@ class InvoiceRequest extends FormRequest
             'items.*.name' => ['required', 'string', 'max:255'],
             'items.*.description' => ['nullable', 'string', 'max:500'],
             'items.*.unit' => ['required', Rule::enum(Unit::class)],
-            'items.*.tax_label' => ['nullable', Rule::in(array_keys(TaxRate::basisPointsByLabel()))],
+            'items.*.tax_label' => ['required', Rule::in(array_keys(FiscalTaxRate::currentBasisPointsByLabel()))],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ];

@@ -35,7 +35,7 @@
                                     <x-status-badge :label="$status['label']" :color="$status['color']" />
                                 </div>
 
-                                <div class="h-[1px] w-full -my-0.5 bg-[var(--color-border)]"></div>
+                                <div class="h-[1px] w-full my-1 bg-[var(--color-border)]"></div>
 
                                 <div class="flex justify-between items-end gap-3">
                                     <div class="flex gap-4 min-w-0">

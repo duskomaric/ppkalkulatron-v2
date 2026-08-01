@@ -254,6 +254,15 @@ it('stavlja čuvanje fiskalnih podešavanja na kraj ekrana', function () {
         ->and(strrpos($html, 'Sačuvaj izmjene'))->toBeGreaterThan(strpos($html, 'Potraga po RequestId'));
 });
 
+it('objašnjava zašto se stope ne mogu preuzeti dok kasa nije spremna', function () {
+    $html = $this->get(route('settings.fiscal.edit'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('Prvo provjerite vezu sa fiskalnom kasom.')
+        ->and($html)->toContain('Kasa nije dostupna. Provjerite adresu, mrežu i podatke za pristup.');
+});
+
 it('čita opseg adresa iz teksta', function () {
     $scanner = app(NetworkScanner::class);
 

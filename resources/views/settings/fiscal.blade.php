@@ -9,7 +9,7 @@
         @csrf
         @method('PUT')
 
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
+        <x-section-block id="fiscal-device-settings" variant="card" class="sm:p-8 space-y-6">
             <x-section-header icon="file-text" title="Fiskalna kasa" :help="route('help').'#fiskalizacija'" />
 
             <div class="space-y-2">
@@ -67,12 +67,16 @@
                         <p class="mt-1 text-xs text-[var(--color-text-dim)]">Nakon što sačuvate i provjerite kasu, preuzmite njene stope. Oznake ostaju identične odgovoru uređaja, uključujući ćirilicu.</p>
                     </div>
                 </div>
-                <x-button variant="primary" type="submit" form="sync-tax-rates" class="w-full sm:w-auto disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-                          x-bind:disabled="fiscalState !== 'ready'"
-                          x-bind:title="fiscalState === 'ready' ? '' : 'Preuzimanje je dostupno kada je kasa povezana.'">
+                <x-button variant="primary" type="submit" form="sync-tax-rates" class="w-full sm:w-auto"
+                          x-bind:aria-disabled="fiscalState !== 'ready'"
+                          x-bind:class="fiscalState !== 'ready' && 'cursor-not-allowed opacity-50 shadow-none'"
+                          x-on:click="if (fiscalState !== 'ready') { $event.preventDefault(); document.getElementById('fiscal-device-settings')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); window.dispatchEvent(new CustomEvent('app-flash', { detail: { message: 'Prvo provjerite vezu sa fiskalnom kasom.', type: 'error' } })); }">
                     Preuzmi stope
                 </x-button>
             </div>
+
+            <p x-show="fiscalState !== 'ready'" x-cloak class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300"
+               x-text="fiscalState === 'pin_required' ? 'Kasa traži PIN sigurnosnog elementa. Unesite ga prije preuzimanja stopa.' : fiscalState === 'unavailable' ? 'Kasa nije dostupna. Provjerite adresu, mrežu i podatke za pristup.' : 'Provjeravam vezu sa kasom. Preuzimanje stopa će biti dostupno kada je potvrđena.'"></p>
 
             @if ($taxRates->isEmpty())
                 <p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">Stope još nisu preuzete. Bez njih nije moguće dodati artikal ni napraviti račun.</p>

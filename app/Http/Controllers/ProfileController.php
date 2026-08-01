@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
 use App\Settings\UserSettings;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function edit(UserSettings $settings)
+    public function edit(UserSettings $settings): View
     {
         return view('profile', ['user' => $settings]);
     }
 
-    public function update(UpdateProfileRequest $request, UserSettings $settings)
+    public function update(UpdateProfileRequest $request, UserSettings $settings): RedirectResponse
     {
         $data = $request->validated();
 

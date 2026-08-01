@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateMailSettingsRequest;
 use App\Settings\MailSettings;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class MailSettingsController extends Controller
 {
-    public function edit(MailSettings $settings)
+    public function edit(MailSettings $settings): View
     {
         return view('settings.mail', ['settings' => $settings]);
     }
 
-    public function update(UpdateMailSettingsRequest $request, MailSettings $settings)
+    public function update(UpdateMailSettingsRequest $request, MailSettings $settings): RedirectResponse
     {
         $data = $request->validated();
 

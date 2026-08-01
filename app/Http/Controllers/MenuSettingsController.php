@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateMenuSettingsRequest;
 use App\Settings\MenuSettings;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class MenuSettingsController extends Controller
 {
-    public function edit(MenuSettings $settings)
+    public function edit(MenuSettings $settings): View
     {
         return view('settings.menu', [
             'settings' => $settings,
@@ -19,7 +21,7 @@ class MenuSettingsController extends Controller
         ]);
     }
 
-    public function update(UpdateMenuSettingsRequest $request, MenuSettings $settings)
+    public function update(UpdateMenuSettingsRequest $request, MenuSettings $settings): RedirectResponse
     {
         $keys = array_keys(MenuSettings::modules());
         $data = $request->validated();

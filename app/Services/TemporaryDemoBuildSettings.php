@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Settings\BackupSettings;
 use App\Settings\CompanySettings;
 use App\Settings\DocumentSettings;
 use App\Settings\FiscalSettings;
 use App\Settings\MailSettings;
+use App\Settings\SecuritySettings;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Privremena početna konfiguracija za interne testne Android buildove.
@@ -15,10 +18,12 @@ use App\Settings\MailSettings;
 class TemporaryDemoBuildSettings
 {
     public function __construct(
+        private readonly BackupSettings $backupSettings,
         private readonly CompanySettings $companySettings,
         private readonly DocumentSettings $documentSettings,
         private readonly FiscalSettings $fiscalSettings,
         private readonly MailSettings $mailSettings,
+        private readonly SecuritySettings $securitySettings,
     ) {}
 
     /**
@@ -77,13 +82,24 @@ class TemporaryDemoBuildSettings
             'encryption' => 'tls',
         ])->save();
 
+        $this->backupSettings->fill([
+            'email' => 'duskomaric86@gmail.com',
+        ])->save();
+
+        $this->securitySettings->fill([
+            'pin_hash' => Hash::make('1111'),
+            'auto_lock_minutes' => 5,
+        ])->save();
+
         return true;
     }
 
     private function isPristine(): bool
     {
         return blank($this->companySettings->name)
+            && blank($this->backupSettings->email)
             && blank($this->fiscalSettings->api_key)
-            && blank($this->mailSettings->host);
+            && blank($this->mailSettings->host)
+            && blank($this->securitySettings->pin_hash);
     }
 }

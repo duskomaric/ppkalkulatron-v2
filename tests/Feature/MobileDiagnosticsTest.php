@@ -18,7 +18,7 @@ it('requires a diagnostic event name', function () {
 it('čuva grešku i bez detaljne dijagnostike, ali ne čuva običan događaj', function () {
     $normalEvent = 'diagnostic_test_normal_'.uniqid();
     $errorEvent = 'diagnostic_test_'.uniqid().'_failed';
-    $path = storage_path('logs/diagnostics-'.now()->format('Y-m-d').'.log');
+    $path = storage_path('logs/support-diagnostics-'.now()->format('Y-m-d').'.log');
     $before = is_file($path) ? (string) file_get_contents($path) : '';
 
     $this->postJson(route('mobile.diagnostics.store'), ['event' => $normalEvent])->assertSuccessful();

@@ -4,6 +4,7 @@ use App\Mail\DiagnosticsMail;
 use App\Services\Diagnostics;
 use App\Services\DiagnosticsArchive;
 use App\Settings\DiagnosticsSettings;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 it('jasno objašnjava sigurnost dijagnostike', function () {
@@ -30,12 +31,14 @@ it('sanitizuje tajne prije upisa u dijagnostički log', function () {
     $context = app(Diagnostics::class)->sanitize([
         'api_key' => 'ne-smije-izaći',
         'document_contents' => 'binarni-racun',
+        'error' => 'tajni-tehnički-detalj',
         'status' => 500,
     ]);
 
     expect($context)->toBe([
         'api_key' => '[redacted]',
         'document_contents' => '[redacted]',
+        'error' => '[redacted]',
         'status' => 500,
     ]);
 });
@@ -65,13 +68,43 @@ it('ne šalje dijagnostiku bez odredišnog emaila', function () {
         ->assertSessionHas('error', 'Prvo unesite email za dijagnostiku.');
 });
 
-it('gradi izvještaj bez dokumenata i tajni', function () {
+it('gradi izvještaj samo iz sigurnog kanala, bez dokumenata i tajni', function () {
+    $safeSecret = 'sigurna-tajna-'.uniqid();
+    $rawSecret = 'interna-tajna-'.uniqid();
+
+    app(Diagnostics::class)->error('Testirana sigurna greška', [
+        'api_key' => $safeSecret,
+    ]);
+    Log::channel('single')->error('Sirova interna greška', [
+        'exception' => $rawSecret,
+    ]);
+
     $archive = app(DiagnosticsArchive::class)->create();
     $contents = file_get_contents($archive['path']);
 
     expect($contents)
         ->toContain('ne sadrži račune')
-        ->not->toContain('ne-smije-izaći');
+        ->toContain('Testirana sigurna greška')
+        ->not->toContain($safeSecret)
+        ->not->toContain($rawSecret)
+        ->not->toContain('stacktrace');
+
+    @unlink($archive['path']);
+});
+
+it('bilježi samo sigurnu oznaku neprijavljene greške', function () {
+    $secretMessage = 'poruka-koja-ne-smije-biti-poslana-'.uniqid();
+
+    report(new RuntimeException($secretMessage));
+
+    $archive = app(DiagnosticsArchive::class)->create();
+    $contents = file_get_contents($archive['path']);
+
+    expect($contents)
+        ->toContain('Unhandled application exception')
+        ->toContain(RuntimeException::class)
+        ->not->toContain($secretMessage)
+        ->not->toContain('stacktrace');
 
     @unlink($archive['path']);
 });

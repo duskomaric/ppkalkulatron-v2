@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Diagnostics;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -29,6 +30,13 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontReportDuplicates();
+        $exceptions->report(function (Throwable $exception): void {
+            // Izvještaj za podršku dobija samo klasu i kod greške. Izvorna poruka
+            // i stack trace mogu sadržati korisničke ili tehničke podatke.
+            app(Diagnostics::class)->exception($exception);
+        });
+
         // JSON akcije (npr. slanje e-maila) dobijaju JSON greške, dok standardne
         // Laravel forme dobijaju redirect nazad sa porukama u sesiji.
         $exceptions->shouldRenderJsonWhen(

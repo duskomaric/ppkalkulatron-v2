@@ -18,7 +18,7 @@ class DiagnosticsArchive
             throw new RuntimeException('Dijagnostički izvještaj nije moguće pripremiti.');
         }
 
-        $logs = glob(storage_path('logs/diagnostics-*.log')) ?: [];
+        $logs = glob(storage_path('logs/support-diagnostics-*.log')) ?: [];
         rsort($logs);
         $logs = array_slice($logs, 0, 7);
         $contents = $this->header();

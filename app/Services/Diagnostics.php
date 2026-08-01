@@ -10,8 +10,9 @@ use Throwable;
 class Diagnostics
 {
     private const SENSITIVE_KEYS = [
-        'api_key', 'authorization', 'body', 'contents', 'email', 'html', 'pac',
-        'password', 'pdf', 'pin', 'secret', 'serial_number', 'token',
+        'api_key', 'authorization', 'body', 'contents', 'email', 'error', 'html',
+        'message', 'pac', 'password', 'pdf', 'pin', 'response', 'secret',
+        'serial_number', 'token',
     ];
 
     public function __construct(private DiagnosticsSettings $settings) {}
@@ -23,20 +24,19 @@ class Diagnostics
             return;
         }
 
-        Log::channel('diagnostics')->info($event, $this->context($context));
+        Log::channel('support-diagnostics')->info($event, $this->context($context));
     }
 
     /** Greške se čuvaju i kada detaljna dijagnostika nije uključena. */
     public function error(string $event, array $context = []): void
     {
-        Log::channel('diagnostics')->error($event, $this->context($context));
+        Log::channel('support-diagnostics')->error($event, $this->context($context));
     }
 
     public function exception(Throwable $exception): void
     {
         $this->error('Unhandled application exception', [
             'exception' => $exception::class,
-            'message' => $exception->getMessage(),
             'code' => $exception->getCode(),
         ]);
     }

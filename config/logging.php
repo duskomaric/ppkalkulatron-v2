@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'default' => 'diagnostics',
+    'default' => env('LOG_CHANNEL', 'stack'),
 
     /*
     |--------------------------------------------------------------------------
@@ -89,9 +89,11 @@ return [
             'replace_placeholders' => true,
         ],
 
-        'diagnostics' => [
+        // Jedini log koji korisnik može poslati podršci. U njega upisuje samo
+        // App\Services\Diagnostics, nakon uklanjanja osjetljivog konteksta.
+        'support-diagnostics' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/diagnostics.log'),
+            'path' => storage_path('logs/support-diagnostics.log'),
             'level' => 'debug',
             'days' => 7,
             'replace_placeholders' => true,

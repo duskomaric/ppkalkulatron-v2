@@ -68,6 +68,48 @@ it('ne šalje dijagnostiku bez odredišnog emaila', function () {
         ->assertSessionHas('error', 'Prvo unesite email za dijagnostiku.');
 });
 
+it('prikaže jasnu grešku kada se dijagnostički prilog ne može pripremiti', function () {
+    $settings = app(DiagnosticsSettings::class);
+    $settings->email = 'podrska@example.com';
+    $settings->save();
+
+    $this->mock(DiagnosticsArchive::class, function ($mock): void {
+        $mock->shouldReceive('create')->andThrow(new RuntimeException('Prilog nije dostupan.'));
+    });
+
+    $this->post(route('settings.diagnostics.send'))
+        ->assertRedirect(route('settings.diagnostics.edit'))
+        ->assertSessionHas('error', 'Slanje dijagnostike nije uspjelo: Prilog nije dostupan.');
+});
+
+it('ne otkriva tehnički detalj neočekivane greške pri slanju dijagnostike', function () {
+    $settings = app(DiagnosticsSettings::class);
+    $settings->email = 'podrska@example.com';
+    $settings->save();
+
+    $this->mock(DiagnosticsArchive::class, function ($mock): void {
+        $mock->shouldReceive('create')->andThrow(new LogicException('tajni tehnički detalj'));
+    });
+
+    $this->post(route('settings.diagnostics.send'))
+        ->assertRedirect(route('settings.diagnostics.edit'))
+        ->assertSessionHas('error', 'Slanje dijagnostike trenutno nije uspjelo. Pokušajte ponovo.');
+});
+
+it('renderuje dijagnostički email u zajedničkom okviru i dodaje tekstualni prilog', function () {
+    $path = storage_path('app/private/dijagnostika-test-'.uniqid().'.log');
+    file_put_contents($path, 'siguran test');
+
+    $mail = new DiagnosticsMail($path, 'dijagnostika.log');
+
+    expect($mail->render())
+        ->toContain('Dijagnostički izvještaj')
+        ->toContain('ppKalkulatron podrška')
+        ->and($mail->attachments()[0]->as)->toBe('dijagnostika.log');
+
+    @unlink($path);
+});
+
 it('gradi izvještaj samo iz sigurnog kanala, bez dokumenata i tajni', function () {
     $safeSecret = 'sigurna-tajna-'.uniqid();
     $rawSecret = 'interna-tajna-'.uniqid();

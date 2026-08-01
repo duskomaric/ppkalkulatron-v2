@@ -1,6 +1,6 @@
 @php
     $formatAmount = fn ($pfening) => number_format($pfening / 100, 2, ',', '.');
-    $currency = $invoice->currency ?: 'BAM';
+    $currency = $invoice->currencySymbol();
     // Porez se prikazuje i kad kompanija nije obveznik, ako ga na računu ima —
     // inače osnovica i ukupno ne bi bili u vezi.
     $showVat = ($company->is_vat_obligor ?? true) || $invoice->tax_total > 0;

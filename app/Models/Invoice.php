@@ -42,6 +42,17 @@ class Invoice extends Model
         return $this->belongsTo(Client::class);
     }
 
+    public function currencyDefinition(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class, 'currency', 'code');
+    }
+
+    /** Simbol se čita iz šifarnika, uz sigurnu oznaku za stare/nepoznate valute. */
+    public function currencySymbol(): string
+    {
+        return $this->currencyDefinition?->symbol ?: $this->currency;
+    }
+
     /** Račun čiji je ovo storno; obrnuta strana refund_invoice_id. */
     public function originalInvoice(): HasOne
     {

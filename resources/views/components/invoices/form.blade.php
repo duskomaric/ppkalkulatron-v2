@@ -6,6 +6,7 @@
     'defaultTemplate' => 'classic',
     'defaultLanguage' => 'sr_Latn',
     'defaultCurrency' => 'BAM',
+    'currencySymbols' => [],
     'defaultDueDays' => 15,
     'defaultNotes' => null,
     'defaultPaymentType' => 'Cash',
@@ -64,6 +65,7 @@
           clients: @js($clientOptions),
           taxRates: @js($taxRates),
           currency: @js($currencyCode),
+          currencySymbols: @js($currencySymbols),
           clientId: @js(old('client_id', $invoice?->client_id)),
           showMore: @js($errors->any()),
       })">
@@ -167,7 +169,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 items-start">
                 <x-form-select label="Valuta" name="currency" icon="credit-card" :show-placeholder="false" :value="$currencyCode"
                                 x-on:change="currency = $event.target.value"
-                                :options="$currencies->pluck('code', 'code')->all()" />
+                                :options="$currencies->mapWithKeys(fn ($currency) => [$currency->code => $currency->symbol.' — '.$currency->code])->all()" />
 
                 <x-form-select label="Jezik" name="language" icon="globe" :show-placeholder="false"
                                 :value="$invoice?->language?->value ?? $defaultLanguage"
@@ -275,7 +277,7 @@
                                                 </template>
                                                 <div class="flex gap-2 text-[10px]">
                                                     <span class="font-bold text-primary"
-                                                          x-text="money(article.last_unit_price) + ' ' + currency"></span>
+                                                          x-text="money(article.last_unit_price) + ' ' + currencySymbol()"></span>
                                                 </div>
                                             </div>
                                         </button>
@@ -307,7 +309,7 @@
                                 <input type="text" inputmode="numeric" :value="money(item.unit_price)"
                                        x-on:input="typePrice(item, $event)" x-on:focus="$event.target.select()"
                                        class="w-full h-[44px] min-h-[44px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-[var(--color-text-main)] font-bold text-sm py-2.5 pr-12 pl-10 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all text-right">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--color-text-dim)]" x-text="currency"></span>
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--color-text-dim)]" x-text="currencySymbol()"></span>
                             </div>
                         </div>
                     </div>
@@ -328,7 +330,7 @@
                         <span>PDV: <strong class="text-[var(--color-text-main)]" x-text="money(lineTax(item))"></strong></span>
                     </div>
                     <p class="text-base font-black text-primary tracking-tighter italic shrink-0"
-                       x-text="money(lineTotal(item)) + ' ' + currency"></p>
+                       x-text="money(lineTotal(item)) + ' ' + currencySymbol()"></p>
                 </div>
             </div>
         </template>
@@ -354,16 +356,16 @@
         <div class="flex-1 min-w-0 space-y-2">
             <div class="flex justify-between text-sm">
                 <span class="text-[var(--color-text-dim)]">Osnovica:</span>
-                <span class="font-bold text-[var(--color-text-main)]" x-text="money(subtotal()) + ' ' + currency"></span>
+                <span class="font-bold text-[var(--color-text-main)]" x-text="money(subtotal()) + ' ' + currencySymbol()"></span>
             </div>
             <div class="flex justify-between text-sm">
                 <span class="text-[var(--color-text-dim)]">PDV:</span>
-                <span class="font-bold text-[var(--color-text-main)]" x-text="money(taxTotal()) + ' ' + currency"></span>
+                <span class="font-bold text-[var(--color-text-main)]" x-text="money(taxTotal()) + ' ' + currencySymbol()"></span>
             </div>
             <div class="h-[1px] bg-primary/20"></div>
             <div class="flex justify-between items-center">
                 <span class="text-sm font-bold text-[var(--color-text-main)]">Ukupno</span>
-                <span class="text-xl font-black text-primary tracking-tighter italic" x-text="money(total()) + ' ' + currency"></span>
+                <span class="text-xl font-black text-primary tracking-tighter italic" x-text="money(total()) + ' ' + currencySymbol()"></span>
             </div>
         </div>
     </div>

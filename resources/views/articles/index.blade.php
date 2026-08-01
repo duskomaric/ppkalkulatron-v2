@@ -71,7 +71,7 @@
                                     <x-status-badge :label="$status['label']" :color="$status['color']" />
                                 </div>
 
-                                <div class="h-[1px] w-full bg-[var(--color-border)]"></div>
+                                <div class="h-[1px] w-full -my-0.5 bg-[var(--color-border)]"></div>
 
                                 <div class="flex justify-between items-end gap-3">
                                     <div class="flex gap-4">
@@ -83,7 +83,7 @@
                                         @if ($price)
                                             <span class="text-sm font-black text-[var(--color-text-main)] tracking-tighter italic leading-none">
                                                 {{ $price }}
-                                                <span class="text-[10px] opacity-60 not-italic uppercase font-bold">BAM</span>
+                                                <span class="text-[10px] opacity-60 not-italic font-bold">{{ $currencySymbol }}</span>
                                             </span>
                                         @else
                                             —
@@ -117,7 +117,7 @@
                                         @if ($price)
                                             <p class="text-sm font-black text-[var(--color-text-main)] tracking-tighter italic leading-none">
                                                 {{ $price }}
-                                                <span class="text-[10px] opacity-60 not-italic uppercase font-bold">BAM</span>
+                                                <span class="text-[10px] opacity-60 not-italic font-bold">{{ $currencySymbol }}</span>
                                             </p>
                                         @else
                                             <p class="text-xs font-bold text-[var(--color-text-muted)]">—</p>

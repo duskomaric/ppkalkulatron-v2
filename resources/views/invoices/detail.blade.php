@@ -21,7 +21,7 @@
                 @endif
                 <x-details-item icon="clock" label="Dospijeće" :value="$invoice->due_date->format('d.m.Y.')"
                                 color="bg-green-500/10 text-green-500" />
-                <x-details-item icon="credit-card" label="Valuta" :value="$invoice->currency"
+                <x-details-item icon="credit-card" label="Valuta" :value="$invoice->currencySymbol()"
                                 color="bg-amber-500/10 text-amber-500" />
                 <x-details-item icon="file-text" label="Predložak" :value="$invoice->template->label()"
                                 color="bg-indigo-500/10 text-indigo-500" />
@@ -62,11 +62,11 @@
                                         <p class="text-[10px] text-[var(--color-text-dim)] whitespace-pre-line">{{ $item->description }}</p>
                                     @endif
                                 </div>
-                                <p class="text-sm font-black text-primary">{{ $invoice->formatted($item->total) }} {{ $invoice->currency }}</p>
+                                <p class="text-sm font-black text-primary">{{ $invoice->formatted($item->total) }} {{ $invoice->currencySymbol() }}</p>
                             </div>
                             <div class="flex gap-4 text-[10px] text-[var(--color-text-dim)]">
                                 <span>Kol: <strong class="text-[var(--color-text-muted)]">{{ $item->quantity }}</strong></span>
-                                <span>Cijena: <strong class="text-[var(--color-text-muted)]">{{ $invoice->formatted($item->unit_price) }} {{ $invoice->currency }}</strong></span>
+                                <span>Cijena: <strong class="text-[var(--color-text-muted)]">{{ $invoice->formatted($item->unit_price) }} {{ $invoice->currencySymbol() }}</strong></span>
                                 <span>PDV: <strong class="text-[var(--color-text-muted)]">{{ $item->tax_rate / 100 }}%</strong></span>
                             </div>
                         </div>
@@ -79,9 +79,9 @@
                                 @endif
                             </div>
                             <div class="text-xs font-bold text-[var(--color-text-muted)] text-right">{{ $item->quantity }}</div>
-                            <div class="text-xs font-bold text-[var(--color-text-muted)] text-right">{{ $invoice->formatted($item->unit_price) }} {{ $invoice->currency }}</div>
+                            <div class="text-xs font-bold text-[var(--color-text-muted)] text-right">{{ $invoice->formatted($item->unit_price) }} {{ $invoice->currencySymbol() }}</div>
                             <div class="text-xs font-bold text-[var(--color-text-muted)] text-right">{{ $item->tax_rate / 100 }}%</div>
-                            <div class="text-sm font-black text-primary text-right">{{ $invoice->formatted($item->total) }} {{ $invoice->currency }}</div>
+                            <div class="text-sm font-black text-primary text-right">{{ $invoice->formatted($item->total) }} {{ $invoice->currencySymbol() }}</div>
                         </div>
                     </div>
                 @endforeach
@@ -91,16 +91,16 @@
         <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-1.5">
             <div class="flex justify-between text-sm">
                 <span class="text-[var(--color-text-dim)]">Osnovica:</span>
-                <span class="font-bold text-[var(--color-text-main)]">{{ $invoice->formatted($invoice->subtotal) }} {{ $invoice->currency }}</span>
+                <span class="font-bold text-[var(--color-text-main)]">{{ $invoice->formatted($invoice->subtotal) }} {{ $invoice->currencySymbol() }}</span>
             </div>
             <div class="flex justify-between text-sm">
                 <span class="text-[var(--color-text-dim)]">PDV:</span>
-                <span class="font-bold text-[var(--color-text-main)]">{{ $invoice->formatted($invoice->tax_total) }} {{ $invoice->currency }}</span>
+                <span class="font-bold text-[var(--color-text-main)]">{{ $invoice->formatted($invoice->tax_total) }} {{ $invoice->currencySymbol() }}</span>
             </div>
             <div class="h-[1px] bg-amber-500/20"></div>
             <div class="flex justify-between">
                 <span class="text-sm font-bold text-[var(--color-text-main)]">Ukupno:</span>
-                <span class="text-xl font-black text-primary tracking-tighter italic">{{ $invoice->formatted($invoice->total) }} {{ $invoice->currency }}</span>
+                <span class="text-xl font-black text-primary tracking-tighter italic">{{ $invoice->formatted($invoice->total) }} {{ $invoice->currencySymbol() }}</span>
             </div>
         </div>
         <div class="flex gap-2">

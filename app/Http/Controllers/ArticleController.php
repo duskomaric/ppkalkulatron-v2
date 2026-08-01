@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ArticleRequest;
 use App\Models\Article;
+use App\Models\Currency;
 use App\Models\FiscalTaxRate;
 use App\Services\FiscalDeviceHealth;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class ArticleController extends Controller
             'q' => $request->string('q')->toString(),
             'taxRates' => FiscalTaxRate::query()->pluck('rate', 'label')->all(),
             'fiscalHealth' => $health->current(),
+            'currencySymbol' => $this->defaultCurrencySymbol(),
         ]);
     }
 
@@ -65,7 +67,7 @@ class ArticleController extends Controller
         return $data;
     }
 
-    /** @return array{article: ?Article, taxRateOptions: array<string, string>} */
+    /** @return array{article: ?Article, taxRateOptions: array<string, string>, currencySymbol: string} */
     private function formData(?Article $article = null): array
     {
         return [
@@ -77,6 +79,12 @@ class ArticleController extends Controller
                     $taxRate->label => $taxRate->label.' — '.$taxRate->category_name.' ('.$taxRate->rate.'%)',
                 ])
                 ->all(),
+            'currencySymbol' => $this->defaultCurrencySymbol(),
         ];
+    }
+
+    private function defaultCurrencySymbol(): string
+    {
+        return Currency::query()->where('is_default', true)->value('symbol') ?? 'KM';
     }
 }

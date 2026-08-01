@@ -206,12 +206,13 @@ const money = (cents) => new Intl.NumberFormat('de-DE', {
     maximumFractionDigits: 2,
 }).format((cents || 0) / 100);
 
-Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, clientId, showMore }) => ({
+Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, currencySymbols, clientId, showMore }) => ({
     items: items.length ? items.map((item) => ({ ...blankItem(), ...item })) : [blankItem()],
     articles,
     clients,
     taxRates,
     currency,
+    currencySymbols,
     clientId: clientId ?? '',
     clientOpen: false,
     clientSearch: '',
@@ -280,6 +281,10 @@ Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, clie
 
     rateOf(label) {
         return this.taxRates[label] ?? 0;
+    },
+
+    currencySymbol() {
+        return this.currencySymbols[this.currency] ?? this.currency;
     },
 
     lineTotal(item) {

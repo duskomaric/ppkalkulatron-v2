@@ -4,6 +4,7 @@ use App\Enums\InvoiceStatus;
 use App\Mail\InvoiceMail;
 use App\Models\Article;
 use App\Models\Client;
+use App\Models\Currency;
 use App\Models\Invoice;
 use App\Services\FiscalReceiptStore;
 use App\Services\InvoiceNumber;
@@ -304,6 +305,22 @@ it('generiše PDF na sva četiri predloška', function (string $template) {
         ->and(strlen($pdf))->toBeGreaterThan(10000)
         ->toBeLessThan(150000);
 })->with(['classic', 'modern', 'minimal', 'standard']);
+
+it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfView): void {
+    Currency::query()->where('code', 'BAM')->update(['symbol' => 'KM']);
+    $invoice = makeInvoice();
+
+    $this->get(route('invoices.show', $invoice))
+        ->assertSuccessful()
+        ->assertSee('1,00 KM');
+
+    expect(renderPdfView($invoice, view: $pdfView))->toContain('1,00 KM');
+})->with([
+    'classic' => 'pdf.invoice',
+    'modern' => 'pdf.invoice-modern',
+    'minimal' => 'pdf.invoice-minimal',
+    'standard' => 'pdf.invoice-standard',
+]);
 
 it('nudi PDF na preuzimanje', function () {
     $this->post(route('invoices.store'), invoicePayload());

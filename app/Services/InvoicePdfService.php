@@ -49,7 +49,7 @@ class InvoicePdfService
         // `loadMissing`, ne `load`: pozivalac koji je već učitao `fiscalRecords.receipt`
         // (slanje mailom) inače dobije zapise bez slika, pa se svaka slika čita ponovo
         // — jedan upit po fiskalnom zapisu, i to nad base64 sadržajem od stotinak kilobajta.
-        $invoice->loadMissing(['client', 'items', 'fiscalRecords']);
+        $invoice->loadMissing(['client', 'currencyDefinition', 'items', 'fiscalRecords']);
 
         $template ??= $invoice->template ?? DocumentTemplate::Classic;
 

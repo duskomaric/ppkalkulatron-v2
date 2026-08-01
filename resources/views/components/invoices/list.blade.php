@@ -47,7 +47,7 @@
                         <x-meta-item icon="clock" label="Dospijeće" :value="$invoice->due_date->format('d.m.Y.')" />
                     </div>
                     <p class="text-lg font-black tracking-tighter italic">
-                        {{ $invoice->formatted($invoice->total) }} {{ $invoice->currency }}
+                        {{ $invoice->formatted($invoice->total) }} {{ $invoice->currencySymbol() }}
                     </p>
                 </div>
             </x-entity-card>
@@ -111,7 +111,7 @@
                     </div>
 
                     <p class="text-right text-lg font-black tracking-tighter italic">
-                        {{ $invoice->formatted($invoice->total) }} {{ $invoice->currency }}
+                        {{ $invoice->formatted($invoice->total) }} {{ $invoice->currencySymbol() }}
                     </p>
                 </div>
             </x-entity-card>

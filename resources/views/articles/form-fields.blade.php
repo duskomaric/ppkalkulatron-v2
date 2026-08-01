@@ -19,7 +19,7 @@
     <x-section-block variant="card">
         <x-section-header icon="currency-euro" title="Cijena" :help="route('help').'#artikli'" />
 
-        <x-form-input label="Cijena" name="last_unit_price" type="number" step="0.01"
+        <x-form-input :label="'Cijena ('.$currencySymbol.')'" name="last_unit_price" type="number" step="0.01"
                       :value="$article?->last_unit_price ? number_format($article->last_unit_price / 100, 2, '.', '') : null"
                       hint="Sa porezom. Ponudi se sama pri dodavanju na račun." />
     </x-section-block>

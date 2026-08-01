@@ -37,7 +37,7 @@ class InvoiceController extends Controller
             'year' => (int) ($request->integer('year') ?: date('Y')),
         ];
 
-        $invoices = Invoice::with('client', 'originalInvoice')
+        $invoices = Invoice::with('client', 'currencyDefinition', 'originalInvoice')
             ->search($filters['q'])
             ->whereBetween('date', ["{$filters['year']}-01-01", "{$filters['year']}-12-31"])
             ->when($filters['status'], fn ($q, $status) => $q->where('status', $status))
@@ -132,7 +132,7 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice, FiscalDeviceHealth $health)
     {
-        $invoice->load(['client', 'items', 'originalInvoice', 'fiscalRecords.receipt']);
+        $invoice->load(['client', 'currencyDefinition', 'items', 'originalInvoice', 'fiscalRecords.receipt']);
 
         return view('invoices.show', [
             'invoice' => $invoice,

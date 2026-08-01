@@ -79,7 +79,7 @@
 
                             @if ($record->receipt)
                                 <button type="button" title="Prikaži fiskalni dokument"
-                                        x-on:click="{{ \App\Support\Js::call('$data.openReceipt', route('invoices.receipt', $record, false), match (strtolower($record->receipt?->extension ?: 'png')) { 'pdf' => 'pdf', 'html', 'htm' => 'html', default => 'image' }, $record->verification_url, getenv('JUMP_BRIDGE_PORT') !== false) }}"
+                                        x-on:click="{{ \App\Support\Js::call('$data.openReceipt', route('invoices.receipt', $record, false), match (strtolower($record->receipt?->extension ?: 'png')) { 'pdf' => 'pdf', 'html', 'htm' => 'html', default => 'image' }, $record->verification_url, getenv('JUMP_BRIDGE_PORT') !== false || isMobile()) }}"
                                         class="cursor-pointer flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white shadow-sm border border-black/5 hover:scale-[1.02] active:scale-[0.98] transition-all {{ $text }}">
                                     <x-icon name="image" class="h-5 w-5" />
                                     <span class="text-[10px] font-black uppercase">Prikaži</span>

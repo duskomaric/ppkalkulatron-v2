@@ -189,11 +189,13 @@ it('otvara svaki podržani fiskalni format u ugrađenom pregledu', function (str
 it('pretvara binarni fiskalni dokument u prikaz koji Android WebView podržava', function () {
     $javascript = file_get_contents(resource_path('js/app.js'));
     $modal = file_get_contents(resource_path('views/components/receipt-modal.blade.php'));
+    $fiscalView = file_get_contents(resource_path('views/invoices/fiscal.blade.php'));
 
     expect($javascript)
         ->toContain('? `data:${document.mime};base64,${document.contents}`')
         ->toContain('withMobilePayload(url, useMobilePayload)')
         ->toContain('reader.readAsDataURL(blob);')
+        ->and($fiscalView)->toContain("getenv('JUMP_BRIDGE_PORT') !== false || isMobile()")
         ->and($modal)->toContain(':src="receiptUrl"')
         ->toContain(':srcdoc="receiptHtml"');
 });

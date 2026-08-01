@@ -529,6 +529,9 @@ it('u Jumpu priprema PDF datoteku iz detalja računa', function () {
         ->assertSuccessful()
         ->assertSee('$data.preparePdf', false)
         ->assertSee(app(InvoicePdfService::class)->filename($invoice));
+
+    expect(file_get_contents(resource_path('views/invoices/detail.blade.php')))
+        ->toContain("getenv('JUMP_BRIDGE_PORT') !== false || isMobile()");
 });
 
 it('u Jumpu servira PDF koji preglednik dijeli kao datoteku', function () {

@@ -105,7 +105,7 @@
         </div>
         <div class="flex gap-2">
             <a href="{{ route('invoices.pdf', $invoice) }}"
-               x-on:click="if (@js(getenv('JUMP_BRIDGE_PORT') !== false)) { $event.preventDefault(); $data.preparePdf(@js(route('invoices.pdf', $invoice, false)), @js(app(\App\Services\InvoicePdfService::class)->filename($invoice)), true); }"
+               x-on:click="if (@js(getenv('JUMP_BRIDGE_PORT') !== false || isMobile())) { $event.preventDefault(); $data.preparePdf(@js(route('invoices.pdf', $invoice, false)), @js(app(\App\Services\InvoicePdfService::class)->filename($invoice)), true); }"
                class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-primary/30 bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-all cursor-pointer min-h-[44px]">
                 <x-icon name="file-text" class="h-4 w-4" />
                 <span x-text="pdfPreparing ? 'Pripremam PDF...' : (pdfFile ? 'Ponovo podijeli PDF' : 'Preuzmi PDF')">Preuzmi PDF</span>

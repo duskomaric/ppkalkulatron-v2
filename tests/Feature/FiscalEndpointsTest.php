@@ -148,17 +148,22 @@ it('servira račun uređaja u formatu u kojem je došao', function (string $exte
     'html' => ['html', 'text/html; charset=UTF-8'],
 ]);
 
-it('šalje fiskalni dokument kao JSON payload kroz Jump proxy', function () {
+it('šalje svaki podržani fiskalni dokument kao JSON payload kroz Jump proxy', function (string $extension, string $mime, string $contents) {
     $record = makeInvoice()->fiscalRecords()->create(['type' => FiscalRecordType::Original]);
-    app(FiscalReceiptStore::class)->store($record, 'png sadržaj', 'png');
+    app(FiscalReceiptStore::class)->store($record, $contents, $extension);
 
     $this->getJson(route('invoices.receipt', [$record, 'mobile_payload' => 1]))
         ->assertSuccessful()
         ->assertJson([
-            'mime' => 'image/png',
-            'contents' => base64_encode('png sadržaj'),
+            'mime' => $mime,
+            'extension' => $extension,
+            'contents' => base64_encode($contents),
         ]);
-});
+})->with([
+    'PNG' => ['png', 'image/png', "\x89PNG\r\n"],
+    'PDF' => ['pdf', 'application/pdf', '%PDF-1.7'],
+    'HTML' => ['html', 'text/html; charset=UTF-8', '<html>račun</html>'],
+]);
 
 it('otvara svaki podržani fiskalni format u ugrađenom pregledu', function (string $extension, string $previewKind) {
     $invoice = fiscalizedInvoice();

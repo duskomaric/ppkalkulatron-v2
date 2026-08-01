@@ -18,6 +18,7 @@ use App\Http\Controllers\PinSettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UnlockController;
 use App\Http\Middleware\EnsureUnlocked;
+use App\Http\Middleware\LogDiagnosticAction;
 use Illuminate\Support\Facades\Route;
 
 // Ekran za otključavanje mora biti dostupan i zaključanoj aplikaciji.
@@ -26,7 +27,7 @@ Route::post('/unlock', [UnlockController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('unlock.store');
 
-Route::middleware(EnsureUnlocked::class)->group(function () {
+Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(function () {
     Route::redirect('/', '/racuni');
 
     Route::post('/lock', [UnlockController::class, 'destroy'])->name('unlock.destroy');

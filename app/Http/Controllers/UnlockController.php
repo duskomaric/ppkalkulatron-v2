@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UnlockRequest;
+use App\Services\Diagnostics;
 use App\Services\PinLock;
 use Illuminate\Http\Request;
 
 class UnlockController extends Controller
 {
-    public function __construct(private PinLock $pin) {}
+    public function __construct(private PinLock $pin, private Diagnostics $diagnostics) {}
 
     public function show(Request $request)
     {
@@ -28,10 +29,13 @@ class UnlockController extends Controller
         $validated = $request->validated();
 
         if (! $this->pin->verify($validated['pin'])) {
+            $this->diagnostics->error('PIN unlock failed');
+
             return redirect()->route('unlock')->withErrors(['pin' => 'Pogrešan PIN.']);
         }
 
         $this->pin->markUnlocked();
+        $this->diagnostics->debug('PIN unlock completed');
 
         return redirect()->intended(route('invoices.index'));
     }
@@ -39,6 +43,7 @@ class UnlockController extends Controller
     public function destroy(Request $request)
     {
         $request->session()->forget(PinLock::SESSION_KEY);
+        $this->diagnostics->debug('PIN lock completed');
 
         return redirect()->route('unlock');
     }

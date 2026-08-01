@@ -108,3 +108,78 @@ it('bilježi samo sigurnu oznaku neprijavljene greške', function () {
 
     @unlink($archive['path']);
 });
+
+it('bilježi tehnički ishod svake promjene bez sadržaja forme', function () {
+    $settings = app(DiagnosticsSettings::class);
+    $settings->detailed_until = now()->addDay();
+    $settings->save();
+
+    $path = storage_path('logs/support-diagnostics-'.now()->format('Y-m-d').'.log');
+    $before = is_file($path) ? (string) file_get_contents($path) : '';
+
+    $this->put(route('settings.menu.update'), [
+        'menu_modules' => ['invoices'],
+        'drawer_modules' => ['clients', 'articles', 'bank-accounts', 'currencies'],
+        'max_menu_items' => 4,
+    ])->assertRedirect(route('settings.menu.edit'));
+
+    $contents = substr((string) file_get_contents($path), strlen($before));
+
+    expect($contents)
+        ->toContain('Application action completed')
+        ->toContain('settings.menu.update')
+        ->toContain('"method":"PUT"')
+        ->toContain('"status":302')
+        ->not->toContain('drawer_modules');
+});
+
+it('bilježi izmjenu klijenta po ruti, bez podataka klijenta', function () {
+    $settings = app(DiagnosticsSettings::class);
+    $settings->detailed_until = now()->addDay();
+    $settings->save();
+
+    $clientName = 'Privatni naziv '.uniqid();
+    $path = storage_path('logs/support-diagnostics-'.now()->format('Y-m-d').'.log');
+    $before = is_file($path) ? (string) file_get_contents($path) : '';
+
+    $this->post(route('clients.store'), ['name' => $clientName, 'is_active' => '1'])
+        ->assertRedirect(route('clients.index'));
+
+    $contents = substr((string) file_get_contents($path), strlen($before));
+
+    expect($contents)
+        ->toContain('clients.store')
+        ->not->toContain($clientName);
+});
+
+it('bilježi neuspjelo PIN otključavanje bez PIN-a', function () {
+    setPin('1111');
+    $path = storage_path('logs/support-diagnostics-'.now()->format('Y-m-d').'.log');
+    $before = is_file($path) ? (string) file_get_contents($path) : '';
+
+    $this->post(route('unlock.store'), ['pin' => '9999'])->assertSessionHasErrors('pin');
+
+    $contents = substr((string) file_get_contents($path), strlen($before));
+
+    expect($contents)
+        ->toContain('PIN unlock failed')
+        ->not->toContain('9999');
+});
+
+it('bilježi neuspjelu promjenu i kada detaljna dijagnostika nije uključena', function () {
+    $path = storage_path('logs/support-diagnostics-'.now()->format('Y-m-d').'.log');
+    $before = is_file($path) ? (string) file_get_contents($path) : '';
+
+    $this->put(route('settings.menu.update'), [
+        'menu_modules' => ['nepoznat-modul'],
+        'drawer_modules' => [],
+        'max_menu_items' => 4,
+    ])->assertSessionHasErrors('menu_modules.0');
+
+    $contents = substr((string) file_get_contents($path), strlen($before));
+
+    expect($contents)
+        ->toContain('Application action failed')
+        ->toContain('settings.menu.update')
+        ->not->toContain('nepoznat-modul');
+});

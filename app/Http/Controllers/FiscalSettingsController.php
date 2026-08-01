@@ -48,9 +48,15 @@ class FiscalSettingsController extends Controller
         return redirect()->route('settings.fiscal.edit')->with('status', 'Fiskalna podešavanja su sačuvana.');
     }
 
-    public function status(FiscalDeviceHealth $health): JsonResponse
+    public function status(Request $request, FiscalDeviceHealth $health): JsonResponse|RedirectResponse
     {
-        return response()->json($health->refreshIfStale());
+        $status = $health->refreshIfStale();
+
+        if ($request->expectsJson()) {
+            return response()->json($status);
+        }
+
+        return redirect()->route('settings.fiscal.edit');
     }
 
     /** Provjera dostupnosti uređaja bez izmjene lokalnog kataloga poreskih stopa. */

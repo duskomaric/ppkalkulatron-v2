@@ -30,6 +30,15 @@ it('vraća spreman status uređaja i kešira ga jednu minutu', function () {
     Http::assertSentCount(2);
 });
 
+it('ne prikazuje interni JSON status kao stranicu', function () {
+    Http::fake([
+        '*/api/attention' => Http::response('', 503),
+    ]);
+
+    unlocked()->get(route('settings.fiscal.status'))
+        ->assertRedirect(route('settings.fiscal.edit'));
+});
+
 it('prijavljuje uređaj koji traži PIN', function () {
     Http::fake([
         '*/api/attention' => Http::response('', 200),

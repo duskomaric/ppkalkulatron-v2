@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ArticleRequest;
 use App\Models\Article;
 use App\Models\TaxRate;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ArticleController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         return view('articles.index', [
             'articles' => Article::when($request->string('q')->toString(), fn ($q, $term) => $q->where('name', 'like', "%{$term}%"))
@@ -21,31 +23,31 @@ class ArticleController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(): View
     {
         return view('articles.form', $this->formData());
     }
 
-    public function store(ArticleRequest $request)
+    public function store(ArticleRequest $request): RedirectResponse
     {
         Article::create($this->priceInMinorUnits($request->validated()));
 
         return redirect()->route('articles.index')->with('status', 'Artikl je kreiran.');
     }
 
-    public function edit(Article $article)
+    public function edit(Article $article): View
     {
         return view('articles.form', $this->formData($article));
     }
 
-    public function update(ArticleRequest $request, Article $article)
+    public function update(ArticleRequest $request, Article $article): RedirectResponse
     {
         $article->update($this->priceInMinorUnits($request->validated()));
 
         return redirect()->route('articles.index')->with('status', 'Izmjene su sačuvane.');
     }
 
-    public function destroy(Article $article)
+    public function destroy(Article $article): RedirectResponse
     {
         $article->delete();
 

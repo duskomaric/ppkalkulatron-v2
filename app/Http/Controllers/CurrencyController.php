@@ -6,11 +6,13 @@ use App\Http\Requests\CurrencyRequest;
 use App\Http\Requests\ExchangeRateRequest;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class CurrencyController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         return view('currencies.index', [
             'currencies' => Currency::orderByDesc('is_default')->orderBy('code')->get(),
@@ -18,19 +20,19 @@ class CurrencyController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(): View
     {
         return view('currencies.form', ['currency' => null, 'rates' => collect()]);
     }
 
-    public function store(CurrencyRequest $request)
+    public function store(CurrencyRequest $request): RedirectResponse
     {
         $this->save($request, new Currency);
 
         return redirect()->route('currencies.index')->with('status', 'Valuta je dodata.');
     }
 
-    public function edit(Currency $currency)
+    public function edit(Currency $currency): View
     {
         return view('currencies.form', [
             'currency' => $currency,
@@ -39,14 +41,14 @@ class CurrencyController extends Controller
         ]);
     }
 
-    public function update(CurrencyRequest $request, Currency $currency)
+    public function update(CurrencyRequest $request, Currency $currency): RedirectResponse
     {
         $this->save($request, $currency);
 
         return redirect()->route('currencies.index')->with('status', 'Izmjene su sačuvane.');
     }
 
-    public function destroy(Currency $currency)
+    public function destroy(Currency $currency): RedirectResponse
     {
         if ($currency->is_default) {
             return redirect()->route('currencies.index')->with('error', 'Podrazumijevana valuta se ne može obrisati.');
@@ -58,7 +60,7 @@ class CurrencyController extends Controller
     }
 
     /** Kurs prema KM na određeni dan; fiskalizacija ga traži za strane valute. */
-    public function storeRate(ExchangeRateRequest $request, Currency $currency)
+    public function storeRate(ExchangeRateRequest $request, Currency $currency): RedirectResponse
     {
         if ($currency->is_default) {
             return redirect()->route('currencies.index')->with('error', 'Podrazumijevana valuta nema kurs prema samoj sebi.');

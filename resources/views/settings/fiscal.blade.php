@@ -57,7 +57,8 @@
             </div>
         </x-section-block>
 
-        <x-section-block variant="accent" class="sm:p-6 space-y-4">
+        <x-section-block variant="accent" class="sm:p-6 space-y-4" x-data="{ fiscalState: @js($fiscalHealth['state']) }"
+                         @fiscal-health-updated="fiscalState = $event.detail.state">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-start gap-3">
                     <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
@@ -66,7 +67,11 @@
                         <p class="mt-1 text-xs text-[var(--color-text-dim)]">Nakon što sačuvate i provjerite kasu, preuzmite njene stope. Oznake ostaju identične odgovoru uređaja, uključujući ćirilicu.</p>
                     </div>
                 </div>
-                <x-button variant="primary" type="submit" form="sync-tax-rates" class="w-full sm:w-auto">Preuzmi stope</x-button>
+                <x-button variant="primary" type="submit" form="sync-tax-rates" class="w-full sm:w-auto disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+                          x-bind:disabled="fiscalState !== 'ready'"
+                          x-bind:title="fiscalState === 'ready' ? '' : 'Preuzimanje je dostupno kada je kasa povezana.'">
+                    Preuzmi stope
+                </x-button>
             </div>
 
             @if ($taxRates->isEmpty())

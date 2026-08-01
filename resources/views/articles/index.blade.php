@@ -8,12 +8,11 @@
 @section('content')
     <div>
         @if ($taxRates === [])
-            <x-section-block variant="accent" class="mb-4">
+            <x-section-block variant="accent" class="mb-4" x-data="{ fiscalState: @js($fiscalHealth['state']) }"
+                             @fiscal-health-updated="fiscalState = $event.detail.state">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-start gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <x-icon name="currency-euro" class="h-5 w-5" />
-                        </div>
+                        <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
                         <div>
                             <p class="text-sm font-black text-[var(--color-text-main)]">Poreske stope nisu preuzete</p>
                             <p class="mt-1 text-xs text-[var(--color-text-dim)]">Artikli se mogu dodati tek kada se preuzmu stope sa dostupne fiskalne kase.</p>
@@ -22,7 +21,11 @@
                     <form method="POST" action="{{ route('settings.fiscal.tax-rates.sync') }}">
                         @csrf
                         <input type="hidden" name="return_to" value="articles">
-                        <x-button variant="primary" class="w-full sm:w-auto">Preuzmi stope sa kase</x-button>
+                        <x-button variant="primary" class="w-full sm:w-auto disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+                                  x-bind:disabled="fiscalState !== 'ready'"
+                                  x-bind:title="fiscalState === 'ready' ? '' : 'Preuzimanje je dostupno kada je kasa povezana.'">
+                            Preuzmi stope sa kase
+                        </x-button>
                     </form>
                 </div>
             </x-section-block>

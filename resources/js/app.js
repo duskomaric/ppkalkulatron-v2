@@ -151,6 +151,7 @@ Alpine.data('fiscalHealth', ({ url, initial }) => ({
 
             if (response.ok) {
                 this.health = await response.json();
+                this.$dispatch('fiscal-health-updated', this.health);
             }
         } catch {
             // Existing status stays visible when the network is temporarily unavailable.

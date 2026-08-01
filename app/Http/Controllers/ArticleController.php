@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ArticleRequest;
 use App\Models\Article;
 use App\Models\FiscalTaxRate;
+use App\Services\FiscalDeviceHealth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ArticleController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, FiscalDeviceHealth $health): View
     {
         return view('articles.index', [
             'articles' => Article::when($request->string('q')->toString(), fn ($q, $term) => $q->where('name', 'like', "%{$term}%"))
@@ -20,6 +21,7 @@ class ArticleController extends Controller
                 ->withQueryString(),
             'q' => $request->string('q')->toString(),
             'taxRates' => FiscalTaxRate::query()->pluck('rate', 'label')->all(),
+            'fiscalHealth' => $health->current(),
         ]);
     }
 

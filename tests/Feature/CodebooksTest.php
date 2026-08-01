@@ -423,6 +423,7 @@ it('priprema porezne stope u kontroleru artikala', function () {
     $this->get(route('articles.index'))
         ->assertSuccessful()
         ->assertViewHas('taxRates', fn (array $taxRates): bool => (float) $taxRates['F'] === 11.0)
+        ->assertViewHas('fiscalHealth')
         ->assertSee($article->name)
         ->assertSee('F (11.00%)');
 

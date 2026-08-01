@@ -5,13 +5,19 @@ namespace App\Settings;
 use Spatie\LaravelSettings\Settings;
 
 /**
- * Raspored modula, po v1 vizuelnim podešavanjima: šta stoji u donjem meniju,
- * a šta se otvara iz drawera. Ništa se ne sakriva — samo se premješta.
+ * Raspored modula u donjem meniju i dodatnoj navigaciji. Ništa se ne sakriva —
+ * samo se premješta.
  */
 class MenuSettings extends Settings
 {
     /** @var string[] Ključevi modula u donjem meniju, redom. */
     public array $menu_modules;
+
+    /** @var string[] Ključevi modula u dodatnoj navigaciji, redom. */
+    public array $drawer_modules;
+
+    /** Najveći broj stavki u donjem meniju prije grupe „Više“. */
+    public int $max_menu_items;
 
     public static function group(): string
     {
@@ -33,6 +39,31 @@ class MenuSettings extends Settings
     /** Moduli koji nisu u meniju otvaraju se iz drawera. */
     public function drawerModules(): array
     {
-        return array_values(array_diff(array_keys(self::modules()), $this->menu_modules));
+        $keys = array_keys(self::modules());
+        $menu = array_values(array_filter(
+            $this->menu_modules,
+            fn (string $key) => in_array($key, $keys, true),
+        ));
+        $drawer = array_values(array_filter(
+            $this->drawer_modules,
+            fn (string $key) => in_array($key, $keys, true),
+        ));
+
+        return array_values(array_unique(array_merge(
+            array_diff($drawer, $menu),
+            array_diff($keys, $menu, $drawer),
+        )));
+    }
+
+    /** Redoslijed koji se koristi na ekranu podešavanja i u navigaciji. */
+    public function orderedModules(): array
+    {
+        $keys = array_keys(self::modules());
+        $menu = array_values(array_filter(
+            $this->menu_modules,
+            fn (string $key) => in_array($key, $keys, true),
+        ));
+
+        return array_values(array_unique(array_merge($menu, $this->drawerModules())));
     }
 }

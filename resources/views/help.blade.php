@@ -2,10 +2,6 @@
 @section('title', 'Pomoć')
 
 @section('content')
-    {{--
-        Prati v1 help: uvod, sadržaj, pa sekcija po temi sa mjestom za slike ekrana.
-        Sidra ovdje moraju pratiti #linkove iz podešavanja — inače vode u prazno.
-    --}}
     <div class="space-y-8 max-w-3xl pb-10">
         <div class="p-5 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] relative overflow-hidden">
             <div class="absolute top-0 right-0 p-6 opacity-5">
@@ -15,16 +11,19 @@
                 Dobrodošli u ppKalkulatron
             </h2>
             <p class="text-sm text-[var(--color-text-muted)] mt-2 relative z-10">
-                Aplikacija radi na uređaju: računi, klijenti i artikli su lokalni, a fiskalni uređaj
-                se poziva direktno sa telefona. Ispod je redoslijed kojim se najlakše pokrenuti.
+                Aplikacija radi na uređaju: računi, klijenti i artikli su lokalni, a PHP dio aplikacije
+                povezuje se s fiskalnim uređajem. Ispod je redoslijed kojim se najlakše pokrenuti.
             </p>
         </div>
+
+        <x-help-preview title="Početni ekran računa" />
 
         <nav class="p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-dim)] mb-3">Sadržaj</p>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 @foreach ([
+                    'pocetak' => 'Početak rada',
                     'profil-kompanije' => 'Profil kompanije',
                     'bankovni-racuni' => 'Bankovni računi',
                     'valute' => 'Valute i kursevi',
@@ -34,6 +33,7 @@
                     'fiskalizacija' => 'Fiskalizacija',
                     'skeniranje' => 'Skeniranje mreže',
                     'mail' => 'Mail (SMTP)',
+                    'backup' => 'Email backup',
                     'numeracija' => 'Numeracija dokumenata',
                     'stampa-racuna' => 'Štampa računa',
                     'napomene' => 'Napomene',
@@ -48,6 +48,24 @@
             </div>
         </nav>
 
+        <x-help-section id="pocetak" title="Početak rada" icon="info">
+            <p>
+                ppKalkulatron služi za izdavanje računa, njihovu fiskalizaciju i čuvanje pratećih dokumenata.
+                Podaci se vode lokalno na uređaju na kojem koristite aplikaciju.
+            </p>
+            <ol class="list-decimal space-y-1 pl-5">
+                <li>U <strong>Podešavanja → Profil kompanije</strong> unesite podatke izdavaoca.</li>
+                <li>Dodajte artikle i, po potrebi, klijente, bankovne račune i dodatne valute.</li>
+                <li>U <strong>Fiskalizacija</strong> povežite uređaj i provjerite njegov status.</li>
+                <li>Napravite račun, pregledajte ga, a zatim ga fiskalizujte na njegovom detalju.</li>
+                <li>PDF pošaljite kupcu, a periodično pošaljite ZIP backup na svoj email.</li>
+            </ol>
+            <p>
+                Fiskalni dokument nije zamjena za PDF računa: uređaj ga vraća kao vlastiti zapis, dok aplikacija
+                uz isti račun čuva oba dokumenta.
+            </p>
+        </x-help-section>
+
         <x-help-section id="profil-kompanije" title="Profil kompanije" icon="building">
             <p>
                 U <strong>Podešavanja → Profil kompanije</strong> unesite naziv, adresu, JIB i PDV broj.
@@ -58,8 +76,12 @@
                 <strong>Mali preduzetnik</strong> dodaje napomenu na dno dokumenta — tekst napomene
                 možete promijeniti ispod prekidača.
             </p>
+            <p>
+                U <strong>Mom nalogu</strong> uređujete ime i email koji se prikazuju u aplikaciji,
+                te ručno zaključavate aplikaciju. Temu i raspored navigacije podešavate u
+                <strong>Izgled i navigacija</strong>.
+            </p>
 
-            <x-help-preview title="Profil kompanije" />
         </x-help-section>
 
         <x-help-section id="bankovni-racuni" title="Bankovni računi" icon="credit-card">
@@ -72,7 +94,6 @@
                 u instrukcijama za plaćanje na PDF-u. Možete držati više računa, a prikazivati samo neke.
             </p>
 
-            <x-help-preview title="Bankovni računi" />
         </x-help-section>
 
         <x-help-section id="valute" title="Valute i kursevi" icon="hash">
@@ -85,7 +106,6 @@
                 na datum računa, ili posljednji raniji — bez kursa fiskalizacija se ne izvršava.
             </p>
 
-            <x-help-preview title="Valute" />
         </x-help-section>
 
         <x-help-section id="klijenti" title="Klijenti" icon="contact">
@@ -98,7 +118,6 @@
                 Za stranog kupca bez JIB-a šalje se <strong>VP:9999999999999</strong>.
             </p>
 
-            <x-help-preview title="Klijenti" />
         </x-help-section>
 
         <x-help-section id="artikli" title="Artikli" icon="boxes">
@@ -110,7 +129,6 @@
                 Zadnja cijena se pamti pri izdavanju računa i sljedeći put se ponudi sama.
             </p>
 
-            <x-help-preview title="Artikli" />
         </x-help-section>
 
         <x-help-section id="racuni" title="Računi" icon="file-text">
@@ -125,8 +143,12 @@
             <p>
                 Fiskalizovan račun se više ne može mijenjati ni brisati — ispravlja se stornom.
             </p>
+            <p>
+                Novi račun prvo ima status <strong>Kreiran</strong>. Na njegovom detalju možete preuzeti PDF,
+                poslati ga mailom ili fiskalizovati. Nakon uspješne fiskalizacije uz račun ostaju broj,
+                vrijeme, kontrolni podaci i originalni fiskalni dokument.
+            </p>
 
-            <x-help-preview title="Kreiranje računa" />
         </x-help-section>
 
         <x-help-section id="fiskalizacija" title="Fiskalizacija (OFS ESIR)" icon="file-text">
@@ -153,8 +175,11 @@
                 <strong>Potraga po RequestId</strong> unesite RequestId iz fiskalnog zapisa i provjerite
                 je li račun prošao — prije nego što pokušate ponovo.
             </p>
+            <p>
+                Na detalju fiskalizovanog računa možete otvoriti originalni dokument, napraviti kopiju
+                ili kreirati storno. Dugme za provjeru vodi na adresu Poreske uprave koju je vratio uređaj.
+            </p>
 
-            <x-help-preview title="Fiskalizacija" />
         </x-help-section>
 
         <x-help-section id="skeniranje" title="Skeniranje mreže" icon="search">
@@ -169,7 +194,6 @@
                 na primjer <strong>192.168.31.100-105</strong> ili <strong>192.168.31.</strong>
             </p>
 
-            <x-help-preview title="Skeniranje mreže" />
         </x-help-section>
 
         <x-help-section id="mail" title="Mail (SMTP)" icon="mail">
@@ -234,7 +258,18 @@
                 @endforeach
             </div>
 
-            <x-help-preview title="Mail" />
+        </x-help-section>
+
+        <x-help-section id="backup" title="Email backup" icon="archive">
+            <p>
+                U <strong>Podešavanja → Backup</strong> odredite adresu na koju se šalje sigurnosna kopija.
+                Prije slanja mora biti podešen mail server.
+            </p>
+            <p>
+                Dugme <strong>Napravi i pošalji backup</strong> pripremi jedan ZIP sa PDF-om svakog računa,
+                originalnim fiskalnim dokumentima (PNG, PDF ili HTML) i <strong>manifest.csv</strong>.
+                Poslije uspješnog slanja aplikacija prikaže datum i broj uključenih dokumenata.
+            </p>
         </x-help-section>
 
         <x-help-section id="numeracija" title="Numeracija dokumenata" icon="hash">
@@ -248,21 +283,19 @@
                 <strong>reset po godini</strong> brojanje kreće ispočetka svakog januara.
             </p>
 
-            <x-help-preview title="Numeracija" />
         </x-help-section>
 
         <x-help-section id="stampa-racuna" title="Štampa računa" icon="file-text">
             <p>
                 <strong>Izgled računa</strong> bira između isječka (Slip) i punog računa (Invoice).
-                <strong>Format slike</strong> je PNG, PDF ili HTML — uz Invoice raspored PNG nije
+                <strong>Format fiskalnog dokumenta</strong> je PNG, PDF ili HTML — uz Invoice raspored PNG nije
                 dostupan jer ga uređaj ne iscrtava.
             </p>
             <p>
-                <strong>Štampaj račun</strong> šalje nalog za štampu samom uređaju. Slika računa se
+                <strong>Štampaj račun</strong> šalje nalog za štampu samom uređaju. Fiskalni dokument se
                 čuva uz fiskalni zapis i može se poslati mailom kao prilog.
             </p>
 
-            <x-help-preview title="Štampa računa" />
         </x-help-section>
 
         <x-help-section id="napomene" title="Napomene" icon="sticky-note">
@@ -271,16 +304,15 @@
                 novi račun i tu se može izmijeniti. Novi red se poštuje i na PDF-u.
             </p>
 
-            <x-help-preview title="Napomene" />
         </x-help-section>
 
         <x-help-section id="meni" title="Podešavanje menija" icon="cog">
             <p>
-                U <strong>Podešavanja → Vizuelna podešavanja</strong> birate koji moduli stoje u donjem
-                meniju. Ostali se otvaraju iz podešavanja — ništa se ne sakriva, samo se premješta.
+                U <strong>Podešavanja → Izgled i navigacija</strong> birate svijetlu, tamnu ili sistemsku temu,
+                kao i redoslijed modula u donjem meniju. Ostali se otvaraju iz grupe <strong>Više</strong> —
+                ništa se ne sakriva, samo se premješta.
             </p>
 
-            <x-help-preview title="Podešavanje menija" />
         </x-help-section>
 
         <x-help-section id="pin" title="PIN i zaključavanje" icon="lock">
@@ -293,7 +325,6 @@
                 kad se telefon zaključa pa vrati. Vrijeme birate sami; „Nikad" isključuje tu provjeru.
             </p>
 
-            <x-help-preview title="PIN" />
         </x-help-section>
     </div>
 @endsection

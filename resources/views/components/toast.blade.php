@@ -1,7 +1,4 @@
-{{--
-    v1 Toast: klizne odozgo, sam se sklanja, sa trakom koja odbrojava.
-    Sluša `app-flash` — poruke iz radnji koje ne osvježavaju stranicu.
---}}
+{{-- Sluša `app-flash` za radnje koje ne osvježavaju stranicu. --}}
 <div x-data="{
         shown: false,
         message: '',

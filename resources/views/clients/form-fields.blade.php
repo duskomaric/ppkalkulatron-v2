@@ -1,21 +1,21 @@
-{{-- Sekcije prate v1 klijent drawer: podaci, kontakt, adresa, poreski broj. --}}
 <form method="POST" action="{{ $client ? route('clients.update', $client) : route('clients.store') }}"
-      class="space-y-4" x-on:submit="$data.submitForm && ($event.preventDefault(), $data.submitForm($event))">
+      class="space-y-4">
     @csrf
     @if ($client) @method('PUT') @endif
 
     <x-form-errors />
 
     <x-section-block variant="card">
-        <x-section-header icon="contact" title="Osnovni podaci" />
+        <x-section-header icon="contact" title="Osnovni podaci" :help="route('help').'#klijenti'" />
 
-        <x-form-input label="Naziv" name="name" :value="$client?->name" required placeholder="npr. Kafe Bar Centar" />
+        <x-form-input label="Naziv" name="name" :value="$client?->name" required autocomplete="organization"
+                      placeholder="npr. Kafe Bar Centar" />
 
         <x-toggle name="is_active" :checked="old('is_active', $client?->is_active ?? true)" label="Klijent je aktivan" />
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="mail" title="Kontakt" />
+        <x-section-header icon="mail" title="Kontakt" :help="route('help').'#klijenti'" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <x-form-input label="Email" name="email" type="email" :value="$client?->email" placeholder="info@klijent.com" />
@@ -24,7 +24,7 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="map-pin" title="Adresa" />
+        <x-section-header icon="map-pin" title="Adresa" :help="route('help').'#klijenti'" />
 
         <x-form-input label="Adresa" name="address" :value="$client?->address" />
 
@@ -45,8 +45,8 @@
         </div>
     </x-section-block>
 
-    <x-drawer-form-actions :label="$client ? 'Sačuvaj izmjene' : 'Kreiraj klijenta'"
-                           :delete="$client ? route('clients.destroy', $client) : null" />
+    <x-form-actions :label="$client ? 'Sačuvaj izmjene' : 'Kreiraj klijenta'"
+                    :delete="$client ? route('clients.destroy', $client) : null" />
 </form>
 
 @if ($client)

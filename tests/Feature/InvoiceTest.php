@@ -9,32 +9,15 @@ use App\Services\FiscalReceiptStore;
 use App\Services\InvoiceNumber;
 use App\Services\InvoicePdfService;
 use App\Settings\CompanySettings;
+use App\Settings\DocumentSettings;
 use App\Settings\NumberingSettings;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Native\Mobile\Facades\Share;
+use Native\Mobile\Facades\System;
 
-uses(RefreshDatabase::class);
-
-function invoicePayload(array $overrides = []): array
-{
-    return $overrides + [
-        'client_id' => Client::create(['name' => 'Kupac d.o.o.'])->id,
-        'payment_type' => 'Cash',
-        'currency' => 'BAM',
-        'template' => 'classic',
-        'language' => 'sr_Latn',
-        'date' => now()->format('Y-m-d'),
-        'due_date' => now()->addDays(15)->format('Y-m-d'),
-        'items' => [[
-            'article_id' => null,
-            'name' => 'Usluga',
-            'unit' => 'kom',
-            'tax_label' => 'F',   // 11%
-            'quantity' => 2,
-            'unit_price' => '55.50',
-        ]],
-    ];
-}
+// invoicePayload() i renderPdfView() stoje u tests/Pest.php.
 
 it('kreira račun i preračuna iznose iz količine i cijene', function () {
     $this->post(route('invoices.store'), invoicePayload())->assertRedirect();
@@ -64,6 +47,44 @@ it('dodjeljuje brojeve redom', function () {
     expect(Invoice::pluck('invoice_number')->all())->toBe(["0001/{$year}", "0002/{$year}"]);
 });
 
+it('listu računa filtrira rasponom datuma izabrane godine', function () {
+    $this->post(route('invoices.store'), invoicePayload([
+        'date' => '2024-06-01', 'due_date' => '2024-06-15',
+    ]));
+    $previousYearNumber = Invoice::sole()->invoice_number;
+
+    $this->post(route('invoices.store'), invoicePayload([
+        'date' => '2025-06-01', 'due_date' => '2025-06-15',
+    ]));
+    $selectedYearNumber = Invoice::latest('id')->value('invoice_number');
+
+    $this->get(route('invoices.index', ['year' => 2025]))
+        ->assertSuccessful()
+        ->assertSee($selectedYearNumber)
+        ->assertDontSee($previousYearNumber);
+});
+
+it('povezuje oznake sa poljima forme računa', function () {
+    $html = $this->get(route('invoices.create'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('for="date"')
+        ->and($html)->toContain('<input id="date"')
+        ->and($html)->toContain('for="payment_type"')
+        ->and($html)->toMatch('/<select[^>]*id="payment_type"/');
+});
+
+it('koristi standardne radnje forme računa', function () {
+    $html = $this->get(route('invoices.create'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('Kreiraj račun')
+        ->and($html)->toContain('href="'.route('invoices.index').'"')
+        ->and($html)->toContain('Odustani');
+});
+
 it('oslobađa broj kad se račun obriše', function () {
     $year = date('Y');
 
@@ -72,7 +93,7 @@ it('oslobađa broj kad se račun obriše', function () {
 
     $this->delete(route('invoices.destroy', Invoice::where('invoice_number', "0002/{$year}")->first()));
 
-    // Broj se izvodi iz računa, pa je 0002 opet slobodan — u v1 nije bio.
+    // Broj se izvodi iz računa, pa je 0002 opet slobodan.
     expect(app(InvoiceNumber::class)->next())->toBe("0002/{$year}");
 });
 
@@ -134,6 +155,16 @@ it('mijenja račun i preračuna iznose ponovo', function () {
         ->and($invoice->total)->toBe(1110);
 });
 
+it('otvara izmjenu kreiranog računa sa njegovim stavkama', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $this->get(route('invoices.edit', $invoice))
+        ->assertSuccessful()
+        ->assertViewHas('invoice', fn (Invoice $value): bool => $value->is($invoice))
+        ->assertSee('Usluga');
+});
+
 it('ne dozvoljava izmjenu ni brisanje fiskalizovanog računa', function () {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::first();
@@ -155,33 +186,112 @@ it('pretražuje po broju i po klijentu', function () {
     ]));
 
     $this->get(route('invoices.index', ['q' => 'Mermer']))
-        ->assertStatus(200)
+        ->assertSuccessful()
         ->assertSee('Mermer Gradnja')
         ->assertDontSee('Kafe Bar');
 
     $this->get(route('invoices.index', ['q' => '0002']))
-        ->assertStatus(200)
+        ->assertSuccessful()
         ->assertSee('Kafe Bar');
+});
+
+it('prikazuje aktivne filtere i linkove koji brišu samo odgovarajući filter', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+
+    $response = $this->get(route('invoices.index', [
+        'q' => '0001',
+        'status' => InvoiceStatus::Created->value,
+        'payment_type' => 'Cash',
+        'created_from' => now()->format('Y-m-d'),
+        'created_to' => now()->format('Y-m-d'),
+        'year' => date('Y'),
+    ]))->assertSuccessful();
+
+    $response->assertViewHas('activeFilters', function (array $filters): bool {
+        $byLabel = collect($filters)->keyBy('label');
+
+        return $byLabel->keys()->all() === ['Pretraga', 'Status', 'Plaćanje', 'Datum']
+            && str_contains($byLabel['Pretraga']['clear'], 'status=created')
+            && ! str_contains($byLabel['Pretraga']['clear'], 'q=')
+            && str_contains($byLabel['Datum']['clear'], 'payment_type=Cash')
+            && ! str_contains($byLabel['Datum']['clear'], 'created_from=');
+    });
+});
+
+it('nudi godine računa zajedno sa izabranom i tekućom godinom', function () {
+    $this->post(route('invoices.store'), invoicePayload([
+        'date' => '2024-06-01',
+        'due_date' => '2024-06-15',
+    ]));
+
+    $this->get(route('invoices.index', ['year' => 2025]))
+        ->assertSuccessful()
+        ->assertViewHas('years', function (array $years): bool {
+            return in_array(2024, $years, true)
+                && in_array(2025, $years, true)
+                && in_array((int) date('Y'), $years, true)
+                && $years === collect($years)->sortDesc()->values()->all();
+        });
 });
 
 it('prikazuje listu i detalj', function () {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::first();
 
-    $this->get(route('invoices.index'))->assertStatus(200)->assertSee($invoice->invoice_number);
-    $this->get(route('invoices.show', $invoice))->assertStatus(200)->assertSee('Usluga');
+    $this->get(route('invoices.index'))->assertSuccessful()->assertSee($invoice->invoice_number);
+    $this->get(route('invoices.show', $invoice))->assertSuccessful()->assertSee('Usluga');
 });
 
-it('servira detalje računa kao dio drawera', function () {
+it('servira punu stranicu detalja računa', function () {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
-    $partial = $this->get(route('invoices.show', [$invoice, 'partial' => 1]));
-
-    $partial->assertStatus(200)
+    $this->get(route('invoices.show', $invoice))
+        ->assertSuccessful()
         ->assertSee($invoice->invoice_number)
-        ->assertSee('Zatvori')
-        ->assertDontSee('<!DOCTYPE html>', false);
+        ->assertSee('<!DOCTYPE html>', false);
+});
+
+it('povezuje fiskalnu sekciju računa sa pomoći', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $this->get(route('invoices.show', $invoice))
+        ->assertSuccessful()
+        ->assertSee(route('help').'#fiskalizacija', false);
+});
+
+it('prikazuje Alpine prekidače za priloge maila', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $this->get(route('invoices.show', $invoice))
+        ->assertSuccessful()
+        ->assertSee('x-model="emailForm.attach_pdf"', false)
+        ->assertSee('x-model="emailForm.attach_fiscal_record_ids"', false);
+});
+
+it('učitava slike fiskalnih računa jednim upitom na detalju', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+    $original = $invoice->fiscalRecords()->create(['type' => 'original', 'fiscal_invoice_number' => 'X-1']);
+    $copy = $invoice->fiscalRecords()->create(['type' => 'copy', 'fiscal_invoice_number' => 'X-2']);
+    $receiptStore = app(FiscalReceiptStore::class);
+
+    $receiptStore->store($original, 'original receipt');
+    $receiptStore->store($copy, 'copy receipt');
+
+    $receiptQueries = 0;
+
+    DB::listen(function (QueryExecuted $query) use (&$receiptQueries): void {
+        if (str_contains($query->sql, 'fiscal_receipts')) {
+            $receiptQueries++;
+        }
+    });
+
+    $this->get(route('invoices.show', $invoice))->assertSuccessful();
+
+    expect($receiptQueries)->toBe(1);
 });
 
 it('generiše PDF na sva četiri predloška', function (string $template) {
@@ -190,16 +300,26 @@ it('generiše PDF na sva četiri predloška', function (string $template) {
 
     $pdf = app(InvoicePdfService::class)->contents($invoice);
 
-    expect($pdf)->toStartWith('%PDF-')->and(strlen($pdf))->toBeGreaterThan(10000);
+    expect($pdf)->toStartWith('%PDF-')
+        ->and(strlen($pdf))->toBeGreaterThan(10000)
+        ->toBeLessThan(150000);
 })->with(['classic', 'modern', 'minimal', 'standard']);
 
 it('nudi PDF na preuzimanje', function () {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
+    System::shouldReceive('isMobile')->once()->andReturnFalse();
 
     $this->get(route('invoices.pdf', $invoice))
-        ->assertStatus(200)
+        ->assertSuccessful()
         ->assertHeader('content-type', 'application/pdf');
+});
+
+it('koristi čitljivo ime za PDF datoteku', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+
+    expect(app(InvoicePdfService::class)->filename(Invoice::firstOrFail()))
+        ->toBe('faktura-0001-'.date('Y').'.pdf');
 });
 
 it('šalje račun mailom sa PDF prilogom', function () {
@@ -213,7 +333,7 @@ it('šalje račun mailom sa PDF prilogom', function () {
         'subject' => 'Račun '.$invoice->invoice_number,
         'body' => 'U prilogu je račun.',
         'attach_pdf' => true,
-    ])->assertStatus(200)->assertJson(['message' => 'Račun je poslat na email.']);
+    ])->assertSuccessful()->assertJson(['message' => 'Račun je poslat na email.']);
 
     // Privremeni PDF se briše čim slanje prođe, pa se provjerava da je bio priložen,
     // a da prilog stvarno nastane pokriva test ispod.
@@ -228,7 +348,7 @@ it('prilaže PDF i fiskalni račun sa pravim sadržajem', function () {
 
     $record = $invoice->fiscalRecords()->create(['type' => 'original']);
     app(FiscalReceiptStore::class)->store($record, 'bajtovi-racuna', 'pdf');
-    $invoice->load('fiscalRecords.receiptImage');
+    $invoice->load('fiscalRecords.receipt');
 
     $path = storage_path('app/private/test-'.uniqid().'.pdf');
     @mkdir(dirname($path), 0755, true);
@@ -249,7 +369,7 @@ it('traži ispravnog primaoca', function () {
 
     $this->postJson(route('invoices.email', Invoice::firstOrFail()), [
         'to' => 'nije-email', 'subject' => '', 'body' => '',
-    ])->assertStatus(422)->assertJsonValidationErrors(['to', 'subject', 'body']);
+    ])->assertUnprocessable()->assertJsonValidationErrors(['to', 'subject', 'body']);
 });
 
 it('prilaže fiskalni račun i kaže kad ga nema', function () {
@@ -268,7 +388,7 @@ it('prilaže fiskalni račun i kaže kad ga nema', function () {
         'body' => 'Tekst',
         'attach_pdf' => false,
         'attach_fiscal_record_ids' => [$withImage->id, $withoutImage->id],
-    ])->assertStatus(200)
+    ])->assertSuccessful()
         ->assertJson(['message' => 'Račun je poslat, ali fiskalni račun nije priložen jer sadržaja nema.']);
 
     Mail::assertSent(InvoiceMail::class, function ($mail) use ($withImage) {
@@ -282,7 +402,7 @@ it('servira sliku fiskalnog računa iz baze', function () {
     app(FiscalReceiptStore::class)->store($record, 'sadrzaj-slike', 'png');
 
     $this->get(route('invoices.receipt', $record))
-        ->assertStatus(200)
+        ->assertSuccessful()
         ->assertHeader('content-type', 'image/png')
         ->assertSee('sadrzaj-slike');
 });
@@ -304,46 +424,169 @@ it('ne stavlja kosu crtu u ime priloga', function () {
     @unlink($path);
 });
 
-it('ispisuje napomenu malog preduzetnika na PDF-u', function () {
-    $company = app(CompanySettings::class);
-    $company->is_small_entrepreneur = true;
-    $company->small_entrepreneur_note = 'Mali preduzetnik — nije u sistemu PDV-a.';
-    $company->save();
+it('kopira podrazumijevanu napomenu dokumenta na novi račun', function () {
+    $documents = app(DocumentSettings::class);
+    $documents->invoice_notes = 'Hvala na povjerenju.';
+    $documents->save();
 
     $this->post(route('invoices.store'), invoicePayload());
-    $invoice = Invoice::firstOrFail();
 
-    $html = view('pdf.invoice', [
-        'invoice' => $invoice->load('client', 'items', 'fiscalRecords'),
-        'company' => $company,
-        'bankAccounts' => collect(),
-    ])->render();
-
-    expect($html)->toContain('Mali preduzetnik');
+    expect(Invoice::firstOrFail()->notes)->toBe('Hvala na povjerenju.');
 });
 
-it('ne ispisuje napomenu kad mali preduzetnik nije uključen', function () {
-    $company = app(CompanySettings::class);
+it('čuva izmijenjenu napomenu samo na kreiranom računu', function () {
+    $documents = app(DocumentSettings::class);
+    $documents->invoice_notes = 'Zadana napomena.';
+    $documents->save();
 
-    $this->post(route('invoices.store'), invoicePayload());
-    $invoice = Invoice::firstOrFail();
+    $this->post(route('invoices.store'), invoicePayload([
+        'notes' => 'Dogovorena napomena za ovaj račun.',
+    ]))->assertRedirect();
 
-    $html = view('pdf.invoice', [
-        'invoice' => $invoice->load('client', 'items', 'fiscalRecords'),
-        'company' => $company,
-        'bankAccounts' => collect(),
-    ])->render();
+    expect(Invoice::firstOrFail()->notes)->toBe('Dogovorena napomena za ovaj račun.');
+});
 
-    expect($html)->not->toContain('Mali preduzetnik');
+it('prikazuje izmjenjivu zadanu napomenu pri kreiranju računa', function () {
+    $documents = app(DocumentSettings::class);
+    $documents->invoice_notes = 'Hvala na povjerenju.';
+    $documents->save();
+
+    $this->get(route('invoices.create'))
+        ->assertSuccessful()
+        ->assertSee('name="notes"', false)
+        ->assertSee('Hvala na povjerenju.');
+});
+
+it('prenosi napomenu sačuvanu kroz podešavanja u formu novog računa', function () {
+    $documents = app(DocumentSettings::class);
+    $numbering = app(NumberingSettings::class);
+
+    $this->put(route('settings.general.update'), [
+        'pad_zeros' => $numbering->pad_zeros,
+        'invoice_prefix' => $numbering->invoice_prefix,
+        'invoice_starting_number' => $numbering->invoice_starting_number,
+        'reset_yearly' => $numbering->reset_yearly,
+        'template' => $documents->template,
+        'language' => $documents->language,
+        'invoice_due_days' => $documents->invoice_due_days,
+        'invoice_notes' => 'Napomena iz podešavanja.',
+    ])->assertRedirect(route('settings.general.edit'));
+
+    $this->get(route('invoices.create'))
+        ->assertSuccessful()
+        ->assertSee('id="notes"', false)
+        ->assertSee('Napomena iz podešavanja.')
+        ->assertSee('Zadana napomena iz Podešavanja je unesena iznad');
+});
+
+it('primjenjuje rok plaćanja i podrazumijevani način plaćanja iz podešavanja na novi račun', function () {
+    $documents = app(DocumentSettings::class);
+    $numbering = app(NumberingSettings::class);
+
+    $this->put(route('settings.general.update'), [
+        'pad_zeros' => $numbering->pad_zeros,
+        'invoice_prefix' => $numbering->invoice_prefix,
+        'invoice_starting_number' => $numbering->invoice_starting_number,
+        'reset_yearly' => $numbering->reset_yearly,
+        'template' => $documents->template,
+        'language' => $documents->language,
+        'invoice_due_days' => 30,
+        'invoice_notes' => $documents->invoice_notes,
+    ])->assertRedirect(route('settings.general.edit'));
+
+    $this->put(route('settings.fiscal.update'), [
+        'base_url' => 'http://192.168.31.103:3566',
+        'cashier' => 'Prodavac',
+        'device_mode' => 'local',
+        'receipt_layout' => 'Slip',
+        'receipt_document_format' => 'Png',
+        'default_payment_type' => 'WireTransfer',
+        'receipt_header_text_lines' => '',
+    ])->assertRedirect(route('settings.fiscal.edit'));
+
+    $html = $this->get(route('invoices.create'))->assertSuccessful()->getContent();
+
+    expect($html)
+        ->toContain('name="due_date"')
+        ->toContain(now()->addDays(30)->format('Y-m-d'))
+        ->toContain('<option value="WireTransfer" selected>Bankovni transfer</option>');
 });
 
 it('u pregledniku vraća PDF na preuzimanje', function () {
     $this->post(route('invoices.store'), invoicePayload());
+    System::shouldReceive('isMobile')->once()->andReturnFalse();
 
-    // isMobile() je false van upakovane aplikacije, pa ostaje obično preuzimanje.
     $this->get(route('invoices.pdf', Invoice::firstOrFail()))
-        ->assertStatus(200)
+        ->assertSuccessful()
         ->assertHeader('content-type', 'application/pdf');
+});
+
+it('u Jumpu priprema PDF datoteku iz detalja računa', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+
+    $this->get(route('invoices.show', $invoice))
+        ->assertSuccessful()
+        ->assertSee('$data.preparePdf', false)
+        ->assertSee(app(InvoicePdfService::class)->filename($invoice));
+});
+
+it('u Jumpu servira PDF koji preglednik dijeli kao datoteku', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+    putenv('JUMP_BRIDGE_PORT=3002');
+
+    try {
+        $this->get(route('invoices.pdf', $invoice))
+            ->assertSuccessful()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', 'inline; filename='.$this->app->make(InvoicePdfService::class)->filename($invoice));
+    } finally {
+        putenv('JUMP_BRIDGE_PORT');
+    }
+});
+
+it('šalje PDF kao JSON payload kroz Jump proxy', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+    putenv('JUMP_BRIDGE_PORT=3002');
+
+    try {
+        $this->getJson(route('invoices.pdf', [$invoice, 'mobile_payload' => 1]))
+            ->assertSuccessful()
+            ->assertJsonPath('mime', 'application/pdf')
+            ->assertJsonPath('filename', app(InvoicePdfService::class)->filename($invoice))
+            ->assertJsonPath('contents', fn (string $contents): bool => str_starts_with(base64_decode($contents, true) ?: '', '%PDF-'));
+    } finally {
+        putenv('JUMP_BRIDGE_PORT');
+    }
+});
+
+it('na telefonu predaje PDF sistemskom dijalogu kao datoteku', function () {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+    $temporaryDirectory = storage_path('app/private/mobile-share-test');
+    config(['nativephp-internal.tempdir' => $temporaryDirectory]);
+    putenv('JUMP_BRIDGE_PORT');
+    System::shouldReceive('isMobile')->once()->andReturnTrue();
+    Share::shouldReceive('file')->once()->withArgs(function (string $title, string $text, string $path) use ($invoice): bool {
+        return $title === 'Račun '.$invoice->invoice_number
+            && $text === 'Račun '.$invoice->invoice_number
+            && is_file($path)
+            && str_starts_with($path, storage_path('app/private/mobile-share-test/'));
+    });
+
+    try {
+        $this->getJson(route('invoices.pdf', $invoice))
+            ->assertSuccessful()
+            ->assertJson(['message' => 'PDF je spreman za čuvanje ili dijeljenje.']);
+    } finally {
+        foreach (glob($temporaryDirectory.'/*') ?: [] as $path) {
+            @unlink($path);
+        }
+
+        @rmdir($temporaryDirectory);
+    }
 });
 
 it('čuva opis stavke', function () {
@@ -384,8 +627,26 @@ it('uzima godinu broja sa datuma računa, ne sa današnjeg', function () {
     expect(Invoice::firstOrFail()->invoice_number)->toEndWith('/2025');
 });
 
+it('ignoriše neispravne stare brojeve pri nastavku numeracije', function () {
+    Invoice::create([
+        'invoice_number' => 'stari-neispravan-broj',
+        'date' => now(),
+        'due_date' => now(),
+    ]);
+    Invoice::create([
+        'invoice_number' => '0007/'.date('Y'),
+        'date' => now(),
+        'due_date' => now(),
+    ]);
+
+    $numbers = app(InvoiceNumber::class);
+
+    expect($numbers->parse('neispravno'))->toBeNull()
+        ->and($numbers->next())->toBe('0008/'.date('Y'));
+});
+
 it('ne ruši listu na neispravan filter', function () {
-    $this->get(route('invoices.index', ['status' => 'bogus', 'payment_type' => 'bogus']))->assertStatus(200);
+    $this->get(route('invoices.index', ['status' => 'bogus', 'payment_type' => 'bogus']))->assertSuccessful();
 });
 
 it('prikazuje PDV na PDF-u i kad kompanija nije obveznik', function () {
@@ -394,14 +655,7 @@ it('prikazuje PDV na PDF-u i kad kompanija nije obveznik', function () {
     $company->save();
 
     $this->post(route('invoices.store'), invoicePayload());
-    $invoice = Invoice::firstOrFail();
-
-    $html = view('pdf.invoice', [
-        'invoice' => $invoice->load('client', 'items', 'fiscalRecords'),
-        'company' => $company,
-        'bankAccounts' => collect(),
-    ])->render();
 
     // Osnovica + PDV mora davati ukupno; inače dokument sam sebi ne odgovara.
-    expect($html)->toContain('PDV');
+    expect(renderPdfView(Invoice::firstOrFail(), $company))->toContain('PDV');
 });

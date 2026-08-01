@@ -23,6 +23,8 @@ it('ispisuje iznos slovima', function (int $number, string $expected) {
     [100000, 'sto hiljada'],
     [1000000, 'jedan milion'],
     [2500000, 'dva miliona petsto hiljada'],
+    [5000000, 'pet miliona'],
+    [1000000000, '1.000.000.000'],
 ]);
 
 it('nosi znak minus', function () {

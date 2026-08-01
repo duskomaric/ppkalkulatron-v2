@@ -342,7 +342,7 @@
                             <td class="detail-value">{{ $invoice->payment_type?->label() ?? '-' }}</td>
                         </tr>
                         @php
-                            $originalFiscal = $invoice->fiscalRecords->firstWhere('type', \App\Enums\FiscalRecordType::Original);
+                            $originalFiscal = $invoice->originalFiscalRecord();
                         @endphp
                         @if($originalFiscal?->fiscal_invoice_number)
                             <tr>

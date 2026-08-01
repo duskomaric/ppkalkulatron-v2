@@ -17,6 +17,8 @@
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot
+/public/android-hot
+/public/ios-hot
 /public/storage
 /storage/*.key
 /storage/pail
@@ -32,3 +34,6 @@ Thumbs.db
 
 # Firebase konfiguracija — vidi firebase/README.md
 /firebase/google-services.json
+
+# Credential files (keystores, private keys, etc.)
+/credentials/

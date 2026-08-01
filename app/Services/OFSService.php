@@ -3,24 +3,32 @@
 namespace App\Services;
 
 use App\Settings\FiscalSettings;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
- * OFS ESIR klijent — prenesen iz v1 (ppKalkulatron-api/app/Services/OFSService.php).
- *
- * Jedina razlika je odakle dolaze podešavanja: v1 ih čita iz podešavanja kompanije,
- * ovdje su u podešavanjima aplikacije, jer v2 nema model kompanije. Zaglavlja, putanje i
- * ponašanje su isti, i isti su testirani protiv prave kase.
- *
- * Poenta v2: ovaj poziv se izvršava iz PHP-a na uređaju, pa ograničenja preglednika
- * (mixed content, Private Network Access) ne važe i lokalni ESIR na http://192.168.x.x
- * je dostupan direktno.
+ * OFS ESIR klijent. Poziv se izvršava iz PHP-a na uređaju, pa je lokalni ESIR na
+ * privatnoj HTTP adresi dostupan direktno.
  */
 class OFSService
 {
+    /**
+     * Uređaj na lokalnoj mreži ili odgovori na rukovanje odmah ili nije tu.
+     *
+     * Bez ovoga se čeka Guzzle-ov podrazumijevani connect timeout, a jedan PHP
+     * proces služi sve zahtjeve — aplikacija stoji dok se čeka.
+     */
+    private const CONNECT_TIMEOUT = 2;
+
+    private const TIMEOUT = 15;
+
     protected string $baseUrl;
+
+    private bool $usesCloud;
 
     public function __construct(
         ?string $baseUrl = null,
@@ -31,24 +39,54 @@ class OFSService
         $settings = app(FiscalSettings::class);
 
         $this->baseUrl = rtrim($baseUrl ?: $settings->base_url, '/');
+        $this->usesCloud = $settings->device_mode === 'cloud';
         $this->apiKey ??= $settings->api_key;
         $this->serialNumber ??= $settings->serial_number;
         $this->pac ??= $settings->pac;
     }
 
-    /** Cloud traži sva tri; lokalni ESIR koristi samo Authorization. */
+    /** Cloud traži dodatne identifikatore; lokalnom ESIR-u se šalje samo API ključ. */
     protected function headers(): array
     {
         return array_filter([
             'Authorization' => $this->apiKey ? 'Bearer '.$this->apiKey : null,
-            'X-Teron-SerialNumber' => $this->serialNumber,
-            'X-PAC' => $this->pac,
-            'Content-Type' => 'application/json',
+            'X-Teron-SerialNumber' => $this->usesCloud ? $this->serialNumber : null,
+            'X-PAC' => $this->usesCloud ? $this->pac : null,
+            'Content-Type' => 'application/json; charset=UTF-8',
             'Accept' => 'application/json',
         ]);
     }
 
-    protected function request(string $method, string $path, array $payload = [], ?string $requestId = null): Response
+    protected function client(array $headers, int $timeout = self::TIMEOUT): PendingRequest
+    {
+        return Http::withHeaders($headers)
+            ->connectTimeout(self::CONNECT_TIMEOUT)
+            ->timeout($timeout);
+    }
+
+    /**
+     * Nedostupan uređaj je domenska greška, ne golo cURL izuzeće.
+     *
+     * Inače korisnik na ekranu dobije „cURL error 7: Failed to connect to …", a
+     * fiskalizacija vrati HTTP 500 umjesto uputstva šta da provjeri. Poziv se ne
+     * ponavlja: /api/invoices nije idempotentan, pa bi ponovni pokušaj mogao
+     * odštampati drugi fiskalni račun.
+     */
+    protected function attempt(callable $call): Response
+    {
+        try {
+            return $call();
+        } catch (ConnectionException $e) {
+            Log::warning('OFS uređaj nije dostupan', ['url' => $this->baseUrl, 'error' => $e->getMessage()]);
+
+            throw new RuntimeException(
+                'Fiskalni uređaj nije dostupan na '.$this->baseUrl.'. '.
+                'Provjerite da je uključen i na istoj mreži, pa pokušajte ponovo.'
+            );
+        }
+    }
+
+    protected function request(string $method, string $path, array $payload = [], ?string $requestId = null, int $timeout = self::TIMEOUT): Response
     {
         $endpoint = $this->baseUrl.$path;
 
@@ -59,14 +97,11 @@ class OFSService
 
         Log::info('OFS request', ['method' => $method, 'url' => $endpoint, 'request_id' => $requestId]);
 
-        // Uređaj na lokalnoj mreži ili odgovori na rukovanje odmah ili nije tu.
-        // Bez ovoga se čeka Guzzle-ov podrazumijevani connect timeout, a jedan PHP
-        // proces služi sve zahtjeve — aplikacija stoji dok se čeka.
-        $http = Http::withHeaders($headers)->connectTimeout(2)->timeout(15);
+        $http = $this->client($headers, $timeout);
 
-        $response = $method === 'GET'
+        $response = $this->attempt(fn () => $method === 'GET'
             ? $http->get($endpoint)
-            : $http->send($method, $endpoint, ['json' => $payload]);
+            : $http->send($method, $endpoint, ['json' => $payload]));
 
         Log::info('OFS response', ['status' => $response->status(), 'successful' => $response->successful()]);
 
@@ -74,14 +109,14 @@ class OFSService
     }
 
     /** GET /api/attention — 200 znači da je uređaj dostupan i konfigurisan. */
-    public function testAttention(): Response
+    public function testAttention(int $timeout = self::TIMEOUT): Response
     {
-        return $this->request('GET', '/api/attention');
+        return $this->request('GET', '/api/attention', timeout: $timeout);
     }
 
-    public function getStatus(): Response
+    public function getStatus(int $timeout = self::TIMEOUT): Response
     {
-        return $this->request('GET', '/api/status');
+        return $this->request('GET', '/api/status', timeout: $timeout);
     }
 
     public function getSettings(): Response
@@ -102,8 +137,9 @@ class OFSService
         $headers = $this->headers();
         unset($headers['Content-Type']);
 
-        return Http::withHeaders($headers)->withBody($pin, 'text/plain')
-            ->connectTimeout(2)->timeout(15)->post($endpoint);
+        return $this->attempt(fn () => $this->client($headers)
+            ->withBody($pin, 'text/plain')
+            ->post($endpoint));
     }
 
     public function createInvoice(array $payload, ?string $requestId = null): Response

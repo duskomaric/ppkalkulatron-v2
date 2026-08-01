@@ -11,11 +11,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
 /**
- * PDF računa, po v1 predlošcima.
- *
- * v1 renderuje kroz spatie/laravel-pdf, dakle Browsershot i headless Chrome. To na
- * telefonu ne postoji, pa v2 koristi dompdf. Predlošci su preneseni nepromijenjeni
- * jer su i u v1 pisani tabelama i DejaVu Sans fontom — dompdf ih čita kako treba.
+ * PDF računa se renderuje dompdf-om, koji je dostupan i na uređaju.
  */
 class InvoicePdfService
 {
@@ -30,7 +26,7 @@ class InvoicePdfService
 
     public function filename(Invoice $invoice): string
     {
-        return 'faktura-'.Str::slug($invoice->invoice_number).'.pdf';
+        return 'faktura-'.Str::of($invoice->invoice_number)->replace('/', '-')->slug().'.pdf';
     }
 
     public function contents(Invoice $invoice, ?DocumentTemplate $template = null): string
@@ -43,9 +39,17 @@ class InvoicePdfService
         return $this->render($invoice, $template)->download($this->filename($invoice));
     }
 
+    public function inline(Invoice $invoice, ?DocumentTemplate $template = null): Response
+    {
+        return $this->render($invoice, $template)->stream($this->filename($invoice));
+    }
+
     private function render(Invoice $invoice, ?DocumentTemplate $template)
     {
-        $invoice->load(['client', 'items', 'fiscalRecords']);
+        // `loadMissing`, ne `load`: pozivalac koji je već učitao `fiscalRecords.receipt`
+        // (slanje mailom) inače dobije zapise bez slika, pa se svaka slika čita ponovo
+        // — jedan upit po fiskalnom zapisu, i to nad base64 sadržajem od stotinak kilobajta.
+        $invoice->loadMissing(['client', 'items', 'fiscalRecords']);
 
         $template ??= $invoice->template ?? DocumentTemplate::Classic;
 
@@ -53,6 +57,6 @@ class InvoicePdfService
             'invoice' => $invoice,
             'company' => $this->company,
             'bankAccounts' => BankAccount::where('show_on_documents', true)->orderBy('id')->get(),
-        ])->setPaper('a4');
+        ])->setPaper('a4')->setOption('isFontSubsettingEnabled', true);
     }
 }

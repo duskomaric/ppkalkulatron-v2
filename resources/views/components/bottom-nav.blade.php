@@ -1,4 +1,3 @@
-{{-- Plutajuća pilula kao u v1 --}}
 <div class="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4 flex justify-center pointer-events-auto safe-bottom safe-x">
     <nav class="bg-[var(--color-glass)] backdrop-blur-2xl border border-[var(--color-border-strong)] rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/20 px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-around gap-2 sm:gap-4 w-full max-w-md sm:max-w-lg">
         @foreach ($navItems as $item)
@@ -26,5 +25,17 @@
                 ])>{{ $item['title'] }}</span>
             </a>
         @endforeach
+
+        @if (count($drawerItems))
+            <button type="button" title="Više modula" @click="moreDrawer = true"
+                    class="cursor-pointer group flex flex-col items-center gap-1 transition-all duration-300">
+                <div class="relative p-2 sm:p-2.5 rounded-2xl bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-hover)] transition-all duration-300">
+                    <x-icon name="more-horizontal" class="h-5 w-5 sm:h-6 sm:w-6 text-[var(--color-text-dim)] group-hover:text-[var(--color-text-main)]" />
+                </div>
+                <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mt-1 text-[var(--color-text-dim)] group-hover:text-[var(--color-text-main)]">
+                    Više
+                </span>
+            </button>
+        @endif
     </nav>
 </div>

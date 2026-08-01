@@ -5,11 +5,7 @@ namespace App\Settings;
 use Spatie\LaravelSettings\Settings;
 
 /**
- * Podaci o korisniku aplikacije.
- *
- * v2 nema naloge — prijava je samo PIN — pa ono što v1 drži na korisničkom nalogu
- * ovdje stoji u podešavanjima. Koristi se za pozdrav u zaglavlju i za ime
- * blagajnika kad ono nije posebno podešeno.
+ * Podaci o korisniku aplikacije za zaglavlje i ime blagajnika.
  */
 class UserSettings extends Settings
 {

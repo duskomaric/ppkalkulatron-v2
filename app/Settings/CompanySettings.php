@@ -6,10 +6,6 @@ use Spatie\LaravelSettings\Settings;
 
 /**
  * Podaci firme koja izdaje dokumente.
- *
- * U v1 je ovo bila tabela `companies` jer je aplikacija bila multi-tenant. Ovdje
- * postoji tačno jedna firma, pa je to podešavanje a ne entitet — nema tabele sa
- * jednim redom.
  */
 class CompanySettings extends Settings
 {

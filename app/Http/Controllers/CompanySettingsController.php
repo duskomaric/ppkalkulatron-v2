@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateCompanySettingsRequest;
 use App\Settings\CompanySettings;
-use Illuminate\Http\Request;
 
 class CompanySettingsController extends Controller
 {
@@ -12,27 +12,9 @@ class CompanySettingsController extends Controller
         return view('settings.company', ['settings' => $settings]);
     }
 
-    public function update(Request $request, CompanySettings $settings)
+    public function update(UpdateCompanySettingsRequest $request, CompanySettings $settings)
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:64'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'city' => ['nullable', 'string', 'max:120'],
-            'zip' => ['nullable', 'string', 'max:16'],
-            'country' => ['nullable', 'string', 'max:120'],
-            'identification_number' => ['nullable', 'string', 'max:32'],
-            'vat_number' => ['nullable', 'string', 'max:32'],
-            'small_entrepreneur_note' => ['nullable', 'string', 'max:255'],
-        ], [], [
-            'name' => 'naziv kompanije', 'email' => 'email', 'phone' => 'telefon',
-            'address' => 'adresa', 'city' => 'grad', 'zip' => 'poštanski broj',
-            'country' => 'država', 'identification_number' => 'JIB', 'vat_number' => 'PIB',
-            'small_entrepreneur_note' => 'napomena',
-        ]);
-
-        $settings->fill($data);
+        $settings->fill($request->safe()->except(['is_small_entrepreneur', 'is_vat_obligor']));
         $settings->is_small_entrepreneur = $request->boolean('is_small_entrepreneur');
         $settings->is_vat_obligor = $request->boolean('is_vat_obligor');
         $settings->save();

@@ -4,12 +4,12 @@
 @section('content')
     <x-back-link :href="route('invoices.index')" />
 
-    <form method="POST" action="{{ route('settings.mail.update') }}" class="space-y-8 animate-fade-in">
+    <form method="POST" action="{{ route('settings.mail.update') }}" class="max-w-3xl space-y-8 animate-fade-in">
         @csrf
         @method('PUT')
 
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="mail" title="Pošiljalac" />
+            <x-section-header icon="mail" title="Pošiljalac" :help="route('help').'#mail'" />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <x-form-input label="Adresa pošiljaoca" name="from_address" type="email" :value="$settings->from_address" />
@@ -18,7 +18,7 @@
         </x-section-block>
 
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="cog" title="SMTP" subtitle="Ostavite host prazan da se šalje podrazumijevanim mailerom" />
+            <x-section-header icon="cog" title="SMTP" subtitle="Ostavite host prazan da se šalje podrazumijevanim mailerom" :help="route('help').'#mail'" />
 
             <x-form-input label="Host" name="host" :value="$settings->host" placeholder="npr. smtp.gmail.com" />
 

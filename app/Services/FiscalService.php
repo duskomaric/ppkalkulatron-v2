@@ -13,11 +13,8 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Fiskalizacija računa preko OFS ESIR-a, preneseno iz v1 FiscalController-a.
- *
- * Razlika u odnosu na v1: nema „local device mode" u kojem preglednik pozove uređaj
- * pa serveru pošalje odgovor na povjerenje. U v2 PHP radi na samom uređaju, pa poziv
- * uvijek ide odavde i odgovor nikad ne prolazi kroz klijenta.
+ * Fiskalizacija računa preko OFS ESIR-a. PHP na uređaju direktno poziva uređaj i
+ * obrađuje njegov odgovor.
  */
 class FiscalService
 {
@@ -28,6 +25,7 @@ class FiscalService
         private FiscalSettings $settings,
         private FiscalReceiptStore $receipts,
         private CurrencyConverter $converter,
+        private OFSService $ofs,
     ) {}
 
     public function fiscalize(Invoice $invoice): FiscalRecord
@@ -104,11 +102,25 @@ class FiscalService
         $payload = $this->payload($invoice, $items, (float) array_sum(array_column($items, 'totalAmount')),
             $transactionType, $invoiceType, $referent);
 
-        $requestId = self::requestId($requestPrefix, $invoice->id);
+        [$record, $isRetry] = $this->pendingRecord($invoice, $type, $requestPrefix);
 
-        Log::info('Fiskalizacija računa', ['invoice_id' => $invoice->id, 'request_id' => $requestId, 'type' => $type->value]);
+        if ($isRetry) {
+            $existing = $this->ofs->getInvoiceByRequestId($record->request_id);
 
-        $response = app(OFSService::class)->createInvoice($payload, $requestId);
+            if (! $existing->successful()) {
+                throw new RuntimeException('Nije moguće provjeriti prethodni zahtjev fiskalnom uređaju. Ne pokušavajte ponovo dok se veza ne vrati.');
+            }
+
+            $previousResponse = (array) $existing->json();
+
+            if (isset($previousResponse['invoiceNumber'])) {
+                return $this->completeRecord($record, $previousResponse);
+            }
+        }
+
+        Log::info('Fiskalizacija računa', ['invoice_id' => $invoice->id, 'request_id' => $record->request_id, 'type' => $type->value]);
+
+        $response = $this->ofs->createInvoice($payload, $record->request_id);
 
         if (! $response->successful()) {
             Log::error('Fiskalizacija nije uspjela', [
@@ -124,16 +136,46 @@ class FiscalService
             throw new RuntimeException('Neispravan odgovor fiskalnog uređaja.');
         }
 
+        return $this->completeRecord($record, $data);
+    }
+
+    /**
+     * RequestId se snima prije slanja. Kod izgubljenog odgovora isti zapis se
+     * prvo traži na ESIR-u, čime se izbjegava izdavanje drugog fiskalnog računa.
+     *
+     * @return array{FiscalRecord, bool}
+     */
+    private function pendingRecord(Invoice $invoice, FiscalRecordType $type, string $requestPrefix): array
+    {
+        $pending = $invoice->fiscalRecords()
+            ->where('type', $type->value)
+            ->whereNull('fiscal_invoice_number')
+            ->oldest('id')
+            ->first();
+
+        if ($pending) {
+            return [$pending, true];
+        }
+
+        return [$invoice->fiscalRecords()->create([
+            'type' => $type,
+            'request_id' => self::requestId($requestPrefix, $invoice->id),
+        ]), false];
+    }
+
+    private function completeRecord(FiscalRecord $record, array $data): FiscalRecord
+    {
+        if (! isset($data['invoiceNumber'])) {
+            throw new RuntimeException('Neispravan odgovor fiskalnog uređaja.');
+        }
+
         $receipt = $this->receipts->extractFrom($data);
 
-        $record = $invoice->fiscalRecords()->create([
-            'type' => $type,
+        $record->update([
             'fiscal_invoice_number' => $data['invoiceNumber'],
             'fiscal_counter' => isset($data['invoiceCounter']) ? (string) $data['invoiceCounter'] : null,
-            'request_id' => $requestId,
             'verification_url' => $data['verificationUrl'] ?? null,
             'fiscalized_at' => now(),
-            'fiscal_receipt_image_path' => $this->receiptName($invoice, $type->value, $receipt),
         ]);
 
         if ($receipt !== null) {
@@ -151,8 +193,9 @@ class FiscalService
     {
         // Uređaju iznosi idu u KM, po kursu na datum računa.
         $toBam = fn (int $pfening) => $this->converter->toBam($pfening, $invoice->currency, $invoice->date);
+        $zeroRateLabel = null;
 
-        return $invoice->items->map(function ($item) use ($toBam) {
+        return $invoice->items->map(function ($item) use ($toBam, &$zeroRateLabel) {
             // GTIN je obavezan (8-14 znakova). Pravi barkod artikla ako ga ima,
             // inače id dopunjen nulama — uređaj traži nešto jedinstveno.
             $barcode = preg_replace('/\D/', '', (string) $item->article?->gtin);
@@ -169,7 +212,7 @@ class FiscalService
                 // odštampa red u kojem cijena × količina ne daje ukupno.
                 'unitPrice' => abs($toBam($item->total)) / max(1, (int) $item->quantity) / 100,
                 'totalAmount' => abs($toBam($item->total)) / 100,
-                'labels' => [$item->tax_label ?: $this->zeroRateLabel()],
+                'labels' => [$item->tax_label ?: ($zeroRateLabel ??= $this->zeroRateLabel())],
             ];
         })->all();
     }
@@ -207,8 +250,8 @@ class FiscalService
 
         $payload = [
             'print' => $this->settings->print_receipt,
-            'renderReceiptImage' => $this->settings->render_receipt_image,
-            'receiptImageFormat' => $this->imageFormat($layout),
+            'renderReceiptImage' => true,
+            'receiptImageFormat' => $this->documentFormat($layout),
             'receiptLayout' => $layout,
             'receiptHeaderTextLines' => $this->settings->receipt_header_text_lines,
             'invoiceRequest' => [
@@ -242,16 +285,16 @@ class FiscalService
      * daje prazan račun od jednog piksela. Radije se vrati na format koji se iscrta
      * nego da fiskalizacija padne zbog izbora slike.
      */
-    private function imageFormat(string $layout): string
+    private function documentFormat(string $layout): string
     {
-        $format = $this->settings->receipt_image_format;
-        $allowed = $this->settings->allowedImageFormats();
+        $format = $this->settings->receipt_document_format;
+        $allowed = $this->settings->allowedDocumentFormats();
 
         if (in_array($format, $allowed, true)) {
             return $format;
         }
 
-        Log::warning('Format slike računa se ne može iscrtati za raspored', [
+        Log::warning('Format fiskalnog dokumenta nije podržan za raspored', [
             'layout' => $layout, 'configured' => $format, 'used' => $allowed[0],
         ]);
 
@@ -315,17 +358,5 @@ class FiscalService
     public static function requestId(string $prefix, int $invoiceId): string
     {
         return substr($prefix.$invoiceId.Str::random(8), 0, 32);
-    }
-
-    /** Logičko ime računa: mjesec/broj-fakture-(tip).ekstenzija — imenuje prilog u mailu. */
-    private function receiptName(Invoice $invoice, string $type, ?array $receipt): ?string
-    {
-        if ($receipt === null) {
-            return null;
-        }
-
-        $safeNumber = preg_replace('/[^a-zA-Z0-9\-_]/', '-', $invoice->invoice_number);
-
-        return now()->format('Y-m').'/'.$safeNumber.'-'.$type.'.'.$receipt['extension'];
     }
 }

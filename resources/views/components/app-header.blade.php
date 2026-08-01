@@ -8,9 +8,6 @@
                 <x-icon name="calculator" class="h-4 w-4" />
             </a>
 
-            {{-- Naziv može biti dug: skraćuje se, i ustupa mjesto meniju na širokom ekranu. --}}
-            @php($companyName = app(\App\Settings\CompanySettings::class)->name)
-
             @if ($companyName)
                 <a href="{{ route('settings.company.edit') }}" title="{{ $companyName }}"
                    class="min-w-0 lg:max-w-[220px] xl:max-w-[320px] text-sm font-black tracking-tighter italic truncate text-[var(--color-text-main)] hover:text-primary transition-colors">
@@ -24,6 +21,13 @@
                 @foreach ($navItems as $item)
                     <x-nav-link :href="$item['href']" :active="$item['active']" :icon="$item['icon']">{{ $item['title'] }}</x-nav-link>
                 @endforeach
+                @if (count($drawerItems))
+                    <button type="button" @click="moreDrawer = true"
+                            class="cursor-pointer group flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-[var(--color-text-dim)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] transition-colors">
+                        <x-icon name="more-horizontal" class="h-4 w-4" />
+                        Više
+                    </button>
+                @endif
             </nav>
         </div>
 

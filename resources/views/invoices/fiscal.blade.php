@@ -1,5 +1,3 @@
-{{-- Fiskalizacija (OFS ESIR), vizuelno odvojena sekcija — kao v1. --}}
-
 @php
     $headTone = match ($invoice->status->value) {
         'refunded' => 'bg-red-500/10 text-red-500',
@@ -9,13 +7,19 @@
 @endphp
 
 <div class="mt-6 pt-4 border-t-2 border-dashed border-[var(--color-border)]">
-    <div class="flex items-center gap-2 mb-3">
-        <div class="h-7 w-7 {{ $headTone }} rounded-lg flex items-center justify-center shrink-0">
-            <x-icon name="file-text" class="h-4 w-4" />
+    <div class="mb-3 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+            <div class="h-7 w-7 {{ $headTone }} rounded-lg flex items-center justify-center shrink-0">
+                <x-icon name="file-text" class="h-4 w-4" />
+            </div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-dim)]">
+                Fiskalizacija (OFS ESIR)
+            </p>
         </div>
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-dim)]">
-            Fiskalizacija (OFS ESIR)
-        </p>
+        <a href="{{ route('help') }}#fiskalizacija" title="Pomoć za fiskalizaciju"
+           class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-dim)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]">
+            <x-icon name="info" class="h-4 w-4" />
+        </a>
     </div>
 
     <div class="p-4 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] space-y-3">
@@ -63,22 +67,22 @@
                         </div>
                     </div>
 
-                    @if ($record->verification_url || $record->fiscal_receipt_image_path)
+                    @if ($record->verification_url || $record->receipt)
                         <div class="flex items-center gap-2 sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 border-black/5">
                             @if ($record->verification_url)
-                                <a href="{{ $record->verification_url }}" target="_blank" rel="noopener noreferrer" title="Verifikacija"
+                                <a href="{{ $record->verification_url }}" title="Provjeri kod Poreske uprave"
                                    class="cursor-pointer flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white shadow-sm border border-black/5 hover:scale-[1.02] active:scale-[0.98] transition-all {{ $text }}">
                                     <x-icon name="external-link" class="h-5 w-5" />
-                                    <span class="text-[10px] font-black uppercase sm:hidden">Provjeri</span>
+                                    <span class="text-[10px] font-black uppercase">Provjeri</span>
                                 </a>
                             @endif
 
-                            @if ($record->fiscal_receipt_image_path)
-                                <button type="button" title="Slika"
-                                        x-on:click="{{ \App\Support\Js::call('$data.openReceipt', route('invoices.receipt', $record), match (strtolower($record->receiptImage?->extension ?: 'png')) { 'pdf' => 'pdf', 'html', 'htm' => 'html', default => 'image' }) }}"
+                            @if ($record->receipt)
+                                <button type="button" title="Prikaži fiskalni dokument"
+                                        x-on:click="{{ \App\Support\Js::call('$data.openReceipt', route('invoices.receipt', $record, false), match (strtolower($record->receipt?->extension ?: 'png')) { 'pdf' => 'pdf', 'html', 'htm' => 'html', default => 'image' }, $record->verification_url, getenv('JUMP_BRIDGE_PORT') !== false) }}"
                                         class="cursor-pointer flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white shadow-sm border border-black/5 hover:scale-[1.02] active:scale-[0.98] transition-all {{ $text }}">
                                     <x-icon name="image" class="h-5 w-5" />
-                                    <span class="text-[10px] font-black uppercase sm:hidden">Prikaži</span>
+                                    <span class="text-[10px] font-black uppercase">Prikaži</span>
                                 </button>
                             @endif
                         </div>
@@ -93,8 +97,9 @@
 
         <div class="flex flex-wrap gap-2 pt-1">
             @if ($invoice->status === \App\Enums\InvoiceStatus::Created)
+                <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
                 <button type="button"
-                        x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.fiscalize', $invoice), 'Fiskalizovati račun '.$invoice->invoice_number.'?') }}"
+                        x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.fiscalize', $invoice, false), 'Fiskalizovati račun '.$invoice->invoice_number.'?') }}"
                         class="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-black text-[11px] uppercase tracking-[0.15em] hover:bg-emerald-500 hover:text-white transition-all cursor-pointer">
                     <x-icon name="check" class="h-4 w-4" /> Fiskalizuj
                 </button>
@@ -102,7 +107,7 @@
 
             @if ($invoice->originalFiscalRecord())
                 <button type="button"
-                        x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.fiscal-copy', $invoice), 'Odštampati kopiju računa?') }}"
+                        x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.fiscal-copy', $invoice, false), 'Odštampati kopiju računa?') }}"
                         class="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 font-black text-[11px] uppercase tracking-[0.15em] hover:bg-blue-500 hover:text-white transition-all cursor-pointer">
                     <x-icon name="file-text" class="h-4 w-4" /> Kopija
                 </button>
@@ -110,7 +115,7 @@
 
             @if ($invoice->status === \App\Enums\InvoiceStatus::Fiscalized && ! $invoice->refund_invoice_id && ! $invoice->originalInvoice)
                 <button type="button"
-                        x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.create-refund', $invoice), 'Kreirati storno računa '.$invoice->invoice_number.'?') }}"
+                        x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.create-refund', $invoice, false), 'Kreirati storno računa '.$invoice->invoice_number.'?') }}"
                         class="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 font-black text-[11px] uppercase tracking-[0.15em] hover:bg-red-500 hover:text-white transition-all cursor-pointer">
                     <x-icon name="repeat" class="h-4 w-4" /> Kreiraj storno
                 </button>
@@ -118,7 +123,7 @@
 
             @if ($invoice->originalInvoice && $invoice->status === \App\Enums\InvoiceStatus::RefundCreated)
                 <button type="button"
-                        x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.fiscal-refund', $invoice), 'Fiskalizovati storno?') }}"
+                        x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.fiscal-refund', $invoice, false), 'Fiskalizovati storno?') }}"
                         class="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 font-black text-[11px] uppercase tracking-[0.15em] hover:bg-red-500 hover:text-white transition-all cursor-pointer">
                     <x-icon name="repeat" class="h-4 w-4" /> Fiskalizuj storno
                 </button>

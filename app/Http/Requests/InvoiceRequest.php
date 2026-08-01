@@ -12,6 +12,11 @@ use Illuminate\Validation\Rule;
 
 class InvoiceRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [

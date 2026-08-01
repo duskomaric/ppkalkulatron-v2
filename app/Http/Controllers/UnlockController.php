@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UnlockRequest;
 use App\Services\PinLock;
 use Illuminate\Http\Request;
 
@@ -18,13 +19,13 @@ class UnlockController extends Controller
         return view('unlock');
     }
 
-    public function store(Request $request)
+    public function store(UnlockRequest $request)
     {
         if (! $this->pin->isEnabled()) {
             return redirect()->route('invoices.index');
         }
 
-        $validated = $request->validate(['pin' => ['required', 'string']]);
+        $validated = $request->validated();
 
         if (! $this->pin->verify($validated['pin'])) {
             return redirect()->route('unlock')->withErrors(['pin' => 'Pogrešan PIN.']);

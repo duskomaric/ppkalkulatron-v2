@@ -10,9 +10,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Potraga za fiskalnim uređajem na lokalnoj mreži.
  *
- * v1 ovo radi iz preglednika: WebRTC-om pogodi lokalnu adresu, pa svaku adresu
- * proba kroz Service Worker — sporo i ograničeno pravilima preglednika. Ovdje PHP
- * radi na samom uređaju, pa se opseg čita direktno sa mrežnog interfejsa, a
+ * PHP radi na samom uređaju: opseg se čita direktno sa mrežnog interfejsa, a
  * adrese se provjeravaju paralelno.
  */
 class NetworkScanner
@@ -78,32 +76,55 @@ class NetworkScanner
     public function localIp(): ?string
     {
         // UDP „veza" ne šalje ništa — samo natjera jezgro da izabere izlazni interfejs.
-        $socket = @stream_socket_client('udp://8.8.8.8:53', $code, $message, 1);
+        $socketIp = $this->socketLocalIp();
 
-        if ($socket) {
-            $name = stream_socket_get_name($socket, false);
-            fclose($socket);
-
-            $ip = strtok((string) $name, ':');
-
-            if ($this->isPrivate($ip)) {
-                return $ip;
-            }
+        if ($this->isPrivate($socketIp)) {
+            return $socketIp;
         }
 
-        if (function_exists('net_get_interfaces')) {
-            foreach ((array) net_get_interfaces() as $interface) {
-                foreach ($interface['unicast'] ?? [] as $unicast) {
-                    $candidate = $unicast['address'] ?? null;
-
-                    if (is_string($candidate) && $this->isPrivate($candidate)) {
-                        return $candidate;
-                    }
-                }
+        foreach ($this->interfaceIps() as $candidate) {
+            if ($this->isPrivate($candidate)) {
+                return $candidate;
             }
         }
 
         return null;
+    }
+
+    protected function socketLocalIp(): ?string
+    {
+        $socket = @stream_socket_client('udp://8.8.8.8:53', $code, $message, 1);
+
+        if (! $socket) {
+            return null;
+        }
+
+        $name = stream_socket_get_name($socket, false);
+        fclose($socket);
+
+        return strtok((string) $name, ':') ?: null;
+    }
+
+    /** @return array<int, string> */
+    protected function interfaceIps(): array
+    {
+        if (! function_exists('net_get_interfaces')) {
+            return [];
+        }
+
+        $ips = [];
+
+        foreach ((array) net_get_interfaces() as $interface) {
+            foreach ($interface['unicast'] ?? [] as $unicast) {
+                $candidate = $unicast['address'] ?? null;
+
+                if (is_string($candidate)) {
+                    $ips[] = $candidate;
+                }
+            }
+        }
+
+        return $ips;
     }
 
     /** „192.168.31.100-105" ili „192.168.31." za cijeli opseg. */
@@ -114,13 +135,15 @@ class NetworkScanner
         if (preg_match('/^(\d{1,3}\.\d{1,3}\.\d{1,3})\.(\d{1,3})-(\d{1,3})$/', $range, $m)) {
             [$prefix, $from, $to] = [$m[1], (int) $m[2], (int) $m[3]];
 
-            return $from <= $to && $to <= 255
+            return $this->isPrivateV4Prefix($prefix) && $from <= $to && $to <= 255
                 ? array_map(fn (int $last) => "{$prefix}.{$last}", range($from, $to))
                 : [];
         }
 
         if (preg_match('/^(\d{1,3}\.\d{1,3}\.\d{1,3})\.?$/', $range, $m)) {
-            return array_map(fn (int $last) => "{$m[1]}.{$last}", range(1, 254));
+            return $this->isPrivateV4Prefix($m[1])
+                ? array_map(fn (int $last) => "{$m[1]}.{$last}", range(1, 254))
+                : [];
         }
 
         return [];
@@ -131,5 +154,10 @@ class NetworkScanner
         return is_string($ip)
             && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
             && ! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE);
+    }
+
+    private function isPrivateV4Prefix(string $prefix): bool
+    {
+        return $this->isPrivate("{$prefix}.1");
     }
 }

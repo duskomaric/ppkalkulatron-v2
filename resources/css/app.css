@@ -3,7 +3,7 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
-/* Tokeni preneseni iz v1 (ppKalkulatron-pwa/app/app.css) da izgled ostane isti. */
+/* Osnovni tokeni izgleda aplikacije. */
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
@@ -93,6 +93,20 @@ body {
 
 /* Alpine: sakrij dok se ne inicijalizuje */
 [x-cloak] { display: none !important; }
+
+/*
+ * WebKit (iPhone i Jump WebView) automatski zumira kontrolu kojoj je tekst manji
+ * od 16px. Forma je ranije koristila kompaktnije Tailwind veličine, pa bi fokus
+ * na bilo kojem polju promijenio cijelu skalu stranice. Na telefonu uvijek
+ * isporučujemo 16px, a desktop zadržava gusti prikaz. PIN polja su već 24px.
+ */
+@media (max-width: 767px) {
+    input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='password'][maxlength='1']),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
 
 /*
  * Sigurne zone.

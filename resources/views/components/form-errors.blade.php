@@ -1,8 +1,7 @@
-{{-- Greške iz XHR odgovora; pune stranice ih i dalje prikazuju uz polje. --}}
-<template x-if="Object.keys($data.formErrors || {}).length">
-    <div data-error-summary class="p-3 rounded-2xl border border-red-500/30 bg-red-500/10 space-y-1">
-        <template x-for="messages in Object.values($data.formErrors)" :key="messages[0]">
-            <p class="text-[11px] font-bold text-red-500" x-text="messages[0]"></p>
-        </template>
+@if ($errors->any())
+    <div class="space-y-1 rounded-2xl border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 p-3">
+        @foreach ($errors->all() as $message)
+            <p class="text-[11px] font-bold text-[var(--color-error)]">{{ $message }}</p>
+        @endforeach
     </div>
-</template>
+@endif

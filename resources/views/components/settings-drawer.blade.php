@@ -1,7 +1,3 @@
-{{--
-    Struktura prati v1 SettingsDrawer: naslovi grupa pa DrawerNavItem sa opisom.
-    Bez licence i vizuelnih podešavanja — nema pretplate, a svi moduli su vidljivi.
---}}
 <x-drawer title="Podešavanja" state="settingsDrawer">
     <div class="flex flex-col gap-3">
         <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)] px-1 pb-1">
@@ -12,6 +8,8 @@
                            description="Podaci o firmi, adresa i JIB/PIB" />
         <x-drawer-nav-item :href="route('settings.mail.edit')" icon="mail" title="Mail"
                            description="Slanje računa, SMTP" />
+        <x-drawer-nav-item :href="route('settings.backup.edit')" icon="archive" title="Backup"
+                           description="ZIP računa i fiskalnih dokumenata" />
 
         <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)] px-1 pt-4 pb-1">
             Podešavanja dokumenata
@@ -38,17 +36,12 @@
             ];
         @endphp
 
-        @foreach ($drawerItems as $item)
-            <x-drawer-nav-item :href="$item['href']" :icon="$item['icon']" :title="$item['title']"
-                               :description="$descriptions[$item['key']] ?? ''" />
-        @endforeach
-
         <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)] px-1 pt-4 pb-1">
             Aplikacija
         </p>
 
-        <x-drawer-nav-item :href="route('settings.menu.edit')" icon="cog" title="Vizuelna podešavanja"
-                           description="Šta stoji u donjem meniju" />
+        <x-drawer-nav-item :href="route('settings.menu.edit')" icon="monitor" title="Izgled i navigacija"
+                           description="Tema i raspored modula" />
         <x-drawer-nav-item :href="route('settings.pin.edit')" icon="lock" title="PIN"
                            description="Zaključavanje aplikacije pri pokretanju" />
         <x-drawer-nav-item :href="route('help')" icon="info" title="Pomoć"

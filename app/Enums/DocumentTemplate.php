@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-/** PDF predlošci dokumenta — isti skup kao u v1. */
+/** PDF predlošci dokumenata. */
 enum DocumentTemplate: string
 {
     case Classic = 'classic';

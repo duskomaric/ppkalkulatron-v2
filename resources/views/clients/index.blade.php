@@ -2,17 +2,17 @@
 @section('title', 'Klijenti')
 
 @section('actions')
-    <x-create-button label="Novi klijent" x-on:click="$dispatch('open-entity-form')" />
+    <x-create-button label="Novi klijent" :href="route('clients.create')" />
 @endsection
 
 @section('content')
-    <div x-data="entityIndex()"
-         x-on:open-entity-form.window="openForm({{ \App\Support\Js::from(route('clients.create', ['partial' => 1])) }}, 'Novi klijent')">
-        <x-search-bar :value="$q" placeholder="Pretraga po nazivu…" />
+    <div>
+        <x-search-bar :value="$q" placeholder="Pretraži klijente…" />
 
-        <div data-entity-list>
+        <div>
             @if ($clients->isEmpty())
-                <x-empty-state icon="x" title="Nema pronađenih klijenata" />
+                <x-empty-state icon="x" title="Nema pronađenih klijenata"
+                               :action="route('clients.create')" action-label="Dodaj klijenta" />
             @else
                 <x-list-header grid="grid-cols-[minmax(0,1.3fr)_0.5fr_0.9fr_0.7fr_0.8fr]" :columns="[
                     ['label' => 'Klijent'], ['label' => 'Status'], ['label' => 'Email'],
@@ -23,8 +23,7 @@
                     @foreach ($clients as $client)
                         @php($status = ['label' => $client->is_active ? 'Aktivan' : 'Neaktivan', 'color' => $client->is_active ? 'green' : 'gray'])
 
-                        <x-responsive-entity-card :href="route('clients.edit', $client)"
-                                                  :x-on:click.prevent="\App\Support\Js::call('openForm', route('clients.edit', [$client, 'partial' => 1]), 'Izmjena klijenta')">
+                        <x-responsive-entity-card :href="route('clients.edit', $client)">
                             <x-slot:mobile>
                                 <div class="flex justify-between items-center">
                                     <div class="flex items-center gap-2 min-w-0">
@@ -104,6 +103,5 @@
             @endif
         </div>
 
-        <x-entity-form-drawer />
     </div>
 @endsection

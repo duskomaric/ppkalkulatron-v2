@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProfileRequest;
 use App\Settings\UserSettings;
-use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
@@ -12,13 +12,9 @@ class ProfileController extends Controller
         return view('profile', ['user' => $settings]);
     }
 
-    public function update(Request $request, UserSettings $settings)
+    public function update(UpdateProfileRequest $request, UserSettings $settings)
     {
-        $data = $request->validate([
-            'first_name' => ['required', 'string', 'max:64'],
-            'last_name' => ['nullable', 'string', 'max:64'],
-            'email' => ['nullable', 'email', 'max:255'],
-        ], [], ['first_name' => 'ime', 'last_name' => 'prezime', 'email' => 'email']);
+        $data = $request->validated();
 
         $settings->first_name = $data['first_name'];
         $settings->last_name = $data['last_name'] ?? '';

@@ -2,24 +2,22 @@
 @section('title', 'Valute')
 
 @section('actions')
-    <x-create-button label="Nova valuta" x-on:click="$dispatch('open-entity-form')" />
+    <x-create-button label="Nova valuta" :href="route('currencies.create')" />
 @endsection
 
 @section('content')
-    {{-- v1 ovdje nema tabelu nego mrežu kartica; kurs je dodatak v2. --}}
-    <div x-data="entityIndex()"
-         x-on:open-entity-form.window="openForm({{ \App\Support\Js::from(route('currencies.create', ['partial' => 1])) }}, 'Nova valuta')">
-        <div data-entity-list>
+    <div>
+        <div>
             @if ($currencies->isEmpty())
-                <x-empty-state icon="hash" title="Nema valuta" />
+                <x-empty-state icon="hash" title="Nema valuta"
+                               :action="route('currencies.create')" action-label="Dodaj valutu" />
             @else
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 animate-fade-in">
                 @foreach ($currencies as $currency)
                     {{-- Cijela kartica je meta za dodir; olovka od 32px je premala na telefonu. --}}
                     <a href="{{ route('currencies.edit', $currency) }}"
-                       x-on:click.prevent="{{ \App\Support\Js::call('openForm', route('currencies.edit', [$currency, 'partial' => 1]), 'Izmjena valute') }}"
                        class="block bg-[var(--color-surface)] border border-[var(--color-border)] p-5 rounded-2xl relative group shadow-sm hover:shadow-md hover:border-primary/40 transition-all">
-                        <div class="flex justify-between items-center mb-3 pr-12">
+                        <div class="flex justify-between items-center gap-3 mb-3">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div class="h-10 min-w-10 px-2 bg-[var(--color-surface-hover)] rounded-full flex items-center justify-center text-primary font-black text-sm shrink-0">
                                     {{ $currency->symbol }}
@@ -28,7 +26,10 @@
                             </div>
 
                             @if ($currency->is_default)
-                                <span class="text-primary text-lg shrink-0" title="Podrazumijevana valuta">★</span>
+                                <span class="shrink-0" title="Podrazumijevana valuta">
+                                    <x-icon name="star" class="h-5 w-5 text-primary" />
+                                    <span class="sr-only">Podrazumijevana valuta</span>
+                                </span>
                             @endif
                         </div>
 
@@ -50,6 +51,5 @@
             @endif
         </div>
 
-        <x-entity-form-drawer />
     </div>
 @endsection

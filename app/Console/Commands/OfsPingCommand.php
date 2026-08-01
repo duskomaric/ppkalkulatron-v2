@@ -65,7 +65,7 @@ class OfsPingCommand extends Command
             $this->warn('  Uređaj traži PIN sigurnosnog elementa.');
         }
 
-        // Poreske oznake dolaze sa uređaja — v1 ih je hardkodirao, v2 ih čita odavde.
+        // Poreske oznake uvijek čitamo sa aktivnog fiskalnog uređaja.
         $categories = (array) $status->json('currentTaxRates.taxCategories', []);
         $labels = [];
         foreach ($categories as $category) {

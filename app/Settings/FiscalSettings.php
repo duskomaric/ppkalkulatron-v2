@@ -24,10 +24,8 @@ class FiscalSettings extends Settings
     /** Slip = termalni, Invoice = A4. */
     public string $receipt_layout;
 
-    /** Png | Pdf | Html. A4 layout ne ume PNG — vraća prazan jednopikselni. */
-    public string $receipt_image_format;
-
-    public bool $render_receipt_image;
+    /** Png | Pdf | Html. Invoice layout ne podržava PNG. */
+    public string $receipt_document_format;
 
     public bool $print_receipt;
 
@@ -35,7 +33,7 @@ class FiscalSettings extends Settings
 
     public string $default_payment_type;
 
-    /** Ime na računu; v1 ga uzima od prijavljenog korisnika, v2 nema korisnike. */
+    /** Ime operatera koje se šalje fiskalnom uređaju. */
     public string $cashier;
 
     public static function group(): string
@@ -44,7 +42,7 @@ class FiscalSettings extends Settings
     }
 
     /** Formati koje layout stvarno ume da iscrta. */
-    public function allowedImageFormats(): array
+    public function allowedDocumentFormats(): array
     {
         return $this->receipt_layout === 'Invoice' ? ['Pdf', 'Html'] : ['Png', 'Pdf', 'Html'];
     }

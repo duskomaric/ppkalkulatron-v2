@@ -1,5 +1,5 @@
 <form method="POST" action="{{ $currency ? route('currencies.update', $currency) : route('currencies.store') }}"
-      class="space-y-4" x-on:submit="$data.submitForm && ($event.preventDefault(), $data.submitForm($event))">
+      class="space-y-4">
     @csrf
     @if ($currency) @method('PUT') @endif
 
@@ -20,8 +20,8 @@
                   label="Osnovna valuta" :disabled="(bool) $currency?->is_default" />
     </x-section-block>
 
-    <x-drawer-form-actions :label="$currency ? 'Sačuvaj izmjene' : 'Dodaj valutu'"
-                           :delete="$currency && ! $currency->is_default ? route('currencies.destroy', $currency) : null" />
+    <x-form-actions :label="$currency ? 'Sačuvaj izmjene' : 'Dodaj valutu'"
+                    :delete="$currency && ! $currency->is_default ? route('currencies.destroy', $currency) : null" />
 </form>
 
 @if ($currency && ! $currency->is_default)
@@ -33,10 +33,9 @@
     {{-- Kurs je zaseban obrazac: mijenja se češće od same valute. --}}
     <div class="mt-4">
         <x-section-block variant="card">
-            <x-section-header icon="credit-card" title="Kursevi prema KM" />
+            <x-section-header icon="credit-card" title="Kursevi prema KM" :help="route('help').'#valute'" />
 
-            <form method="POST" action="{{ route('currencies.rates.store', $currency) }}" class="space-y-4"
-                  x-on:submit="$data.submitForm && ($event.preventDefault(), $data.submitForm($event))">
+            <form method="POST" action="{{ route('currencies.rates.store', $currency) }}" class="space-y-4">
                 @csrf
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -7,11 +7,7 @@ use Carbon\CarbonInterface;
 use RuntimeException;
 
 /**
- * Preračun u konvertibilnu marku, po v1 CurrencyConversionService.
- *
- * v1 čuva preračunate iznose u zasebnim _bam kolonama. v2 računa u trenutku
- * kad zatreba — a treba samo fiskalnom uređaju — pa nema kolona koje mogu
- * zastariti ako se kurs kasnije ispravi.
+ * Preračun u konvertibilnu marku prema kursu koji važi na datum računa.
  */
 class CurrencyConverter
 {

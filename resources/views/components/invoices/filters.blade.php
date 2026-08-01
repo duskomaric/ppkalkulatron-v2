@@ -1,10 +1,5 @@
 @props(['filters', 'years', 'activeFilters'])
 
-{{--
-    Cijela filter sekcija računa, po v1: traka sa dugmetom za filtere, godinom i
-    pretragom; panel koji se otvara ispod; i traka aktivnih filtera sa resetom.
---}}
-
 @php
     $statusOptions = ['' => 'Status: Svi'] + collect(\App\Enums\InvoiceStatus::cases())
         ->mapWithKeys(fn ($status) => [$status->value => 'Status: '.$status->label()])
@@ -15,18 +10,16 @@
         ->all();
 @endphp
 
-<div class="space-y-3 mb-4" x-data="{ filtersOpen: {{ collect($filters)->except('year')->filter()->isNotEmpty() ? 'true' : 'false' }} }">
+<div class="space-y-3 mb-4" x-data="{ filtersOpen: {{ collect($filters)->except('year')->filter()->isNotEmpty() ? 'true' : 'false' }}, yearDrawer: false }">
     <form method="GET">
         <input type="hidden" name="year" value="{{ $filters['year'] }}">
 
-        {{-- Na uskom ekranu pretraga ide u svoj red: uz dugmad joj ostane 133px. --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
-            <div class="flex items-center gap-2">
-                <x-filter-button state="filtersOpen" />
-                <x-year-button :year="$filters['year']" />
-            </div>
+        {{-- Pretraga se namjerno skuplja da filter, godina i traženje stanu u isti red. --}}
+        <div class="flex items-center gap-2">
+            <x-filter-button state="filtersOpen" />
+            <x-year-button :year="$filters['year']" />
 
-            <div class="w-full sm:w-[320px]">
+            <div class="min-w-0 grow sm:ml-auto sm:w-[320px] sm:grow-0">
                 <x-filter-search :value="$filters['q']" placeholder="Pretraži račune…" />
             </div>
         </div>
@@ -35,12 +28,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div class="flex flex-col gap-1.5 min-w-0">
                     <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-dim)]">Status</span>
-                    <x-filter-pill-select name="status" :value="$filters['status']" :options="$statusOptions" />
+                    <x-form-select variant="filter" name="status" :value="$filters['status']" :options="$statusOptions" auto-submit />
                 </div>
 
                 <div class="flex flex-col gap-1.5 min-w-0">
                     <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-dim)]">Plaćanje</span>
-                    <x-filter-pill-select name="payment_type" :value="$filters['payment_type']" :options="$paymentOptions" />
+                    <x-form-select variant="filter" name="payment_type" :value="$filters['payment_type']" :options="$paymentOptions" auto-submit />
                 </div>
 
                 <div class="flex flex-col gap-1.5 min-w-0">

@@ -1,7 +1,6 @@
 @props(['action', 'confirm' => 'Obrisati zapis?'])
 
-<form id="delete-entity" method="POST" action="{{ $action }}" class="hidden"
-      onsubmit="return confirm(@js($confirm))">
+<form id="delete-entity" method="POST" action="{{ $action }}" class="hidden" data-confirm="{{ $confirm }}">
     @csrf
     @method('DELETE')
 </form>

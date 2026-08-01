@@ -1,6 +1,3 @@
-@php($user = app(\App\Settings\UserSettings::class))
-
-{{-- v1 UserDrawer: kartica korisnika pa stavke; umjesto odjave stoji zaključavanje. --}}
 <x-drawer title="Moj nalog" state="userDrawer">
     <div class="flex items-center gap-4 p-4 bg-[var(--color-surface)] rounded-2xl mb-4 border border-[var(--color-border)] relative overflow-hidden">
         <div class="h-12 w-12 bg-primary rounded-xl flex items-center justify-center text-white font-black text-lg shadow-glow-primary shrink-0 z-10">

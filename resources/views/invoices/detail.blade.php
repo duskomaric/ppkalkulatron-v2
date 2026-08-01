@@ -1,4 +1,4 @@
-{{-- Sadržaj drawera sa detaljima računa; servira ga InvoiceController@show na ?partial=1. --}}
+{{-- Detalji računa koriste se na punoj stranici i u standardnom Laravel toku. --}}
 <x-detail-body :entity-name="$invoice->invoice_number" entity-icon="file-text">
     <x-slot:badges>
         <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
@@ -6,10 +6,8 @@
 
     <div class="space-y-3">
         <x-section-block>
-            <x-section-header icon="file-text" title="Osnovni podaci" />
+            <x-section-header icon="file-text" title="Osnovni podaci" :help="route('help').'#racuni'" />
 
-            {{-- Redoslijed i boje pločica prate v1. Izostavljeni su Izvor i Ponavljanje —
-                 v2 nema konverzije dokumenata ni ponavljajućih računa. --}}
             <x-details-grid :columns="2">
                 <x-details-item icon="contact" label="Klijent" :value="$invoice->client?->name"
                                 color="bg-blue-500/10 text-blue-500" />
@@ -43,7 +41,7 @@
         @endif
 
         <x-section-block>
-            <x-section-header icon="boxes" title="Stavke ({{ $invoice->items->count() }})" />
+            <x-section-header icon="boxes" title="Stavke ({{ $invoice->items->count() }})" :help="route('help').'#racuni'" />
 
             <div class="hidden md:grid grid-cols-[minmax(0,1fr)_70px_110px_80px_120px] gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-dim)] px-2">
                 <span>Stavka</span>
@@ -105,16 +103,17 @@
                 <span class="text-xl font-black text-primary tracking-tighter italic">{{ $invoice->formatted($invoice->total) }} {{ $invoice->currency }}</span>
             </div>
         </div>
-        {{-- PDF i mail, kao u v1 --}}
         <div class="flex gap-2">
             <a href="{{ route('invoices.pdf', $invoice) }}"
+               x-on:click="if (@js(getenv('JUMP_BRIDGE_PORT') !== false)) { $event.preventDefault(); $data.preparePdf(@js(route('invoices.pdf', $invoice, false)), @js(app(\App\Services\InvoicePdfService::class)->filename($invoice)), true); }"
                class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-primary/30 bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-all cursor-pointer min-h-[44px]">
-                <x-icon name="file-text" class="h-4 w-4" /> Preuzmi PDF
+                <x-icon name="file-text" class="h-4 w-4" />
+                <span x-text="pdfPreparing ? 'Pripremam PDF...' : (pdfFile ? 'Ponovo podijeli PDF' : 'Preuzmi PDF')">Preuzmi PDF</span>
             </a>
 
             @php
                 $emailDefaults = [
-                    'url' => route('invoices.email', $invoice),
+                    'url' => route('invoices.email', $invoice, false),
                     'to' => $invoice->client?->email ?? '',
                     'subject' => 'Račun '.$invoice->invoice_number,
                     'body' => "Poštovani,\n\nU prilogu vam šaljemo račun {$invoice->invoice_number}.\n\nS poštovanjem",
@@ -138,13 +137,11 @@
     @if ($invoice->isDeletable())
         <x-slot:actions>
             <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" class="flex-1"
-                  onsubmit="return confirm('Obrisati račun {{ $invoice->invoice_number }}?')">
+                  data-confirm="Obrisati račun {{ $invoice->invoice_number }}?">
                 @csrf @method('DELETE')
                 <x-drawer-action-button tone="danger" icon="trash" label="Obriši" class="w-full" />
             </form>
-            <x-drawer-action-button icon="pencil" label="Uredi" :href="route('invoices.edit', $invoice)"
-                                    :x-on:click="'$data.openForm && ($event.preventDefault(), '
-                                        .\App\Support\Js::call('$data.openForm', route('invoices.edit', [$invoice, 'partial' => 1]), 'Uredi račun').')'" />
+            <x-drawer-action-button icon="pencil" label="Uredi" :href="route('invoices.edit', $invoice)" />
         </x-slot:actions>
     @endif
 </x-detail-body>

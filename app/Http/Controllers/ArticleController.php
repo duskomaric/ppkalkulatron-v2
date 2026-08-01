@@ -2,17 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Unit;
-use App\Http\Controllers\Concerns\DrawerForms;
+use App\Http\Requests\ArticleRequest;
 use App\Models\Article;
 use App\Models\TaxRate;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ArticleController extends Controller
 {
-    use DrawerForms;
-
     public function index(Request $request)
     {
         return view('articles.index', [
@@ -21,31 +17,32 @@ class ArticleController extends Controller
                 ->paginate(20)
                 ->withQueryString(),
             'q' => $request->string('q')->toString(),
+            'taxRates' => TaxRate::query()->pluck('rate', 'label')->all(),
         ]);
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        return $this->formView($request, 'articles.form-fields', 'articles.form', ['article' => null]);
+        return view('articles.form', $this->formData());
     }
 
-    public function store(Request $request)
+    public function store(ArticleRequest $request)
     {
-        Article::create($this->validated($request));
+        Article::create($this->priceInMinorUnits($request->validated()));
 
-        return $this->saved($request, 'articles.index', 'Artikl je kreiran.');
+        return redirect()->route('articles.index')->with('status', 'Artikl je kreiran.');
     }
 
-    public function edit(Request $request, Article $article)
+    public function edit(Article $article)
     {
-        return $this->formView($request, 'articles.form-fields', 'articles.form', ['article' => $article]);
+        return view('articles.form', $this->formData($article));
     }
 
-    public function update(Request $request, Article $article)
+    public function update(ArticleRequest $request, Article $article)
     {
-        $article->update($this->validated($request));
+        $article->update($this->priceInMinorUnits($request->validated()));
 
-        return $this->saved($request, 'articles.index', 'Izmjene su sačuvane.');
+        return redirect()->route('articles.index')->with('status', 'Izmjene su sačuvane.');
     }
 
     public function destroy(Article $article)
@@ -55,26 +52,27 @@ class ArticleController extends Controller
         return redirect()->route('articles.index')->with('status', 'Artikl je obrisan.');
     }
 
-    private function validated(Request $request): array
+    private function priceInMinorUnits(array $data): array
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'unit' => ['required', Rule::enum(Unit::class)],
-            'tax_label' => ['nullable', Rule::in(array_keys(TaxRate::basisPointsByLabel()))],
-            'gtin' => ['nullable', 'string', 'min:8', 'max:14'],
-            'last_unit_price' => ['nullable', 'numeric', 'min:0'],
-            'is_active' => ['nullable', 'boolean'],
-        ], [], [
-            'name' => 'naziv', 'description' => 'opis', 'unit' => 'jedinica mjere',
-            'tax_label' => 'poreska oznaka', 'gtin' => 'GTIN', 'last_unit_price' => 'cijena',
-        ]);
-
-        $data['last_unit_price'] = $data['last_unit_price'] !== null
+        $data['last_unit_price'] = ($data['last_unit_price'] ?? null) !== null
             ? (int) round(((float) $data['last_unit_price']) * 100)
             : null;
-        $data['is_active'] = $request->boolean('is_active');
 
         return $data;
+    }
+
+    /** @return array{article: ?Article, taxRateOptions: array<string, string>} */
+    private function formData(?Article $article = null): array
+    {
+        return [
+            'article' => $article,
+            'taxRateOptions' => ['' => '—'] + TaxRate::query()
+                ->orderBy('label')
+                ->get(['label', 'rate'])
+                ->mapWithKeys(fn (TaxRate $taxRate): array => [
+                    $taxRate->label => $taxRate->label.' — '.$taxRate->rate.'%',
+                ])
+                ->all(),
+        ];
     }
 }

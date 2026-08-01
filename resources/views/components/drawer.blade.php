@@ -1,6 +1,5 @@
 @props(['title', 'state', 'titleExpr' => null])
 
-{{-- Ista struktura kao v1: bottom sheet na telefonu, centrirano na desktopu. --}}
 <div x-cloak x-show="{{ $state }}" role="dialog" aria-modal="true"
      x-on:keydown.escape.window="{{ $state }} = false"
      x-effect="document.body.style.overflow = {{ $state }} ? 'hidden' : ''"

@@ -8,9 +8,8 @@ use App\Settings\NumberingSettings;
 /**
  * Broj računa se izvodi iz samih računa, ne iz brojača.
  *
- * U v1 je brojač bio jedini izvor istine i razilazio se sa stvarnošću: brisanje
- * računa nije ispravno oslobađalo broj. Ovdje je pravilo jedno — sljedeći broj je
- * najveći iskorišteni + 1. Brisanje time samo radi, bez ijedne dodatne linije.
+ * Sljedeći broj je najveći iskorišteni + 1, pa se nakon brisanja zadnjeg računa
+ * taj broj može ponovo koristiti.
  *
  * Podešavanja numeracije se poštuju: početni broj postavlja pod, broj nula i
  * prefiks određuju oblik, a isključen godišnji reset znači da brojanje ide dalje

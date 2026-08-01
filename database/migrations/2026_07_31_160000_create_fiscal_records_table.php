@@ -17,8 +17,6 @@ return new class extends Migration
             $table->string('request_id', 64)->nullable();
             $table->text('verification_url')->nullable();
             $table->timestamp('fiscalized_at')->nullable();
-            $table->string('fiscal_receipt_image_path')->nullable();
-            $table->json('fiscal_meta')->nullable();
             $table->timestamps();
 
             $table->index(['invoice_id', 'type']);

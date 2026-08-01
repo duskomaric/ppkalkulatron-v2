@@ -1,5 +1,5 @@
 <form method="POST" action="{{ $account ? route('bank-accounts.update', $account) : route('bank-accounts.store') }}"
-      class="space-y-4" x-on:submit="$data.submitForm && ($event.preventDefault(), $data.submitForm($event))">
+      class="space-y-4">
     @csrf
     @if ($account) @method('PUT') @endif
 
@@ -20,14 +20,14 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="file-text" title="Prikaz" />
+        <x-section-header icon="file-text" title="Prikaz" :help="route('help').'#bankovni-racuni'" />
 
         <x-toggle name="show_on_documents" :checked="old('show_on_documents', $account?->show_on_documents ?? true)"
                   label="Prikaži na dokumentima" />
     </x-section-block>
 
-    <x-drawer-form-actions :label="$account ? 'Sačuvaj izmjene' : 'Dodaj račun'"
-                           :delete="$account ? route('bank-accounts.destroy', $account) : null" />
+    <x-form-actions :label="$account ? 'Sačuvaj izmjene' : 'Dodaj račun'"
+                    :delete="$account ? route('bank-accounts.destroy', $account) : null" />
 </form>
 
 @if ($account)

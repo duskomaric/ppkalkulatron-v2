@@ -2,41 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\DrawerForms;
+use App\Http\Requests\BankAccountRequest;
 use App\Models\BankAccount;
-use Illuminate\Http\Request;
 
 class BankAccountController extends Controller
 {
-    use DrawerForms;
-
     public function index()
     {
         return view('bank-accounts.index', ['accounts' => BankAccount::orderBy('bank_name')->get()]);
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        return $this->formView($request, 'bank-accounts.form-fields', 'bank-accounts.form', ['account' => null]);
+        return view('bank-accounts.form', ['account' => null]);
     }
 
-    public function store(Request $request)
+    public function store(BankAccountRequest $request)
     {
-        BankAccount::create($this->validated($request));
+        BankAccount::create($request->validated());
 
-        return $this->saved($request, 'bank-accounts.index', 'Bankovni račun je dodat.');
+        return redirect()->route('bank-accounts.index')->with('status', 'Bankovni račun je dodat.');
     }
 
-    public function edit(Request $request, BankAccount $bankAccount)
+    public function edit(BankAccount $bankAccount)
     {
-        return $this->formView($request, 'bank-accounts.form-fields', 'bank-accounts.form', ['account' => $bankAccount]);
+        return view('bank-accounts.form', ['account' => $bankAccount]);
     }
 
-    public function update(Request $request, BankAccount $bankAccount)
+    public function update(BankAccountRequest $request, BankAccount $bankAccount)
     {
-        $bankAccount->update($this->validated($request));
+        $bankAccount->update($request->validated());
 
-        return $this->saved($request, 'bank-accounts.index', 'Izmjene su sačuvane.');
+        return redirect()->route('bank-accounts.index')->with('status', 'Izmjene su sačuvane.');
     }
 
     public function destroy(BankAccount $bankAccount)
@@ -44,16 +41,5 @@ class BankAccountController extends Controller
         $bankAccount->delete();
 
         return redirect()->route('bank-accounts.index')->with('status', 'Bankovni račun je obrisan.');
-    }
-
-    private function validated(Request $request): array
-    {
-        return $request->validate([
-            'bank_name' => ['required', 'string', 'max:255'],
-            'account_number' => ['required', 'string', 'max:64'],
-            'swift' => ['nullable', 'string', 'max:32'],
-        ], [], [
-            'bank_name' => 'naziv banke', 'account_number' => 'broj računa', 'swift' => 'SWIFT',
-        ]) + ['show_on_documents' => $request->boolean('show_on_documents')];
     }
 }

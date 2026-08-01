@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Jezik dokumenta — isti skup kao v1 LanguageEnum.
+ * Jezici dostupni na dokumentima.
  *
  * Za sada se samo čuva i prikazuje; PDF-ovi izlaze na jednom jeziku dok se
  * prevodi ne implementiraju.

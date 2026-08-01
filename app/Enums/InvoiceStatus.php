@@ -19,7 +19,7 @@ enum InvoiceStatus: string
         };
     }
 
-    /** Boja bedža — iste vrijednosti kao StatusBadge u v1. */
+    /** Boja statusnog bedža. */
     public function badgeColor(): string
     {
         return match ($this) {

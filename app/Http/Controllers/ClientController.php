@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\DrawerForms;
+use App\Http\Requests\ClientRequest;
 use App\Models\Client;
 use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
-    use DrawerForms;
-
     public function index(Request $request)
     {
         return view('clients.index', [
@@ -21,28 +19,28 @@ class ClientController extends Controller
         ]);
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        return $this->formView($request, 'clients.form-fields', 'clients.form', ['client' => null]);
+        return view('clients.form', ['client' => null]);
     }
 
-    public function store(Request $request)
+    public function store(ClientRequest $request)
     {
-        Client::create($this->validated($request));
+        Client::create($request->validated());
 
-        return $this->saved($request, 'clients.index', 'Klijent je kreiran.');
+        return redirect()->route('clients.index')->with('status', 'Klijent je kreiran.');
     }
 
-    public function edit(Request $request, Client $client)
+    public function edit(Client $client)
     {
-        return $this->formView($request, 'clients.form-fields', 'clients.form', ['client' => $client]);
+        return view('clients.form', ['client' => $client]);
     }
 
-    public function update(Request $request, Client $client)
+    public function update(ClientRequest $request, Client $client)
     {
-        $client->update($this->validated($request));
+        $client->update($request->validated());
 
-        return $this->saved($request, 'clients.index', 'Izmjene su sačuvane.');
+        return redirect()->route('clients.index')->with('status', 'Izmjene su sačuvane.');
     }
 
     public function destroy(Client $client)
@@ -54,25 +52,5 @@ class ClientController extends Controller
         $client->delete();
 
         return redirect()->route('clients.index')->with('status', 'Klijent je obrisan.');
-    }
-
-    private function validated(Request $request): array
-    {
-        return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:64'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'city' => ['nullable', 'string', 'max:120'],
-            'zip' => ['nullable', 'string', 'max:16'],
-            'country' => ['nullable', 'string', 'max:120'],
-            'vat_id' => ['nullable', 'string', 'max:32'],
-            'tax_id' => ['nullable', 'string', 'max:32'],
-            'is_active' => ['nullable', 'boolean'],
-        ], [], [
-            'name' => 'naziv', 'email' => 'email', 'phone' => 'telefon', 'address' => 'adresa',
-            'city' => 'grad', 'zip' => 'poštanski broj', 'country' => 'država',
-            'vat_id' => 'JIB', 'tax_id' => 'PDV',
-        ]) + ['is_active' => $request->boolean('is_active')];
     }
 }

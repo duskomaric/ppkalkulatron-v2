@@ -1,46 +1,25 @@
 <?php
 
+use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
 use App\Models\Client;
 use App\Models\ExchangeRate;
 use App\Models\Invoice;
 use App\Models\TaxRate;
+use App\Services\FiscalReceiptStore;
 use App\Services\FiscalService;
 use App\Services\InvoiceWriter;
 use App\Services\NetworkScanner;
-use App\Services\PinLock;
+use App\Services\OFSService;
 use App\Settings\FiscalSettings;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
-uses(RefreshDatabase::class);
-
-function makeInvoice(array $client = []): Invoice
-{
-    return app(InvoiceWriter::class)->create([
-        'client_id' => Client::create(['name' => 'Kupac d.o.o.'] + $client)->id,
-        'payment_type' => 'Cash',
-        'currency' => 'BAM',
-        'template' => 'classic',
-        'language' => 'sr_Latn',
-        'date' => now()->format('Y-m-d'),
-        'due_date' => now()->addDay()->format('Y-m-d'),
-        'items' => [[
-            'article_id' => null, 'name' => 'Usluga', 'unit' => 'kom',
-            'tax_label' => 'F', 'quantity' => 1, 'unit_price' => '1.00',
-        ]],
-    ]);
-}
-
-function fakeDevice(array $extra = []): void
-{
-    Http::fake(['*/api/invoices' => Http::response([
-        'invoiceNumber' => 'ABC12345-ABC12345-1',
-        'invoiceCounter' => '1/1ПП',
-        'verificationUrl' => 'https://example.test/v/?vl=x',
-        'invoiceImagePngBase64' => base64_encode('slika-racuna'),
-    ] + $extra)]);
-}
+// makeInvoice(), fakeDevice(), fiscalizedInvoice(), refundFor(), enableWholesale()
+// i unlocked() stoje u tests/Pest.php.
 
 it('fiskalizuje račun i sačuva račun uređaja', function () {
     fakeDevice();
@@ -50,8 +29,62 @@ it('fiskalizuje račun i sačuva račun uređaja', function () {
 
     expect($record->fiscal_invoice_number)->toBe('ABC12345-ABC12345-1')
         ->and($record->fiscal_counter)->toBe('1/1ПП')
-        ->and($record->receiptImage->binary())->toBe('slika-racuna')
+        ->and(app(FiscalReceiptStore::class)->binary($record->fresh('receipt')))->toBe('slika-racuna')
         ->and($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized);
+});
+
+it('čuva svaki podržani format fiskalnog dokumenta', function (string $layout, string $format, string $responseField, string $contents, string $extension) {
+    $settings = app(FiscalSettings::class);
+    $settings->receipt_layout = $layout;
+    $settings->receipt_document_format = $format;
+    $settings->save();
+
+    Http::fake(['*/api/invoices' => Http::response([
+        'invoiceNumber' => 'ABC12345-ABC12345-1',
+        'invoiceCounter' => '1/1ПП',
+        $responseField => $responseField === 'invoiceImageHtml' ? $contents : base64_encode($contents),
+    ])]);
+
+    $record = app(FiscalService::class)->fiscalize(makeInvoice());
+    $record = $record->fresh('receipt');
+
+    expect($record->receipt->extension)->toBe($extension)
+        ->and(app(FiscalReceiptStore::class)->binary($record))->toBe($contents);
+
+    Http::assertSent(fn ($request) => $request['receiptLayout'] === $layout
+        && $request['receiptImageFormat'] === $format
+        && $request['renderReceiptImage'] === true);
+})->with([
+    'termalni PNG' => ['Slip', 'Png', 'invoiceImagePngBase64', "\x89PNG\r\n", 'png'],
+    'termalni PDF' => ['Slip', 'Pdf', 'invoiceImagePdfBase64', '%PDF-1.7', 'pdf'],
+    'termalni HTML' => ['Slip', 'Html', 'invoiceImageHtml', '<html>slip</html>', 'html'],
+    'A4 PDF' => ['Invoice', 'Pdf', 'invoiceImagePdfBase64', '%PDF-1.7 A4', 'pdf'],
+    'A4 HTML' => ['Invoice', 'Html', 'invoiceImageHtml', '<html>A4</html>', 'html'],
+]);
+
+it('čuva sadržaj računa samo u povezanoj tabeli slika', function () {
+    expect(Schema::hasColumn('fiscal_records', 'fiscal_receipt_image_path'))->toBeFalse()
+        ->and(Schema::hasColumn('fiscal_records', 'fiscal_meta'))->toBeFalse()
+        ->and(Schema::hasColumn('invoices', 'is_fiscalized'))->toBeFalse()
+        ->and(Schema::hasColumn('invoices', 'fiscal_invoice_number'))->toBeFalse()
+        ->and(Schema::hasColumn('invoices', 'fiscal_counter'))->toBeFalse()
+        ->and(Schema::hasColumn('invoices', 'fiscal_verification_url'))->toBeFalse()
+        ->and(Schema::hasColumn('invoices', 'fiscal_request_id'))->toBeFalse()
+        ->and(Schema::hasColumn('invoices', 'fiscalized_at'))->toBeFalse();
+});
+
+it('zamjenjuje raniji fiskalni dokument kada uređaj vrati noviji format', function () {
+    $record = makeInvoice()->fiscalRecords()->create(['type' => FiscalRecordType::Original]);
+    $receipts = app(FiscalReceiptStore::class);
+
+    $receipts->store($record, 'stari PNG', 'png');
+    $receipts->store($record->fresh('receipt'), 'novi PDF', 'pdf');
+
+    $receipt = $record->fresh('receipt')->receipt;
+
+    expect($receipt->extension)->toBe('pdf')
+        ->and($receipts->binary($record->fresh('receipt')))->toBe('novi PDF');
+    Storage::disk('local')->assertMissing('fiscal-receipts/'.$record->id.'.png');
 });
 
 it('šalje iznose sa porezom i poresku oznaku', function () {
@@ -80,6 +113,37 @@ it('ne fiskalizuje dva puta', function () {
     app(FiscalService::class)->fiscalize($invoice->fresh());
 })->throws(RuntimeException::class, 'Račun nije moguće fiskalizovati.');
 
+it('prvo pronađe prethodni zahtjev prije ponovnog slanja računa', function () {
+    $invoice = makeInvoice();
+    $pending = $invoice->fiscalRecords()->create([
+        'type' => FiscalRecordType::Original,
+        'request_id' => 'inv'.$invoice->id.'ponovo123',
+    ]);
+
+    Http::fake([
+        '*/api/invoices/request/*' => Http::response([
+            'invoiceNumber' => 'ABC12345-ABC12345-1',
+            'invoiceCounter' => '1/1ПП',
+        ]),
+    ]);
+
+    $record = app(FiscalService::class)->fiscalize($invoice);
+
+    expect($record->id)->toBe($pending->id)
+        ->and($record->fiscal_invoice_number)->toBe('ABC12345-ABC12345-1')
+        ->and($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized);
+
+    Http::assertSentCount(1);
+});
+
+it('ne šalje novi račun kada se prethodni zahtjev ne može provjeriti', function () {
+    $invoice = makeInvoice();
+    $invoice->fiscalRecords()->create(['type' => FiscalRecordType::Original, 'request_id' => 'ponovi-zahtjev']);
+    Http::fake(['*/api/invoices/request/*' => Http::response('', 503)]);
+
+    app(FiscalService::class)->fiscalize($invoice);
+})->throws(RuntimeException::class, 'Nije moguće provjeriti prethodni zahtjev fiskalnom uređaju.');
+
 it('šalje JIB kupca kao buyerId', function () {
     fakeDevice();
 
@@ -90,9 +154,7 @@ it('šalje JIB kupca kao buyerId', function () {
 
 it('prefiksuje JIB sa VP za veleprodaju', function () {
     fakeDevice();
-    $settings = app(FiscalSettings::class);
-    $settings->wholesale = true;
-    $settings->save();
+    enableWholesale();
 
     app(FiscalService::class)->fiscalize(makeInvoice(['vat_id' => '4403927160006']));
 
@@ -101,18 +163,14 @@ it('prefiksuje JIB sa VP za veleprodaju', function () {
 
 it('odbija veleprodaju bez JIB-a kupca', function () {
     fakeDevice();
-    $settings = app(FiscalSettings::class);
-    $settings->wholesale = true;
-    $settings->save();
+    enableWholesale();
 
     app(FiscalService::class)->fiscalize(makeInvoice());
 })->throws(RuntimeException::class, 'Za veleprodaju je obavezan JIB kupca.');
 
 it('šalje strano lice kao VP sa devetkama', function () {
     fakeDevice();
-    $settings = app(FiscalSettings::class);
-    $settings->wholesale = true;
-    $settings->save();
+    enableWholesale();
 
     app(FiscalService::class)->fiscalize(makeInvoice(['country' => 'DE']));
 
@@ -120,15 +178,15 @@ it('šalje strano lice kao VP sa devetkama', function () {
 });
 
 it('kopija nosi referencu na original', function () {
-    fakeDevice();
-    $invoice = makeInvoice();
-    app(FiscalService::class)->fiscalize($invoice);
+    $invoice = fiscalizedInvoice();
 
-    app(FiscalService::class)->copy($invoice->fresh()->load('fiscalRecords'));
+    app(FiscalService::class)->copy($invoice->load('fiscalRecords'));
 
+    // Traži se da kopija zaista bude poslata; implikacija „nije Copy ILI ima
+    // referencu" bila bi istinita i kad kopije nema.
     Http::assertSent(function ($request) {
-        return $request['invoiceRequest']['invoiceType'] !== 'Copy'
-            || $request['invoiceRequest']['referentDocumentNumber'] === 'ABC12345-ABC12345-1';
+        return ($request['invoiceRequest']['invoiceType'] ?? null) === 'Copy'
+            && ($request['invoiceRequest']['referentDocumentNumber'] ?? null) === 'ABC12345-ABC12345-1';
     });
 });
 
@@ -137,21 +195,18 @@ it('traži fiskalizovan račun prije kopije', function () {
 })->throws(RuntimeException::class, 'Račun mora biti fiskalizovan prije štampe kopije.');
 
 it('storno prebacuje original u storniran', function () {
-    fakeDevice();
-    $invoice = makeInvoice();
-    app(FiscalService::class)->fiscalize($invoice);
-
-    $this->postJson(route('invoices.create-refund', $invoice->fresh()))->assertStatus(200);
-    $refund = Invoice::latest('id')->first();
+    $invoice = fiscalizedInvoice();
+    $refund = refundFor($invoice);
 
     app(FiscalService::class)->refund($refund->fresh());
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Refunded)
         ->and($refund->fresh()->status)->toBe(InvoiceStatus::Fiscalized);
 
+    // Refund zahtjev mora zaista biti poslat, uz referencu na original.
     Http::assertSent(function ($request) {
-        return $request['invoiceRequest']['transactionType'] !== 'Refund'
-            || $request['invoiceRequest']['referentDocumentNumber'] === 'ABC12345-ABC12345-1';
+        return ($request['invoiceRequest']['transactionType'] ?? null) === 'Refund'
+            && ($request['invoiceRequest']['referentDocumentNumber'] ?? null) === 'ABC12345-ABC12345-1';
     });
 });
 
@@ -185,14 +240,22 @@ it('vraća poruku uređaja kad odbije račun', function () {
 })->throws(RuntimeException::class, 'Uređaj je odbio račun (HTTP 400)');
 
 it('ne dozvoljava dva storna istog računa', function () {
-    fakeDevice();
-    $invoice = makeInvoice();
-    app(FiscalService::class)->fiscalize($invoice);
+    $invoice = fiscalizedInvoice();
+    refundFor($invoice);
 
-    $this->postJson(route('invoices.create-refund', $invoice->fresh()))->assertStatus(200);
     $this->postJson(route('invoices.create-refund', $invoice->fresh()))
-        ->assertStatus(422)
+        ->assertUnprocessable()
         ->assertJson(['message' => 'Storno za ovaj račun već postoji.']);
+});
+
+it('stavlja čuvanje fiskalnih podešavanja na kraj ekrana', function () {
+    $html = $this->get(route('settings.fiscal.edit'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('id="fiscal-settings-form"')
+        ->and($html)->toContain('form="fiscal-settings-form"')
+        ->and(strrpos($html, 'Sačuvaj izmjene'))->toBeGreaterThan(strpos($html, 'Potraga po RequestId'));
 });
 
 it('čita opseg adresa iz teksta', function () {
@@ -202,6 +265,9 @@ it('čita opseg adresa iz teksta', function () {
         ->toBe(['192.168.31.100', '192.168.31.101', '192.168.31.102', '192.168.31.103'])
         ->and($scanner->parseRange('192.168.31.'))->toHaveCount(254)
         ->and($scanner->parseRange('192.168.31.10-5'))->toBe([])
+        ->and($scanner->parseRange('999.168.31.10-12'))->toBe([])
+        ->and($scanner->parseRange('192.168.999.'))->toBe([])
+        ->and($scanner->parseRange('8.8.8.1-2'))->toBe([])
         ->and($scanner->parseRange('bilo šta'))->toBe([]);
 });
 
@@ -219,20 +285,31 @@ it('prijavljuje uređaj koji odgovori na attention', function () {
 
 it('šalje PIN sigurnosnog elementa kao goli tekst', function () {
     Http::fake(['*/api/pin' => Http::response('"0100"', 200)]);
-    $this->withSession([PinLock::SESSION_KEY => true]);
 
-    $this->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
+    unlocked()->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
         ->assertSessionHas('status', 'PIN je prihvaćen. Uređaj je spreman za fiskalizaciju.');
 
     Http::assertSent(fn ($request) => $request->body() === '1234');
 });
 
-it('prevodi kod greške sa PIN-a u poruku', function () {
-    Http::fake(['*/api/pin' => Http::response('"1300"', 200)]);
-    $this->withSession([PinLock::SESSION_KEY => true]);
+it('prevodi kod greške sa PIN-a u poruku', function (string $code, string $message) {
+    Http::fake(['*/api/pin' => Http::response('"'.$code.'"', 200)]);
 
-    $this->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
-        ->assertSessionHas('error', 'Sigurnosni element nije prisutan u uređaju.');
+    unlocked()->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
+        ->assertSessionHas('error', $message);
+})->with([
+    ['1300', 'Sigurnosni element nije prisutan u uređaju.'],
+    ['2400', 'Lokalni ESIR (LPFR) nije spreman.'],
+    ['2800', 'PIN nije u ispravnom formatu — očekuje se 4 cifre.'],
+    ['2806', 'PIN nije u ispravnom formatu — očekuje se 4 cifre.'],
+    ['9999', 'Uređaj je odbio PIN (kod 9999).'],
+]);
+
+it('ne otkriva tehnički detalj greške fiskalnog uređaja', function () {
+    Http::fake(fn () => throw new LogicException('tajni tehnički detalj'));
+
+    unlocked()->post(route('settings.fiscal.test'))
+        ->assertSessionHas('error', 'Fiskalni uređaj trenutno nije dostupan. Pokušajte ponovo.');
 });
 
 it('stavku bez poreza šalje sa nultom stopom, ne sa 9%', function () {
@@ -257,6 +334,42 @@ it('stavku bez poreza šalje sa nultom stopom, ne sa 9%', function () {
     });
 });
 
+it('odbija stavku bez poreske oznake kada uređaj nema nultu stopu', function () {
+    TaxRate::query()->where('rate', 0)->delete();
+    $invoice = makeInvoice();
+    $invoice->items()->update(['tax_label' => null, 'tax_rate' => 0]);
+
+    app(FiscalService::class)->fiscalize($invoice->fresh());
+})->throws(RuntimeException::class, 'Stavka je bez poreske oznake, a uređaj ne prijavljuje nijednu nultu stopu.');
+
+it('nultu poresku oznaku čita samo jednom za više stavki bez poreza', function () {
+    fakeDevice();
+
+    $invoice = makeInvoice();
+    $invoice->items()->update(['tax_label' => null, 'tax_rate' => 0]);
+    $invoice->items()->create([
+        'name' => 'Druga stavka bez poreza',
+        'unit' => 'kom',
+        'quantity' => 1,
+        'unit_price' => 100,
+        'subtotal' => 100,
+        'tax_rate' => 0,
+        'tax_amount' => 0,
+        'total' => 100,
+    ]);
+
+    $zeroRateQueries = 0;
+    DB::listen(function (QueryExecuted $query) use (&$zeroRateQueries): void {
+        if (str_contains($query->sql, '"tax_rates"') && in_array(0, $query->bindings, true)) {
+            $zeroRateQueries++;
+        }
+    });
+
+    app(FiscalService::class)->fiscalize($invoice->fresh());
+
+    expect($zeroRateQueries)->toBe(1);
+});
+
 it('cijena × količina daje ukupno i poslije preračuna valute', function () {
     fakeDevice();
     ExchangeRate::create(['currency' => 'EUR', 'rate_to_bam' => 1.95583, 'rate_date' => now()->subDay()]);
@@ -275,21 +388,15 @@ it('cijena × količina daje ukupno i poslije preračuna valute', function () {
 });
 
 it('ne fiskalizuje storno dva puta', function () {
-    fakeDevice();
-    $invoice = makeInvoice();
-    app(FiscalService::class)->fiscalize($invoice);
-    $this->postJson(route('invoices.create-refund', $invoice->fresh()));
-    $refund = Invoice::latest('id')->first();
+    $refund = refundFor(fiscalizedInvoice());
     app(FiscalService::class)->refund($refund->fresh());
 
     app(FiscalService::class)->refund($refund->fresh());
 })->throws(RuntimeException::class, 'Ovaj storno je već fiskalizovan.');
 
 it('ne dozvoljava izmjenu fiskalizovanog računa ni kad mu je storno kreiran', function () {
-    fakeDevice();
-    $invoice = makeInvoice();
-    app(FiscalService::class)->fiscalize($invoice);
-    $this->postJson(route('invoices.create-refund', $invoice->fresh()));
+    $invoice = fiscalizedInvoice();
+    refundFor($invoice);
 
     expect($invoice->fresh()->isDeletable())->toBeFalse();
 
@@ -298,11 +405,8 @@ it('ne dozvoljava izmjenu fiskalizovanog računa ni kad mu je storno kreiran', f
 });
 
 it('brisanje storna vraća original u fiskalizovano stanje', function () {
-    fakeDevice();
-    $invoice = makeInvoice();
-    app(FiscalService::class)->fiscalize($invoice);
-    $this->postJson(route('invoices.create-refund', $invoice->fresh()));
-    $refund = Invoice::latest('id')->first();
+    $invoice = fiscalizedInvoice();
+    $refund = refundFor($invoice);
 
     $this->delete(route('invoices.destroy', $refund));
 
@@ -311,20 +415,139 @@ it('brisanje storna vraća original u fiskalizovano stanje', function () {
 });
 
 it('traži serijski broj i PAK za cloud uređaj', function () {
-    $this->withSession([PinLock::SESSION_KEY => true, PinLock::BOOT_KEY => PinLock::boot()]);
-
     // Način uređaja je do sada bio samo dekoracija; sada odlučuje šta je obavezno.
-    $this->put(route('settings.fiscal.update'), [
+    unlocked()->put(route('settings.fiscal.update'), [
         'base_url' => 'https://pos.ofs.ba', 'device_mode' => 'cloud', 'cashier' => 'Prodavac',
-        'receipt_layout' => 'Slip', 'receipt_image_format' => 'Png', 'default_payment_type' => 'Cash',
+        'receipt_layout' => 'Slip', 'receipt_document_format' => 'Png', 'default_payment_type' => 'Cash',
     ])->assertSessionHasErrors(['serial_number', 'pac']);
 });
 
-it('lokalni uređaj ne traži serijski broj', function () {
-    $this->withSession([PinLock::SESSION_KEY => true, PinLock::BOOT_KEY => PinLock::boot()]);
+it('šalje cloud identifikatore uz OFS zahtjev', function () {
+    $settings = app(FiscalSettings::class);
+    $settings->device_mode = 'cloud';
+    $settings->serial_number = 'test-serial';
+    $settings->pac = 'test-pac';
+    $settings->save();
+    fakeDevice();
 
-    $this->put(route('settings.fiscal.update'), [
+    app(FiscalService::class)->fiscalize(makeInvoice());
+
+    Http::assertSent(fn ($request) => $request->header('X-Teron-SerialNumber') === ['test-serial']
+        && $request->header('X-PAC') === ['test-pac']
+        && $request->header('Content-Type') === ['application/json; charset=UTF-8']);
+});
+
+it('lokalni uređaj ne traži serijski broj', function () {
+    unlocked()->put(route('settings.fiscal.update'), [
         'base_url' => 'http://192.168.31.103:3566', 'device_mode' => 'local', 'cashier' => 'Prodavac',
-        'receipt_layout' => 'Slip', 'receipt_image_format' => 'Png', 'default_payment_type' => 'Cash',
+        'receipt_layout' => 'Slip', 'receipt_document_format' => 'Png', 'default_payment_type' => 'Cash',
     ])->assertSessionHasNoErrors();
+});
+
+it('ne dozvoljava PNG za A4 fiskalni dokument', function () {
+    unlocked()->put(route('settings.fiscal.update'), [
+        'base_url' => 'http://192.168.31.103:3566',
+        'device_mode' => 'local',
+        'cashier' => 'Prodavac',
+        'receipt_layout' => 'Invoice',
+        'receipt_document_format' => 'Png',
+        'default_payment_type' => 'Cash',
+    ])->assertSessionHasErrors('receipt_document_format');
+});
+
+it('ne šalje cloud identifikatore lokalnom ESIR-u', function () {
+    $settings = app(FiscalSettings::class);
+    $settings->device_mode = 'local';
+    $settings->serial_number = 'ne šalji';
+    $settings->pac = 'ne šalji';
+    $settings->save();
+    fakeDevice();
+
+    app(FiscalService::class)->fiscalize(makeInvoice());
+
+    Http::assertSent(fn ($request) => $request->header('X-Teron-SerialNumber') === []
+        && $request->header('X-PAC') === []);
+});
+
+it('čita podešavanja fiskalnog uređaja preko OFS klijenta', function () {
+    Http::fake(['*/api/settings' => Http::response(['device' => 'ESIR'])]);
+
+    expect(app(OFSService::class)->getSettings()->json('device'))->toBe('ESIR');
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/api/settings'));
+});
+
+it('za staru nevažeću kombinaciju A4 i PNG bira podržani format dokumenta', function () {
+    $settings = app(FiscalSettings::class);
+    $settings->receipt_layout = 'Invoice';
+    $settings->receipt_document_format = 'Png';
+    $settings->save();
+    fakeDevice();
+
+    app(FiscalService::class)->fiscalize(makeInvoice());
+
+    Http::assertSent(fn ($request) => $request['receiptLayout'] === 'Invoice'
+        && $request['receiptImageFormat'] === 'Pdf');
+});
+
+it('vraća prazan rezultat skeniranja kada opseg nema adresa', function () {
+    expect(app(NetworkScanner::class)->scan('neispravan opseg'))->toBe([]);
+});
+
+it('lokalni opseg uvijek sadrži samo privatne IPv4 adrese kada je dostupan', function () {
+    $range = app(NetworkScanner::class)->localRange();
+
+    expect($range === [] || (count($range) === 254
+        && collect($range)->every(fn (string $ip): bool => filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
+            && ! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE))))->toBeTrue();
+});
+
+it('traži privatnu adresu mrežnog interfejsa kada socket vrati javnu adresu', function () {
+    $scanner = new class extends NetworkScanner
+    {
+        protected function socketLocalIp(): ?string
+        {
+            return '8.8.8.8';
+        }
+
+        protected function interfaceIps(): array
+        {
+            return ['203.0.113.1', '192.168.50.12'];
+        }
+    };
+
+    expect($scanner->localIp())->toBe('192.168.50.12')
+        ->and($scanner->localRange())->toHaveCount(254)
+        ->and($scanner->localRange()[0])->toBe('192.168.50.1');
+});
+
+it('ne pokušava skeniranje kada nijedan mrežni interfejs nema privatnu adresu', function () {
+    $scanner = new class extends NetworkScanner
+    {
+        protected function socketLocalIp(): ?string
+        {
+            return null;
+        }
+
+        protected function interfaceIps(): array
+        {
+            return ['203.0.113.1'];
+        }
+    };
+
+    expect($scanner->localIp())->toBeNull()
+        ->and($scanner->localRange())->toBe([])
+        ->and($scanner->scan())->toBe([]);
+});
+
+it('čita dostupne IP adrese iz stvarnih mrežnih interfejsa uređaja', function () {
+    $scanner = new class extends NetworkScanner
+    {
+        /** @return array<int, string> */
+        public function availableInterfaceIps(): array
+        {
+            return $this->interfaceIps();
+        }
+    };
+
+    expect($scanner->availableInterfaceIps())->each->toBeString();
 });

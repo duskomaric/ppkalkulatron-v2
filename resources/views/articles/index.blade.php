@@ -2,17 +2,17 @@
 @section('title', 'Artikli')
 
 @section('actions')
-    <x-create-button label="Novi artikl" x-on:click="$dispatch('open-entity-form')" />
+    <x-create-button label="Novi artikl" :href="route('articles.create')" />
 @endsection
 
 @section('content')
-    <div x-data="entityIndex()"
-         x-on:open-entity-form.window="openForm({{ \App\Support\Js::from(route('articles.create', ['partial' => 1])) }}, 'Novi artikl')">
-        <x-search-bar :value="$q" placeholder="Pretraga po nazivu…" />
+    <div>
+        <x-search-bar :value="$q" placeholder="Pretraži artikle…" />
 
-        <div data-entity-list>
+        <div>
             @if ($articles->isEmpty())
-                <x-empty-state icon="x" title="Nema pronađenih artikala" />
+                <x-empty-state icon="x" title="Nema pronađenih artikala"
+                               :action="route('articles.create')" action-label="Dodaj artikl" />
             @else
                 <x-list-header grid="grid-cols-[minmax(0,1.4fr)_0.6fr_0.6fr_0.7fr_1fr]" :columns="[
                     ['label' => 'Artikl'], ['label' => 'Status'], ['label' => 'JM'],
@@ -23,13 +23,12 @@
                     @foreach ($articles as $article)
                         @php
                             $status = ['label' => $article->is_active ? 'Aktivan' : 'Neaktivan', 'color' => $article->is_active ? 'green' : 'gray'];
-                            $rate = $article->tax_label ? \App\Models\TaxRate::where('label', $article->tax_label)->value('rate') : null;
+                            $rate = $article->tax_label ? ($taxRates[$article->tax_label] ?? null) : null;
                             $tax = $article->tax_label ? $article->tax_label.' ('.$rate.'%)' : '—';
                             $price = $article->last_unit_price ? number_format($article->last_unit_price / 100, 2, ',', '.') : null;
                         @endphp
 
-                        <x-responsive-entity-card :href="route('articles.edit', $article)"
-                                                  :x-on:click.prevent="\App\Support\Js::call('openForm', route('articles.edit', [$article, 'partial' => 1]), 'Izmjena artikla')">
+                        <x-responsive-entity-card :href="route('articles.edit', $article)">
                             <x-slot:mobile>
                                 <div class="flex justify-between items-center">
                                     <div class="flex items-center gap-2 min-w-0">
@@ -114,6 +113,5 @@
             @endif
         </div>
 
-        <x-entity-form-drawer />
     </div>
 @endsection

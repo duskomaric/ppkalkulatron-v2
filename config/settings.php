@@ -1,5 +1,18 @@
 <?php
 
+use App\Settings\BackupSettings;
+use App\Settings\CompanySettings;
+use App\Settings\DocumentSettings;
+use App\Settings\FiscalSettings;
+use App\Settings\MailSettings;
+use App\Settings\MenuSettings;
+use App\Settings\NumberingSettings;
+use App\Settings\SecuritySettings;
+use App\Settings\UserSettings;
+use Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast;
+use Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast;
+use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
+
 return [
 
     /*
@@ -7,12 +20,15 @@ return [
      * put them (manually) here.
      */
     'settings' => [
-        App\Settings\CompanySettings::class,
-        App\Settings\FiscalSettings::class,
-        App\Settings\NumberingSettings::class,
-        App\Settings\MailSettings::class,
-        App\Settings\DocumentSettings::class,
-        App\Settings\SecuritySettings::class,
+        BackupSettings::class,
+        CompanySettings::class,
+        FiscalSettings::class,
+        NumberingSettings::class,
+        MailSettings::class,
+        DocumentSettings::class,
+        SecuritySettings::class,
+        MenuSettings::class,
+        UserSettings::class,
     ],
 
     /*
@@ -40,15 +56,10 @@ return [
      */
     'repositories' => [
         'database' => [
-            'type' => Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository::class,
+            'type' => DatabaseSettingsRepository::class,
             'model' => null,
             'table' => null,
             'connection' => null,
-        ],
-        'redis' => [
-            'type' => Spatie\LaravelSettings\SettingsRepositories\RedisSettingsRepository::class,
-            'connection' => null,
-            'prefix' => null,
         ],
     ],
 
@@ -66,7 +77,7 @@ return [
      * additional prefix.
      */
     'cache' => [
-        'enabled' => (bool)env('SETTINGS_CACHE_ENABLED', false),
+        'enabled' => (bool) env('SETTINGS_CACHE_ENABLED', false),
         'store' => null,
         'prefix' => null,
         'ttl' => null,
@@ -83,19 +94,15 @@ return [
      * your settings class isn't a default PHP type.
      */
     'global_casts' => [
-        DateTimeInterface::class => Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast::class,
-        DateTimeZone::class => Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast::class,
-//        Spatie\DataTransferObject\DataTransferObject::class => Spatie\LaravelSettings\SettingsCasts\DtoCast::class,
-        Spatie\LaravelData\Data::class => Spatie\LaravelSettings\SettingsCasts\DataCast::class,
+        DateTimeInterface::class => DateTimeInterfaceCast::class,
+        DateTimeZone::class => DateTimeZoneCast::class,
     ],
 
     /*
      * The package will look for settings in these paths and automatically
      * register them.
      */
-    'auto_discover_settings' => [
-        app_path('Settings'),
-    ],
+    'auto_discover_settings' => [],
 
     /*
      * Automatically discovered settings classes can be cached, so they don't

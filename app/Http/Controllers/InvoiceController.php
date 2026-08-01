@@ -12,20 +12,27 @@ use App\Models\Client;
 use App\Models\Currency;
 use App\Models\FiscalRecord;
 use App\Models\Invoice;
+use App\Services\FiscalDeviceHealth;
 use App\Services\FiscalReceiptStore;
 use App\Services\InvoicePdfService;
 use App\Services\InvoiceWriter;
 use App\Services\MailService;
 use App\Settings\DocumentSettings;
+use App\Settings\FiscalSettings;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Native\Mobile\Facades\Share;
 
 class InvoiceController extends Controller
 {
-    public function __construct(private InvoiceWriter $writer) {}
+    public function __construct(
+        private InvoiceWriter $writer,
+        private DocumentSettings $documents,
+        private FiscalSettings $fiscalSettings,
+    ) {}
 
-    public function index(Request $request)
+    public function index(Request $request, FiscalDeviceHealth $health)
     {
         $filters = [
             'q' => $request->string('q')->toString(),
@@ -38,7 +45,7 @@ class InvoiceController extends Controller
 
         $invoices = Invoice::with('client', 'originalInvoice')
             ->search($filters['q'])
-            ->whereYear('date', $filters['year'])
+            ->whereBetween('date', ["{$filters['year']}-01-01", "{$filters['year']}-12-31"])
             ->when($filters['status'], fn ($q, $status) => $q->where('status', $status))
             ->when($filters['payment_type'], fn ($q, $type) => $q->where('payment_type', $type))
             ->when($filters['created_from'], fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
@@ -53,6 +60,7 @@ class InvoiceController extends Controller
             'filters' => $filters,
             'years' => $this->years($filters['year']),
             'activeFilters' => $this->activeFilters($filters),
+            'fiscalHealth' => $health->current(),
         ]);
     }
 
@@ -115,30 +123,30 @@ class InvoiceController extends Controller
         ));
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        return $this->form($request, $this->formData(), 'invoices.create');
+        return view('invoices.create', $this->formData());
     }
 
     public function store(InvoiceRequest $request)
     {
         $invoice = $this->writer->create($request->validated());
 
-        return $this->saved($request, $invoice, "Račun {$invoice->invoice_number} je kreiran.");
+        return redirect()->route('invoices.show', $invoice)
+            ->with('status', "Račun {$invoice->invoice_number} je kreiran.");
     }
 
-    public function show(Request $request, Invoice $invoice)
+    public function show(Invoice $invoice, FiscalDeviceHealth $health)
     {
-        $invoice->load('client', 'items', 'originalInvoice');
+        $invoice->load(['client', 'items', 'originalInvoice', 'fiscalRecords.receipt']);
 
-        // Lista otvara detalje u draweru i dovlači samo njegov sadržaj; puna
-        // stranica ostaje za direktan link i za rad bez JavaScripta.
-        return $request->boolean('partial')
-            ? view('invoices.detail', ['invoice' => $invoice])
-            : view('invoices.show', ['invoice' => $invoice]);
+        return view('invoices.show', [
+            'invoice' => $invoice,
+            'fiscalHealth' => $health->current(),
+        ]);
     }
 
-    public function edit(Request $request, Invoice $invoice)
+    public function edit(Invoice $invoice)
     {
         if (! $invoice->isDeletable()) {
             return redirect()
@@ -146,7 +154,7 @@ class InvoiceController extends Controller
                 ->with('error', 'Fiskalizovan račun se ne može mijenjati.');
         }
 
-        return $this->form($request, $this->formData(['invoice' => $invoice->load('items')]), 'invoices.edit');
+        return view('invoices.edit', $this->formData(['invoice' => $invoice->load('items')]));
     }
 
     public function update(InvoiceRequest $request, Invoice $invoice)
@@ -159,7 +167,7 @@ class InvoiceController extends Controller
 
         $this->writer->update($invoice, $request->validated());
 
-        return $this->saved($request, $invoice, 'Izmjene su sačuvane.');
+        return redirect()->route('invoices.show', $invoice)->with('status', 'Izmjene su sačuvane.');
     }
 
     public function destroy(Invoice $invoice)
@@ -186,30 +194,49 @@ class InvoiceController extends Controller
             ->with('status', "Račun {$number} je obrisan.");
     }
 
-    /**
-     * PDF računa.
-     *
-     * U upakovanoj aplikaciji `Content-Disposition: attachment` ne radi ništa —
-     * WebView bez DownloadListener-a tiho ignoriše preuzimanje, a NativePHP ga ne
-     * postavlja. Zato se na telefonu PDF upiše u datoteku i preda sistemskom
-     * dijalogu za dijeljenje: odatle korisnik može sačuvati, odštampati ili poslati.
-     */
+    /** PDF: browser ga preuzima, a upakovana aplikacija predaje sistemu kao datoteku. */
     public function pdf(Request $request, Invoice $invoice, InvoicePdfService $pdf)
     {
-        if (! isMobile()) {
+        $mobile = isMobile();
+
+        Log::channel('mobile')->info('Invoice PDF requested', [
+            'invoice_id' => $invoice->id,
+            'jump' => getenv('JUMP_BRIDGE_PORT') !== false,
+            'mobile' => $mobile,
+        ]);
+
+        if ($request->boolean('mobile_payload')) {
+            $contents = $pdf->contents($invoice);
+
+            return response()->json([
+                'mime' => 'application/pdf',
+                'filename' => $pdf->filename($invoice),
+                'contents' => base64_encode($contents),
+            ]);
+        }
+
+        if (getenv('JUMP_BRIDGE_PORT') !== false) {
+            return $pdf->inline($invoice);
+        }
+
+        if (! $mobile) {
             return $pdf->download($invoice);
         }
 
-        // Mora u NATIVEPHP_TEMPDIR (cacheDir): file_paths.xml izlaže samo njega
-        // FileProvideru, a sistem ga smije očistiti pa se PDF-ovi ne nakupljaju.
-        $path = rtrim(env('NATIVEPHP_TEMPDIR', storage_path('app/private')), '/').'/'.$pdf->filename($invoice);
+        $tempDir = config('nativephp-internal.tempdir') ?: storage_path('app/private');
+        $path = rtrim($tempDir, '/').'/'.$pdf->filename($invoice);
         @mkdir(dirname($path), 0755, true);
         file_put_contents($path, $pdf->contents($invoice));
+
+        Log::channel('mobile')->info('Invoice PDF handed to native share', [
+            'invoice_id' => $invoice->id,
+            'bytes' => filesize($path),
+        ]);
 
         Share::file('Račun '.$invoice->invoice_number, 'Račun '.$invoice->invoice_number, $path);
 
         return $request->expectsJson()
-            ? response()->json(['message' => 'Račun je pripremljen za dijeljenje.'])
+            ? response()->json(['message' => 'PDF je spreman za čuvanje ili dijeljenje.'])
             : redirect()->route('invoices.show', $invoice);
     }
 
@@ -221,7 +248,7 @@ class InvoiceController extends Controller
         InvoicePdfService $pdf,
         FiscalReceiptStore $receipts,
     ) {
-        $invoice->load(['client', 'items', 'fiscalRecords.receiptImage']);
+        $invoice->load(['client', 'items', 'fiscalRecords.receipt']);
 
         // Zapis bez sačuvanog računa bi tiho ispao iz priloga, a korisnik bi dobio
         // poruku da je sve poslato — zato se odvaja da odgovor može to reći.
@@ -251,10 +278,14 @@ class InvoiceController extends Controller
                 fromAddress: $fromAddress,
                 fromName: $fromName,
             ));
-        } catch (\Throwable $e) {
+        } catch (\RuntimeException $e) {
             report($e);
 
             return response()->json(['message' => 'Slanje nije uspjelo: '.$e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'Slanje emaila trenutno nije uspjelo. Pokušajte ponovo.'], 422);
         } finally {
             if ($pdfPath && file_exists($pdfPath)) {
                 @unlink($pdfPath);
@@ -268,33 +299,30 @@ class InvoiceController extends Controller
         ]);
     }
 
-    /** Slika fiskalnog računa iz baze, za modal i za novi tab. */
-    public function receipt(FiscalRecord $record, FiscalReceiptStore $receipts)
+    /** Fiskalni dokument iz privatne pohrane, za modal i za novi tab. */
+    public function receipt(Request $request, FiscalRecord $record, FiscalReceiptStore $receipts)
     {
-        return $receipts->response($record->load('receiptImage'));
-    }
+        $record->load('receipt');
 
-    /** Drawer traži samo tijelo forme; puna stranica ostaje za direktan link. */
-    private function form(Request $request, array $data, string $view)
-    {
-        return $request->boolean('partial')
-            ? view('invoices.form', $data)
-            : view($view, $data);
-    }
+        Log::channel('mobile')->info('Fiscal receipt requested', [
+            'fiscal_record_id' => $record->id,
+            'extension' => $record->receipt?->extension,
+            'bytes' => $record->receipt?->size,
+            'available' => $receipts->has($record),
+        ]);
 
-    /** Iz drawera se šalje preko XHR-a, pa odgovor mora reći kuda dalje. */
-    private function saved(Request $request, Invoice $invoice, string $message)
-    {
-        if ($request->expectsJson()) {
+        if ($request->boolean('mobile_payload')) {
+            $contents = $receipts->binary($record);
+            abort_if($contents === null, 404, 'Slika fiskalnog računa nije dostupna.');
+
             return response()->json([
-                'message' => $message,
-                'detail_url' => route('invoices.show', [$invoice, 'partial' => 1]),
+                'mime' => $receipts->mime($record),
+                'extension' => $receipts->extension($record),
+                'contents' => base64_encode($contents),
             ]);
         }
 
-        session()->flash('status', $message);
-
-        return redirect()->route('invoices.show', $invoice);
+        return $receipts->response($record);
     }
 
     private function formData(array $extra = []): array
@@ -306,11 +334,12 @@ class InvoiceController extends Controller
             'articles' => Article::where('is_active', true)->orderBy('name')
                 ->get(['id', 'name', 'description', 'unit', 'tax_label', 'last_unit_price']),
             'currencies' => Currency::orderByDesc('is_default')->orderBy('code')->get(['code', 'name']),
-            'defaultTemplate' => app(DocumentSettings::class)->template,
-            'defaultLanguage' => app(DocumentSettings::class)->language,
+            'defaultTemplate' => $this->documents->template,
+            'defaultLanguage' => $this->documents->language,
             'defaultCurrency' => Currency::where('is_default', true)->value('code') ?? 'BAM',
-            'defaultDueDays' => app(DocumentSettings::class)->invoice_due_days,
-            'defaultNotes' => app(DocumentSettings::class)->invoice_notes,
+            'defaultDueDays' => $this->documents->invoice_due_days,
+            'defaultNotes' => $this->documents->invoice_notes,
+            'defaultPaymentType' => $this->fiscalSettings->default_payment_type,
         ];
     }
 }

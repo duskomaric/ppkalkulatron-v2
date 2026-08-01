@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Article;
 use App\Models\Invoice;
 use App\Models\TaxRate;
+use App\Settings\DocumentSettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -12,12 +13,15 @@ use Illuminate\Support\Facades\DB;
  * Upis računa iz podataka forme.
  *
  * Iznosi se uvijek preračunavaju iz količine i cijene — ono što dođe iz forme nije
- * izvor istine. Cijena je sa porezom (inkluzivno), kao u v1 i kao što OFS očekuje,
+ * izvor istine. Cijena je sa porezom, kako OFS očekuje,
  * pa se osnovica i porez izvode iz nje.
  */
 class InvoiceWriter
 {
-    public function __construct(private InvoiceNumber $numbers) {}
+    public function __construct(
+        private InvoiceNumber $numbers,
+        private DocumentSettings $documents,
+    ) {}
 
     public function create(array $data): Invoice
     {
@@ -53,7 +57,7 @@ class InvoiceWriter
             'language' => $data['language'],
             'date' => $data['date'],
             'due_date' => $data['due_date'],
-            'notes' => $data['notes'] ?? null,
+            'notes' => $data['notes'] ?? $this->documents->invoice_notes,
         ];
     }
 
@@ -62,8 +66,12 @@ class InvoiceWriter
         $subtotal = 0;
         $taxTotal = 0;
 
+        // Šifarnik stopa se čita jednom, a ne po stavci: račun sa deset stavki je
+        // inače značio deset istih upita na `tax_rates`.
+        $taxRates = TaxRate::basisPointsByLabel();
+
         foreach ($items as $row) {
-            $line = $this->line($row);
+            $line = $this->line($row, $taxRates);
 
             $invoice->items()->create($line);
 
@@ -80,13 +88,17 @@ class InvoiceWriter
         $this->rememberPrices($items);
     }
 
-    /** Cijena je inkluzivna: osnovica = ukupno / (1 + stopa), porez je ostatak. */
-    private function line(array $row): array
+    /**
+     * Cijena je inkluzivna: osnovica = ukupno / (1 + stopa), porez je ostatak.
+     *
+     * @param  array<string, int>  $taxRates  label => bazni poeni
+     */
+    private function line(array $row, array $taxRates): array
     {
         $quantity = max(1, (int) $row['quantity']);
         $unitPrice = (int) round(((float) $row['unit_price']) * 100);
         $taxLabel = $row['tax_label'] ?: null;
-        $taxRate = $taxLabel ? (int) (TaxRate::basisPointsByLabel()[$taxLabel] ?? 0) : 0;
+        $taxRate = $taxLabel ? (int) ($taxRates[$taxLabel] ?? 0) : 0;
 
         $total = $quantity * $unitPrice;
         $subtotal = (int) round($total / (1 + $taxRate / 10000));
@@ -106,7 +118,7 @@ class InvoiceWriter
         ];
     }
 
-    /** Zadnja cijena na artiklu, da se sljedeći put ponudi sama — kao u v1. */
+    /** Pamti posljednju cijenu artikla za sljedeći unos. */
     private function rememberPrices(array $items): void
     {
         foreach ($items as $row) {

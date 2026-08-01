@@ -1,5 +1,4 @@
 @if ($paginator->hasPages())
-    {{-- Paginacija po v1: pilule sa strelicama i brojevima. --}}
     <nav class="mt-8 flex flex-wrap items-center justify-center gap-2">
         @if ($paginator->onFirstPage())
             <span class="px-3 py-2 rounded-xl bg-[var(--color-border)] text-[var(--color-text-dim)] border border-[var(--color-border)] cursor-not-allowed">

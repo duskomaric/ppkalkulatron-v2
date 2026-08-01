@@ -1,41 +1,28 @@
-@props(['title'])
+@props(['title' => 'Aplikacija', 'name' => 'app'])
 
-{{--
-    Mjesto za slike ekrana, kao u v1: zasebno za telefon i za desktop.
-    Slike još ne postoje — kad se naprave, dolaze u public/help/.
---}}
 @php
-    $slug = \Illuminate\Support\Str::slug($title);
+    $mobilePath = "help/{$name}-mobile.jpg";
+    $desktopPath = "help/{$name}-desktop.jpg";
 @endphp
 
-<div class="rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-bg)]/40 p-4 space-y-3">
-    <div class="flex items-center justify-between gap-2">
+@if (file_exists(public_path($mobilePath)) && file_exists(public_path($desktopPath)))
+    <div class="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 p-4">
         <p class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-dim)]">
-            Vizuelni prikaz: {{ $title }}
+            Prikaz: {{ $title }}
         </p>
-        <span class="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-amber-500/10 text-amber-500">
-            Uskoro
-        </span>
+
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-5 md:items-start">
+            <figure class="space-y-1.5 md:col-span-2">
+                <figcaption class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-dim)]">Telefon</figcaption>
+                <img src="{{ asset($mobilePath) }}" alt="{{ $title }} na telefonu"
+                     class="w-full rounded-xl border border-[var(--color-border)] shadow-lg" loading="lazy">
+            </figure>
+
+            <figure class="space-y-1.5 md:col-span-3">
+                <figcaption class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-dim)]">Desktop</figcaption>
+                <img src="{{ asset($desktopPath) }}" alt="{{ $title }} na desktopu"
+                     class="w-full rounded-xl border border-[var(--color-border)] shadow-lg" loading="lazy">
+            </figure>
+        </div>
     </div>
-
-    {{-- Prikazuje se snimak koji odgovara ekranu na kojem se pomoć čita. --}}
-    <div>
-        @foreach ([['mobile', 'Mobile', 'aspect-[9/16] max-w-[280px]', 'md:hidden'], ['desktop', 'Desktop', 'aspect-[16/10]', 'hidden md:block']] as [$kind, $label, $ratio, $visible])
-            @php($path = "help/{$slug}-{$kind}.png")
-
-            <div class="space-y-1.5 {{ $visible }}">
-                <p class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-dim)]">{{ $label }}</p>
-
-                @if (file_exists(public_path($path)))
-                    <img src="{{ asset($path) }}" alt="{{ $title }} — {{ $label }}"
-                         class="w-full rounded-xl border border-[var(--color-border)]" loading="lazy">
-                @else
-                    <div class="{{ $ratio }} w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center justify-center gap-2 text-[var(--color-text-dim)]">
-                        <x-icon name="image" class="h-6 w-6" />
-                        <p class="text-[10px] font-bold text-center px-3">Slika još nije dodana</p>
-                    </div>
-                @endif
-            </div>
-        @endforeach
-    </div>
-</div>
+@endif

@@ -1,20 +1,13 @@
 @props(['invoices'])
 
-<div data-invoice-list>
-{{--
-    Cijela lista računa. Raspored i sadržaj kartice prate v1: na telefonu kartica sa
-    brojem, statusom, klijentom, načinom plaćanja i podnožjem sa datumima i ukupnim
-    iznosom; na desktopu ista mreža kolona kao u v1.
---}}
-
 @if ($invoices->isEmpty())
-    <x-empty-state icon="x" title="Nema pronađenih računa" />
+    <x-empty-state icon="x" title="Nema pronađenih računa"
+                   :action="route('invoices.create')" action-label="Novi račun" />
 @else
     {{-- Telefon --}}
     <div class="md:hidden space-y-3">
         @foreach ($invoices as $invoice)
-            <x-entity-card :href="route('invoices.show', $invoice)"
-                          :x-on:click.prevent="\App\Support\Js::call('openDetail', route('invoices.show', [$invoice, 'partial' => 1]))">
+            <x-entity-card :href="route('invoices.show', $invoice)">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center gap-2 min-w-0">
                         <x-icon name="hash" class="w-3 h-3 text-primary shrink-0" />
@@ -73,8 +66,7 @@
 
     <div class="hidden md:block space-y-3">
         @foreach ($invoices as $invoice)
-            <x-entity-card :href="route('invoices.show', $invoice)"
-                          :x-on:click.prevent="\App\Support\Js::call('openDetail', route('invoices.show', [$invoice, 'partial' => 1]))">
+            <x-entity-card :href="route('invoices.show', $invoice)">
                 <div class="grid grid-cols-[minmax(0,1.6fr)_0.6fr_0.7fr_0.7fr_0.7fr_0.7fr] gap-3 items-center">
                     <div class="flex items-center gap-3 min-w-0">
                         <span class="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -128,4 +120,3 @@
 
     <div class="mt-6">{{ $invoices->links() }}</div>
 @endif
-</div>

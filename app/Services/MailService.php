@@ -9,12 +9,14 @@ use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 
 /**
- * Slanje pošte kroz SMTP iz podešavanja, po v1 CompanyMailService.
+ * Slanje pošte kroz SMTP iz podešavanja aplikacije.
  *
  * Bez podešenog hosta koristi se podrazumijevani mailer iz konfiguracije.
  */
 class MailService
 {
+    private const SMTP_TIMEOUT_SECONDS = 20;
+
     public function __construct(private MailSettings $settings) {}
 
     /** @return array{0: ?string, 1: ?string} */
@@ -39,7 +41,7 @@ class MailService
             'encryption' => $this->settings->encryption ?: null,
             'username' => $this->settings->username ?: null,
             'password' => $this->settings->password ?: null,
-            'timeout' => null,
+            'timeout' => self::SMTP_TIMEOUT_SECONDS,
         ]]);
 
         // Bez purge: MailManager vrati transport napravljen sa starim hostom, a

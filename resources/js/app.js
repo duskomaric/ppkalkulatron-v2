@@ -2,9 +2,48 @@ import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 
+/** Tehnički trag za mobilni WebView; ne šalje sadržaj dokumenata ni korisničke podatke. */
+const mobileLog = (event, context = {}) => {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    if (! csrfToken) {
+        return;
+    }
+
+    fetch('/dijagnostika/mobile', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify({ event, context }),
+    }).catch(() => {});
+};
+
+const withMobilePayload = (url, enabled) => {
+    if (! enabled) {
+        return url;
+    }
+
+    return `${url}${url.includes('?') ? '&' : '?'}mobile_payload=1`;
+};
+
+const blobFromBase64 = (contents, mime) => {
+    const binary = atob(contents);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let index = 0; index < binary.length; index++) {
+        bytes[index] = binary.charCodeAt(index);
+    }
+
+    return new Blob([bytes], { type: mime });
+};
+
 /**
  * Tema: svijetla, tamna ili po sistemu. Izbor se pamti u pregledniku jer je vezan
- * za uređaj, ne za podatke aplikacije. Klase su iste kao u v1 — `light` na <html>.
+ * za uređaj, ne za podatke aplikacije.
  */
 Alpine.store('theme', {
     choice: 'dark',
@@ -33,8 +72,111 @@ Alpine.store('theme', {
     },
 });
 
+/** Jedinstvena potvrda za fiskalne i destruktivne radnje u aplikaciji. */
+Alpine.store('confirmation', {
+    open: false,
+    message: '',
+    running: false,
+    action: null,
+
+    ask(message, action) {
+        this.open = true;
+        this.message = message;
+        this.running = false;
+        this.action = action;
+    },
+
+    dismiss() {
+        if (! this.running) {
+            this.open = false;
+        }
+    },
+
+    async execute() {
+        if (this.running || ! this.action) {
+            return;
+        }
+
+        this.running = true;
+
+        try {
+            await this.action();
+        } finally {
+            this.open = false;
+            this.running = false;
+            this.action = null;
+        }
+    },
+});
+
+/** Zadnji poznati status fiskalnog uređaja; osvježava se tiho samo dok je ekran aktivan. */
+Alpine.data('fiscalHealth', ({ url, initial }) => ({
+    health: initial,
+    checking: false,
+    timer: null,
+    onVisibilityChange: null,
+
+    init() {
+        this.refresh();
+        this.timer = window.setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                this.refresh();
+            }
+        }, 60_000);
+        this.onVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                this.refresh();
+            }
+        };
+        document.addEventListener('visibilitychange', this.onVisibilityChange);
+    },
+
+    destroy() {
+        window.clearInterval(this.timer);
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    },
+
+    async refresh() {
+        if (this.checking) {
+            return;
+        }
+
+        this.checking = true;
+
+        try {
+            const response = await fetch(url, {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store',
+            });
+
+            if (response.ok) {
+                this.health = await response.json();
+            }
+        } catch {
+            // Existing status stays visible when the network is temporarily unavailable.
+        } finally {
+            this.checking = false;
+        }
+    },
+}));
+
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+
+    if (!(form instanceof HTMLFormElement) || ! form.dataset.confirm || form.dataset.confirmed === 'true') {
+        return;
+    }
+
+    event.preventDefault();
+
+    Alpine.store('confirmation').ask(form.dataset.confirm, () => {
+        form.dataset.confirmed = 'true';
+        form.requestSubmit();
+    });
+});
+
 /**
- * Forma računa. Iznosi se drže u fenizima, kao u v1: cijena je sa porezom,
+ * Forma računa. Iznosi se drže u fenizima: cijena je sa porezom,
  * osnovica i porez se iz nje izvode. Preglednik računa samo prikaz — server
  * na kraju sve preračuna, pa ovo nije izvor istine.
  */
@@ -118,7 +260,7 @@ Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, clie
             `${article.name} ${article.description || ''}`.toLowerCase().includes(needle));
     },
 
-    /** Artikal nosi naziv, jedinicu, poresku oznaku i zadnju cijenu — kao u v1. */
+    /** Artikal nosi naziv, jedinicu, poresku oznaku i zadnju cijenu. */
     pickArticle(item, article) {
         item.article_id = article.id;
         item.name = article.name;
@@ -184,99 +326,39 @@ Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, clie
     },
 }));
 
-/**
- * Liste šifarnika: forma se otvara u draweru i šalje preko XHR-a, kao kod računa.
- * Jedan opis za klijente, artikle, bankovne račune i valute — razlikuju se samo URL-ovi.
- */
-Alpine.data('entityIndex', () => ({
-    formDrawer: false,
-    formLoading: false,
-    formHtml: '',
-    formTitle: '',
-    formErrors: {},
-    saving: false,
+Alpine.data('menuSettings', ({ modules, menuModules, maxMenuItems }) => ({
+    modules: modules.map((module) => ({
+        ...module,
+        placement: menuModules.includes(module.key) ? 'menu' : 'drawer',
+    })),
+    maxMenuItems,
 
-    async openForm(url, title) {
-        this.formTitle = title;
-        this.formErrors = {};
-        this.formHtml = '';
-        this.formLoading = true;
-        this.formDrawer = true;
-        this.formHtml = await this.load(url);
-        this.formLoading = false;
+    menu() {
+        return this.modules.filter((module) => module.placement === 'menu');
     },
 
-    closeForm() {
-        this.formDrawer = false;
+    drawer() {
+        return this.modules.filter((module) => module.placement === 'drawer');
     },
 
-    async load(url) {
-        const failure = '<p class="py-8 text-center text-sm font-bold text-[var(--color-error)]">Nije moguće učitati.</p>';
-
-        try {
-            const response = await fetch(url, {
-                cache: 'no-store',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            });
-
-            if (wentToUnlock(response)) return failure;
-
-            return response.ok ? await response.text() : failure;
-        } catch {
-            return failure;
-        }
+    normalizeLimit() {
+        this.menu().slice(this.maxMenuItems).forEach((module) => {
+            module.placement = 'drawer';
+        });
     },
 
-    /** Prepiši listu bez ponovnog učitavanja stranice. */
-    async refreshList() {
-        const html = await this.load(window.location.href);
-        const fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-entity-list]');
-        const current = this.$el.querySelector('[data-entity-list]');
+    move(key, direction) {
+        const module = this.modules.find((candidate) => candidate.key === key);
+        if (! module) return;
 
-        if (fresh && current) {
-            current.innerHTML = fresh.innerHTML;
-        }
-    },
+        const samePlacement = this.modules.filter((candidate) => candidate.placement === module.placement);
+        const index = samePlacement.findIndex((candidate) => candidate.key === key);
+        const target = index + direction;
+        if (target < 0 || target >= samePlacement.length) return;
 
-    async submitForm(event) {
-        if (this.saving) return;
-
-        this.saving = true;
-        this.formErrors = {};
-
-        try {
-            const form = event.target;
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-            });
-
-            if (wentToUnlock(response)) return;
-
-            if (response.status === 422) {
-                this.formErrors = (await response.json()).errors || {};
-                this.$nextTick(() => this.$el.querySelector('[data-error-summary]')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-
-                return;
-            }
-
-            if (! response.ok) {
-                this.formErrors = { _: ['Čuvanje nije uspjelo. Pokušajte ponovo.'] };
-
-                return;
-            }
-
-            const saved = await response.json();
-            this.formDrawer = false;
-            window.dispatchEvent(new CustomEvent('app-flash', { detail: saved.message }));
-            await this.refreshList();
-        } catch {
-            this.formErrors = { _: ['Čuvanje nije uspjelo. Pokušajte ponovo.'] };
-        } finally {
-            this.saving = false;
-        }
+        const first = this.modules.indexOf(samePlacement[index]);
+        const second = this.modules.indexOf(samePlacement[target]);
+        [this.modules[first], this.modules[second]] = [this.modules[second], this.modules[first]];
     },
 }));
 
@@ -288,13 +370,24 @@ Alpine.data('entityIndex', () => ({
  */
 Alpine.data('pinEntry', () => ({
     digits: ['', '', '', ''],
+    submitting: false,
 
     init() {
-        this.$nextTick(() => this.box(0)?.focus());
+        this.$nextTick(() => this.focusFirstEmpty());
+
+        // Jump/WebKit ponekad završi učitavanje webviewa nakon Alpine inicijalizacije.
+        // Drugi pokušaj fokusira PIN bez čekanja na dodir korisnika.
+        window.setTimeout(() => this.focusFirstEmpty(), 250);
     },
 
     box(index) {
         return this.$refs.box ? this.$root.querySelectorAll('input[type=password]')[index] : null;
+    },
+
+    focusFirstEmpty() {
+        const index = this.digits.findIndex((digit) => digit === '');
+
+        this.box(index === -1 ? 3 : index)?.focus();
     },
 
     filled() {
@@ -356,8 +449,9 @@ Alpine.data('pinEntry', () => ({
     },
 
     submitWhenFilled() {
-        if (! this.filled()) return;
+        if (! this.filled() || this.submitting) return;
 
+        this.submitting = true;
         this.$nextTick(() => this.$root.requestSubmit());
     },
 }));
@@ -380,12 +474,10 @@ const wentToUnlock = (response) => {
     return true;
 };
 
-window.wentToUnlock = wentToUnlock;
-
 /**
- * Radnje nad računom: fiskalizacija, kopija, storno, slika računa i mail.
+ * Radnje nad računom: fiskalizacija, kopija, storno, fiskalni dokument i mail.
  *
- * Živi ovdje, a ne u opisu liste, jer isti partial detalja koristi i puna stranica
+ * Živi ovdje, a ne u opisu liste, jer se detalji koriste na punoj stranici
  * računa — tamo bez ovoga svaki fiskalni dugmić samo javi grešku u konzoli.
  * Osvježavanje se traži preko `refreshAfterAction`, koje lista prepisuje.
  */
@@ -397,30 +489,183 @@ const invoiceActions = () => ({
     emailReceipts: [],
     emailForm: { to: '', subject: '', body: '', attach_pdf: true, attach_fiscal_record_ids: [] },
 
+    pdfFile: null,
+    pdfPreparing: false,
+
     receiptModal: false,
+    receiptLoading: false,
+    receiptError: '',
     receiptUrl: '',
+    receiptHtml: '',
+    receiptSourceUrl: '',
+    receiptVerificationUrl: '',
     receiptKind: 'image',
 
-    confirm: { open: false, message: '', running: false, action: null },
+    async preparePdf(url, filename, useMobilePayload = false) {
+        if (this.pdfPreparing) {
+            return;
+        }
 
-    openReceipt(url, kind = 'image') {
-        this.receiptUrl = url;
+        mobileLog('invoice_pdf_clicked', { has_prepared_file: this.pdfFile !== null });
+
+        if (this.pdfFile) {
+            await this.sharePreparedPdf();
+
+            return;
+        }
+
+        this.pdfPreparing = true;
+
+        try {
+            const response = await fetch(withMobilePayload(url, useMobilePayload), { headers: { Accept: 'application/pdf' } });
+
+            mobileLog('invoice_pdf_response', {
+                status: response.status,
+                content_type: response.headers.get('content-type'),
+            });
+
+            if (! response.ok) {
+                throw new Error('PDF nije dostupan.');
+            }
+
+            const document = useMobilePayload ? await response.json() : null;
+            const documentBlob = document
+                ? blobFromBase64(document.contents, document.mime)
+                : await response.blob();
+
+            this.pdfFile = new File([documentBlob], document?.filename || filename, { type: 'application/pdf' });
+            mobileLog('invoice_pdf_prepared', { bytes: this.pdfFile.size });
+            await this.sharePreparedPdf();
+        } catch {
+            mobileLog('invoice_pdf_failed');
+            this.flash('PDF nije moguće pripremiti.', 'error');
+        } finally {
+            this.pdfPreparing = false;
+        }
+    },
+
+    async sharePreparedPdf() {
+        if (! this.pdfFile) {
+            return;
+        }
+
+        const shareData = { title: this.pdfFile.name, files: [this.pdfFile] };
+        mobileLog('invoice_pdf_share_started', {
+            navigator_share: Boolean(navigator.share),
+            can_share_file: ! navigator.canShare || navigator.canShare(shareData),
+        });
+
+        try {
+            if (navigator.share && (! navigator.canShare || navigator.canShare(shareData))) {
+                await navigator.share(shareData);
+                mobileLog('invoice_pdf_share_opened');
+
+                return;
+            }
+        } catch (error) {
+            if (error?.name === 'AbortError') {
+                mobileLog('invoice_pdf_share_cancelled');
+                return;
+            }
+
+            mobileLog('invoice_pdf_share_failed', { error: error?.name || 'unknown' });
+        }
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(this.pdfFile);
+        link.download = this.pdfFile.name;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        mobileLog('invoice_pdf_download_fallback');
+        this.flash('PDF je preuzet na uređaj.');
+    },
+
+    async openReceipt(url, kind = 'image', verificationUrl = '', useMobilePayload = false) {
+        this.releaseReceiptUrl();
+        this.receiptSourceUrl = url;
+        this.receiptVerificationUrl = verificationUrl;
         this.receiptKind = kind;
+        this.receiptError = '';
+        this.receiptUrl = '';
+        this.receiptHtml = '';
+        this.receiptLoading = true;
         this.receiptModal = true;
+        mobileLog('fiscal_receipt_clicked', { kind });
+
+        try {
+            const response = await fetch(withMobilePayload(url, useMobilePayload), {
+                headers: { Accept: kind === 'html' ? 'text/html' : '*/*' },
+            });
+
+            mobileLog('fiscal_receipt_response', {
+                kind,
+                status: response.status,
+                content_type: response.headers.get('content-type'),
+            });
+
+            if (wentToUnlock(response)) {
+                return;
+            }
+
+            if (! response.ok) {
+                throw new Error('Fiskalni dokument nije dostupan.');
+            }
+
+            const document = useMobilePayload ? await response.json() : null;
+
+            if (kind === 'html') {
+                this.receiptHtml = document ? atob(document.contents) : await response.text();
+                mobileLog('fiscal_receipt_html_ready', { characters: this.receiptHtml.length });
+            } else {
+                const documentBlob = document
+                    ? blobFromBase64(document.contents, document.mime)
+                    : await response.blob();
+                this.receiptUrl = document
+                    ? `data:${document.mime};base64,${document.contents}`
+                    : await this.dataUrl(documentBlob);
+                mobileLog('fiscal_receipt_binary_ready', { kind, bytes: documentBlob.size });
+            }
+        } catch {
+            mobileLog('fiscal_receipt_failed', { kind });
+            this.receiptError = 'Fiskalni dokument nije moguće prikazati. Pokušajte ponovo.';
+        } finally {
+            this.receiptLoading = false;
+        }
+    },
+
+    closeReceipt() {
+        this.releaseReceiptUrl();
+        this.receiptModal = false;
+        this.receiptUrl = '';
+        this.receiptHtml = '';
+    },
+
+    releaseReceiptUrl() {
+        // Data URL nema resurs koji se posebno oslobađa.
+    },
+
+    dataUrl(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+        });
+    },
+
+    receiptFailed() {
+        mobileLog('fiscal_receipt_render_failed', { kind: this.receiptKind });
+        this.receiptError = 'Fiskalni račun nije dostupan. Pokušajte ponovo.';
     },
 
     /** Fiskalne radnje traže potvrdu prije izvršenja. */
     fiscalAction(url, message) {
-        this.confirm = { open: true, message, running: false, action: url };
+        Alpine.store('confirmation').ask(message, () => this.runFiscalAction(url));
     },
 
-    async runConfirmed() {
-        if (this.confirm.running) return;
-
-        this.confirm.running = true;
-
+    async runFiscalAction(url) {
         try {
-            const response = await fetch(this.confirm.action, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -433,7 +678,6 @@ const invoiceActions = () => ({
 
             const data = await response.json().catch(() => ({}));
 
-            this.confirm.open = false;
             this.flash(data.message || (response.ok ? 'Gotovo.' : 'Radnja nije uspjela.'),
                 response.ok ? 'success' : 'error');
 
@@ -441,10 +685,7 @@ const invoiceActions = () => ({
                 await this.refreshAfterAction(data);
             }
         } catch {
-            this.confirm.open = false;
             this.flash('Radnja nije uspjela.', 'error');
-        } finally {
-            this.confirm.running = false;
         }
     },
 
@@ -511,6 +752,5 @@ const invoiceActions = () => ({
 });
 
 Alpine.data('invoiceActions', invoiceActions);
-window.invoiceActions = invoiceActions;
 
 Alpine.start();

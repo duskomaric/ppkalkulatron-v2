@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateAutoLockSettingsRequest;
+use App\Http\Requests\UpdatePinRequest;
 use App\Services\PinLock;
 use App\Settings\SecuritySettings;
 use Illuminate\Http\Request;
@@ -22,12 +24,9 @@ class PinSettingsController extends Controller
         ]);
     }
 
-    public function updateLock(Request $request, SecuritySettings $settings)
+    public function updateLock(UpdateAutoLockSettingsRequest $request, SecuritySettings $settings)
     {
-        $data = $request->validate(
-            ['auto_lock_minutes' => ['required', 'integer', 'in:0,1,5,15,30,60']],
-            [], ['auto_lock_minutes' => 'zaključavanje']
-        );
+        $data = $request->validated();
 
         $settings->auto_lock_minutes = $data['auto_lock_minutes'];
         $settings->save();
@@ -35,13 +34,9 @@ class PinSettingsController extends Controller
         return redirect()->route('settings.pin.edit')->with('status', 'Podešavanje je sačuvano.');
     }
 
-    public function update(Request $request)
+    public function update(UpdatePinRequest $request)
     {
-        $validated = $request->validate(
-            ['pin' => ['required', 'digits:4', 'confirmed']],
-            [],
-            ['pin' => 'PIN'],
-        );
+        $validated = $request->validated();
 
         $enabled = $this->pin->isEnabled();
         $this->pin->set($validated['pin']);

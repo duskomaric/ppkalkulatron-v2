@@ -8,7 +8,6 @@
 
     // Boje iz dizajna
     $color_primary = '#2f80ed';
-    $color_primary_dark = '#1d5fc4';
     $color_bg_light = '#f3f8fb';
     $color_border = '#e5eaf0';
     $color_text_dark = '#111827';
@@ -319,7 +318,7 @@
                     <div class="document-details-row"><span class="document-details-label">Datum izdavanja</span> <span class="document-details-value">{{ $invoice->date?->format('d.m.Y.') ?? '-' }}</span></div>
                     <div class="document-details-row"><span class="document-details-label">Način plaćanja</span> <span class="document-details-value">{{ $invoice->payment_type?->label() ?? '-' }}</span></div>
                     @php
-                        $originalFiscal = $invoice->fiscalRecords->firstWhere('type', \App\Enums\FiscalRecordType::Original);
+                        $originalFiscal = $invoice->originalFiscalRecord();
                     @endphp
                     @if($originalFiscal?->fiscal_invoice_number)
                         <div class="document-details-row"><span class="document-details-label">Br. fiskalnog računa</span> <span class="document-details-value">{{ $originalFiscal->fiscal_invoice_number }}</span></div>

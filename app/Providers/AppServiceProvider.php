@@ -2,36 +2,56 @@
 
 namespace App\Providers;
 
+use App\Services\PinLock;
+use App\Settings\CompanySettings;
+use App\Settings\UserSettings;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Vite;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\View as ViewInstance;
 use Native\Mobile\Runtime;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void
-    {
-        //
-    }
-
     public function boot(): void
     {
         Paginator::useTailwind();
+        Model::preventLazyLoading(! $this->app->isProduction());
 
+        $this->shareLayoutData();
         $this->keepSettingsFreshBetweenDispatches();
     }
 
-    /**
-     * Podešavanja se moraju ponovo pročitati na svakom zahtjevu.
-     *
-     * Na uređaju NativePHP servira sve zahtjeve iz jednog PHP procesa i između njih
-     * poziva `Runtime::reset()`, koje čisti fasade ali **ne** i `scoped` veze. Sva
-     * podešavanja (spatie ih registruje kao `scoped`) time postaju singletoni za
-     * cijeli život procesa: sačuvaš izmjenu, a aplikacija do restarta i dalje čita
-     * staru vrijednost. Zbog toga izbor modula u meniju „nije radio", a isto je
-     * važilo za naziv kompanije, fiskalne parametre i sve ostalo.
-     *
-     * Obični Laravel ovo radi sam u `Application::handleRequest()`.
-     */
+    private function shareLayoutData(): void
+    {
+        View::composer('layouts.app', function (ViewInstance $view): void {
+            $pinLock = $this->app->make(PinLock::class);
+
+            $view->with('autoLockMinutes', $pinLock->isEnabled() ? $pinLock->autoLockMinutes() : 0);
+        });
+
+        View::composer('components.app-header', function (ViewInstance $view): void {
+            $view->with('companyName', $this->app->make(CompanySettings::class)->name);
+        });
+
+        View::composer('components.user-drawer', function (ViewInstance $view): void {
+            $view->with('user', $this->app->make(UserSettings::class));
+        });
+
+        View::composer(['profile', 'unlock'], function (ViewInstance $view): void {
+            $assetBuildHash = $this->app->make(Vite::class)->manifestHash();
+
+            $view->with([
+                'appReleaseVersion' => config('nativephp.version'),
+                'appBuildCode' => config('nativephp.version_code'),
+                'assetBuildHash' => $assetBuildHash === null ? null : strtoupper(substr($assetBuildHash, 0, 8)),
+            ]);
+        });
+    }
+
+    /** NativePHP proces ostaje živ između zahtjeva, pa scoped podešavanja osvježava na resetu. */
     private function keepSettingsFreshBetweenDispatches(): void
     {
         if (! class_exists(Runtime::class)) {

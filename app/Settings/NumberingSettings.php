@@ -8,7 +8,7 @@ use Spatie\LaravelSettings\Settings;
  * Numeracija dokumenata.
  *
  * Sljedeći broj se izvodi iz samih dokumenata, ne iz brojača — zato ovdje nema
- * `last_number`. v1 je imao brojač i on se razilazio sa stvarnošću kad se dokument obriše.
+ * `last_number`.
  */
 class NumberingSettings extends Settings
 {
@@ -19,14 +19,6 @@ class NumberingSettings extends Settings
     public string $invoice_prefix;
 
     public int $invoice_starting_number;
-
-    public string $proforma_prefix;
-
-    public int $proforma_starting_number;
-
-    public string $quote_prefix;
-
-    public int $quote_starting_number;
 
     public static function group(): string
     {

@@ -2,83 +2,84 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\PaymentType;
+use App\Http\Requests\EnterFiscalPinRequest;
+use App\Http\Requests\FindFiscalRequestRequest;
+use App\Http\Requests\ScanFiscalNetworkRequest;
+use App\Http\Requests\UpdateFiscalSettingsRequest;
+use App\Services\FiscalDeviceHealth;
 use App\Services\NetworkScanner;
 use App\Services\OFSService;
 use App\Settings\FiscalSettings;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use RuntimeException;
+use Throwable;
 
 class FiscalSettingsController extends Controller
 {
-    public function edit(FiscalSettings $settings)
+    public function edit(FiscalSettings $settings, FiscalDeviceHealth $health)
     {
-        return view('settings.fiscal', ['settings' => $settings]);
+        return view('settings.fiscal', [
+            'settings' => $settings,
+            'fiscalHealth' => $health->current(),
+        ]);
     }
 
-    public function update(Request $request, FiscalSettings $settings)
+    public function update(UpdateFiscalSettingsRequest $request, FiscalSettings $settings, FiscalDeviceHealth $health)
     {
-        $data = $request->validate([
-            'base_url' => ['required', 'string', 'max:255'],
-            'api_key' => ['nullable', 'string', 'max:255'],
-            // Cloud uređaj bez serijskog broja i PAK-a ne odgovara — bolje odbiti
-            // pri čuvanju nego dati korisniku da otkriva zašto fiskalizacija pada.
-            'serial_number' => ['nullable', 'string', 'max:255', 'required_if:device_mode,cloud'],
-            'pac' => ['nullable', 'string', 'max:32', 'required_if:device_mode,cloud'],
-            'cashier' => ['required', 'string', 'max:64'],
-            'device_mode' => ['required', Rule::in(['cloud', 'local'])],
-            'receipt_layout' => ['required', Rule::in(['Slip', 'Invoice'])],
-            'receipt_image_format' => ['required', Rule::in(['Png', 'Pdf', 'Html'])],
-            'default_payment_type' => ['required', Rule::enum(PaymentType::class)],
-            'receipt_header_text_lines' => ['nullable', 'string'],
-        ], [], [
-            'base_url' => 'base URL', 'device_mode' => 'način uređaja',
-            'serial_number' => 'serijski broj', 'pac' => 'PAK',
-            'receipt_layout' => 'izgled računa', 'receipt_image_format' => 'format slike',
-        ]);
+        $data = $request->validated();
 
-        // A4 layout nema PNG renderer — uređaj vrati praznu jednopikselnu sliku.
-        $allowed = $data['receipt_layout'] === 'Invoice' ? ['Pdf', 'Html'] : ['Png', 'Pdf', 'Html'];
-
-        if (! in_array($data['receipt_image_format'], $allowed, true)) {
-            throw ValidationException::withMessages([
-                'receipt_image_format' => sprintf(
-                    'Izgled "%s" ne podržava format "%s". Dozvoljeno: %s.',
-                    $data['receipt_layout'], $data['receipt_image_format'], implode(', ', $allowed),
-                ),
-            ]);
-        }
-
-        $settings->fill(collect($data)->except('receipt_header_text_lines')->all());
+        $settings->fill(collect($data)->except([
+            'receipt_header_text_lines',
+            'wholesale',
+            'print_receipt',
+        ])->all());
         $settings->receipt_header_text_lines = collect(explode("\n", (string) $request->input('receipt_header_text_lines')))
             ->map(fn ($line) => trim($line))->filter()->values()->all();
         $settings->wholesale = $request->boolean('wholesale');
-        $settings->render_receipt_image = $request->boolean('render_receipt_image');
         $settings->print_receipt = $request->boolean('print_receipt');
         $settings->save();
+        $health->forget();
 
         return redirect()->route('settings.fiscal.edit')->with('status', 'Fiskalna podešavanja su sačuvana.');
     }
 
-    /** Provjera dostupnosti uređaja — v1 ima tri dugmeta, ovdje su spojena u jedno. */
-    public function test(FiscalSettings $settings)
+    public function status(FiscalDeviceHealth $health): JsonResponse
+    {
+        return response()->json($health->refreshIfStale());
+    }
+
+    /** Provjera dostupnosti i poreskih oznaka uređaja. */
+    public function test(FiscalSettings $settings, FiscalDeviceHealth $health)
     {
         try {
             $ofs = new OFSService($settings->base_url, $settings->api_key, $settings->serial_number, $settings->pac);
             $attention = $ofs->testAttention();
 
             if (! $attention->successful()) {
+                $health->markUnavailable();
+
                 return redirect()->route('settings.fiscal.edit')->with('error', "Uređaj nije dostupan (HTTP {$attention->status()}).");
             }
 
             $status = $ofs->getStatus();
+
+            if (! $status->successful()) {
+                $health->markUnavailable();
+
+                return redirect()->route('settings.fiscal.edit')->with('error', "Uređaj nije dostupan (HTTP {$status->status()}).");
+            }
+
             $data = $status->json() ?? [];
             $gsc = array_map('strval', (array) ($data['gsc'] ?? []));
 
             if (in_array('1500', $gsc, true)) {
+                $health->markPinRequired();
+
                 return redirect()->route('settings.fiscal.edit')->with('error', 'Uređaj traži PIN sigurnosnog elementa.');
             }
+
+            $health->markReady();
 
             $labels = collect($data['currentTaxRates']['taxCategories'] ?? [])
                 ->flatMap(fn ($c) => $c['taxRates'] ?? [])
@@ -87,8 +88,10 @@ class FiscalSettingsController extends Controller
 
             return redirect()->route('settings.fiscal.edit')->with('status', 'Uređaj je dostupan. UID '.($data['uid'] ?? '—').
                 ($labels ? '. Oznake: '.$labels : ''));
-        } catch (\Throwable $e) {
-            return redirect()->route('settings.fiscal.edit')->with('error', 'Greška: '.$e->getMessage());
+        } catch (Throwable $e) {
+            $health->markUnavailable();
+
+            return $this->fiscalError($e);
         }
     }
 
@@ -107,9 +110,9 @@ class FiscalSettingsController extends Controller
     ];
 
     /** Potraga za ESIR-om na lokalnoj mreži; odgovor je JSON jer traje. */
-    public function scan(Request $request, NetworkScanner $scanner, FiscalSettings $settings)
+    public function scan(ScanFiscalNetworkRequest $request, NetworkScanner $scanner, FiscalSettings $settings)
     {
-        $data = $request->validate(['range' => ['nullable', 'string', 'max:32']]);
+        $data = $request->validated();
         $range = trim((string) ($data['range'] ?? ''));
 
         if ($range !== '' && $scanner->parseRange($range) === []) {
@@ -135,9 +138,9 @@ class FiscalSettingsController extends Controller
     }
 
     /** PIN sigurnosnog elementa; uređaj ga traži poslije napajanja. */
-    public function pin(Request $request, FiscalSettings $settings)
+    public function pin(EnterFiscalPinRequest $request, FiscalSettings $settings)
     {
-        $data = $request->validate(['security_pin' => ['required', 'digits:4']], [], ['security_pin' => 'PIN']);
+        $data = $request->validated();
 
         try {
             $ofs = new OFSService($settings->base_url, $settings->api_key, $settings->serial_number, $settings->pac);
@@ -149,17 +152,15 @@ class FiscalSettingsController extends Controller
             }
 
             return redirect()->route('settings.fiscal.edit')->with('error', self::PIN_ERRORS[$code] ?? "Uređaj je odbio PIN (kod {$code}).");
-        } catch (\Throwable $e) {
-            return redirect()->route('settings.fiscal.edit')->with('error', 'Greška: '.$e->getMessage());
+        } catch (Throwable $e) {
+            return $this->fiscalError($e);
         }
     }
 
     /** Potraga za izgubljenim odgovorom uređaja po RequestId-u. */
-    public function findRequest(Request $request, FiscalSettings $settings)
+    public function findRequest(FindFiscalRequestRequest $request, FiscalSettings $settings)
     {
-        $data = $request->validate(
-            ['request_id' => ['required', 'string', 'max:32']], [], ['request_id' => 'RequestId']
-        );
+        $data = $request->validated();
 
         try {
             $ofs = new OFSService($settings->base_url, $settings->api_key, $settings->serial_number, $settings->pac);
@@ -174,8 +175,20 @@ class FiscalSettingsController extends Controller
             return redirect()->route('settings.fiscal.edit')->with('status', empty($found)
                 ? 'Zahtjev nije pronađen — fiskalizacija vjerovatno nije prošla.'
                 : 'Pronađen račun '.($found['invoiceNumber'] ?? '—').', brojač '.($found['invoiceCounter'] ?? '—').'.');
-        } catch (\Throwable $e) {
-            return redirect()->route('settings.fiscal.edit')->with('error', 'Greška: '.$e->getMessage());
+        } catch (Throwable $e) {
+            return $this->fiscalError($e);
         }
+    }
+
+    private function fiscalError(Throwable $exception): RedirectResponse
+    {
+        if ($exception instanceof RuntimeException) {
+            return redirect()->route('settings.fiscal.edit')->with('error', $exception->getMessage());
+        }
+
+        report($exception);
+
+        return redirect()->route('settings.fiscal.edit')
+            ->with('error', 'Fiskalni uređaj trenutno nije dostupan. Pokušajte ponovo.');
     }
 }

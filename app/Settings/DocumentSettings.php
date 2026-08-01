@@ -15,15 +15,7 @@ class DocumentSettings extends Settings
 
     public int $invoice_due_days;
 
-    public int $proforma_due_days;
-
-    public int $quote_valid_days;
-
     public ?string $invoice_notes;
-
-    public ?string $proforma_notes;
-
-    public ?string $quote_notes;
 
     public static function group(): string
     {

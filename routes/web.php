@@ -1,16 +1,18 @@
 <?php
 
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BankAccountController;
-use App\Http\Controllers\CurrencyController;
-use App\Http\Controllers\FiscalController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompanySettingsController;
+use App\Http\Controllers\CurrencyController;
+use App\Http\Controllers\FiscalController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\GeneralSettingsController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MailSettingsController;
 use App\Http\Controllers\MenuSettingsController;
-use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\MobileDiagnosticsController;
 use App\Http\Controllers\PinSettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UnlockController;
@@ -27,6 +29,7 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::redirect('/', '/racuni');
 
     Route::post('/lock', [UnlockController::class, 'destroy'])->name('unlock.destroy');
+    Route::post('/dijagnostika/mobile', [MobileDiagnosticsController::class, 'store'])->name('mobile.diagnostics.store');
 
     Route::get('/racuni/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
     Route::post('/racuni/{invoice}/mail', [InvoiceController::class, 'email'])->name('invoices.email');
@@ -57,7 +60,12 @@ Route::middleware(EnsureUnlocked::class)->group(function () {
     Route::get('/podesavanja/mail', [MailSettingsController::class, 'edit'])->name('settings.mail.edit');
     Route::put('/podesavanja/mail', [MailSettingsController::class, 'update'])->name('settings.mail.update');
 
+    Route::get('/podesavanja/backup', [BackupController::class, 'edit'])->name('settings.backup.edit');
+    Route::put('/podesavanja/backup', [BackupController::class, 'update'])->name('settings.backup.update');
+    Route::post('/podesavanja/backup/posalji', [BackupController::class, 'send'])->name('settings.backup.send');
+
     Route::get('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'edit'])->name('settings.fiscal.edit');
+    Route::get('/podesavanja/fiskalizacija/status', [FiscalSettingsController::class, 'status'])->name('settings.fiscal.status');
     Route::put('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'update'])->name('settings.fiscal.update');
     Route::post('/podesavanja/fiskalizacija/provjera', [FiscalSettingsController::class, 'test'])->name('settings.fiscal.test');
     Route::post('/podesavanja/fiskalizacija/skeniraj', [FiscalSettingsController::class, 'scan'])->name('settings.fiscal.scan');

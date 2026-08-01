@@ -39,7 +39,7 @@
                 @method('PUT')
 
                 <x-section-block variant="card" class="sm:p-8 space-y-6">
-                    <x-section-header icon="clock" title="Automatsko zaključavanje" />
+                    <x-section-header icon="clock" title="Automatsko zaključavanje" :help="route('help').'#pin'" />
 
                     <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
                         Aplikacija se sama zaključava kad se ostavi otvorena, i kad se telefon zaključa
@@ -56,17 +56,18 @@
                                        60 => '1 sat',
                                    ]" />
 
-                    <x-button variant="ghost" class="w-full !py-3.5">Sačuvaj</x-button>
+                    <x-button variant="primary" class="w-full !py-3.5 !text-[11px] !font-black !uppercase !tracking-[0.2em]">
+                        Sačuvaj izmjene
+                    </x-button>
                 </x-section-block>
             </form>
 
-            <form method="POST" action="{{ route('settings.pin.destroy') }}"
-                  onsubmit="return confirm('Ukloniti PIN?')">
+            <form method="POST" action="{{ route('settings.pin.destroy') }}" data-confirm="Ukloniti PIN?">
                 @csrf
                 @method('DELETE')
 
                 <x-section-block variant="card" class="sm:p-8 space-y-6">
-                    <x-section-header icon="lock" title="Ukloni PIN" />
+                    <x-section-header icon="lock" title="Ukloni PIN" :help="route('help').'#pin'" />
 
                     <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
                         Aplikacija se nakon ovoga otvara bez PIN-a.

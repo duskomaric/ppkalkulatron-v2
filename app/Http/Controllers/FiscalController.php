@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
+use App\Services\FiscalDeviceHealth;
 use App\Services\FiscalService;
 use App\Services\InvoiceNumber;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +13,10 @@ use Throwable;
 
 class FiscalController extends Controller
 {
-    public function __construct(private FiscalService $fiscal) {}
+    public function __construct(
+        private FiscalService $fiscal,
+        private FiscalDeviceHealth $health,
+    ) {}
 
     public function fiscalize(Invoice $invoice)
     {
@@ -29,7 +33,7 @@ class FiscalController extends Controller
         return $this->run(fn () => $this->fiscal->refund($invoice), 'Storno je fiskalizovan.', $invoice);
     }
 
-    /** Storno račun: kopija originala sa istim iznosima, kao u v1. */
+    /** Storno račun preuzima stavke i iznose originalnog računa. */
     public function createRefund(Invoice $invoice, InvoiceNumber $numbers)
     {
         if ($invoice->refund_invoice_id) {
@@ -89,12 +93,14 @@ class FiscalController extends Controller
     {
         try {
             $action();
+            $this->health->markReady();
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (Throwable $e) {
             report($e);
+            $this->health->markUnavailable();
 
-            return response()->json(['message' => 'Greška: '.$e->getMessage()], 500);
+            return response()->json(['message' => 'Fiskalizacija trenutno nije uspjela. Pokušajte ponovo.'], 500);
         }
 
         return response()->json(['message' => $message, 'invoice_id' => $invoice->id]);

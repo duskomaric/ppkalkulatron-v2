@@ -60,6 +60,14 @@ class InvoiceMail extends Mailable
                 ->withMime('application/pdf');
         }
 
+        if ($this->attachFiscalRecordIds === []) {
+            return $attachments;
+        }
+
+        // Prilozi čitaju i zapis i njegovu sliku; bez ovoga se slika dovlači po
+        // zapisu, jednim upitom za svaki.
+        $this->invoice->loadMissing('fiscalRecords.receipt');
+
         $receipts = app(FiscalReceiptStore::class);
 
         foreach ($this->attachFiscalRecordIds as $recordId) {

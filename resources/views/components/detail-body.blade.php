@@ -1,8 +1,7 @@
 @props(['entityName', 'entityIcon'])
 
 {{--
-    Unutrašnjost v1 DetailDrawer-a: kartica zaglavlja, sadržaj, pa podnožje sa akcijama.
-    Odvojeno od x-drawer jer se sadržaj dovlači sa servera i ubacuje u već otvoreni okvir.
+    Kartica zaglavlja, sadržaj i podnožje sa akcijama za detalj dokumenta.
 --}}
 <div class="flex flex-col gap-4">
     <div class="flex items-center gap-3 p-4 bg-[var(--color-border)] rounded-[24px] border border-[var(--color-border-strong)] relative overflow-hidden group">
@@ -24,7 +23,5 @@
         @isset($actions)
             <div class="flex gap-2">{{ $actions }}</div>
         @endisset
-        <x-drawer-secondary-button label="Zatvori"
-                                   x-on:click="$data.detailDrawer === undefined ? history.back() : ($data.detailDrawer = false)" />
     </div>
 </div>

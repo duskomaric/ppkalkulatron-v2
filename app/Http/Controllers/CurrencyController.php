@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\DrawerForms;
+use App\Http\Requests\CurrencyRequest;
+use App\Http\Requests\ExchangeRateRequest;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class CurrencyController extends Controller
 {
-    use DrawerForms;
-
     public function index()
     {
         return view('currencies.index', [
@@ -21,32 +18,32 @@ class CurrencyController extends Controller
         ]);
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        return $this->formView($request, 'currencies.form-fields', 'currencies.form', ['currency' => null, 'rates' => collect()]);
+        return view('currencies.form', ['currency' => null, 'rates' => collect()]);
     }
 
-    public function store(Request $request)
+    public function store(CurrencyRequest $request)
     {
         $this->save($request, new Currency);
 
-        return $this->saved($request, 'currencies.index', 'Valuta je dodata.');
+        return redirect()->route('currencies.index')->with('status', 'Valuta je dodata.');
     }
 
-    public function edit(Request $request, Currency $currency)
+    public function edit(Currency $currency)
     {
-        return $this->formView($request, 'currencies.form-fields', 'currencies.form', [
+        return view('currencies.form', [
             'currency' => $currency,
             'rates' => ExchangeRate::where('currency', $currency->code)
                 ->orderByDesc('rate_date')->limit(10)->get(),
         ]);
     }
 
-    public function update(Request $request, Currency $currency)
+    public function update(CurrencyRequest $request, Currency $currency)
     {
         $this->save($request, $currency);
 
-        return $this->saved($request, 'currencies.index', 'Izmjene su sačuvane.');
+        return redirect()->route('currencies.index')->with('status', 'Izmjene su sačuvane.');
     }
 
     public function destroy(Currency $currency)
@@ -61,16 +58,13 @@ class CurrencyController extends Controller
     }
 
     /** Kurs prema KM na određeni dan; fiskalizacija ga traži za strane valute. */
-    public function storeRate(Request $request, Currency $currency)
+    public function storeRate(ExchangeRateRequest $request, Currency $currency)
     {
         if ($currency->is_default) {
             return redirect()->route('currencies.index')->with('error', 'Podrazumijevana valuta nema kurs prema samoj sebi.');
         }
 
-        $data = $request->validate([
-            'rate_to_bam' => ['required', 'numeric', 'min:0.00001'],
-            'rate_date' => ['required', 'date'],
-        ], [], ['rate_to_bam' => 'kurs', 'rate_date' => 'datum']);
+        $data = $request->validated();
 
         // whereDate, ne updateOrCreate: na SQLite-u kolona datuma nosi i vrijeme,
         // pa poređenje sa golim „Y-m-d" ne bi našlo postojeći zapis.
@@ -81,18 +75,12 @@ class CurrencyController extends Controller
         $rate->rate_to_bam = $data['rate_to_bam'];
         $rate->save();
 
-        return $this->saved($request, 'currencies.index', 'Kurs je sačuvan.');
+        return redirect()->route('currencies.index')->with('status', 'Kurs je sačuvan.');
     }
 
-    private function save(Request $request, Currency $currency): void
+    private function save(CurrencyRequest $request, Currency $currency): void
     {
-        $data = $request->validate([
-            'code' => ['required', 'string', 'size:3', Rule::unique('currencies', 'code')->ignore($currency)],
-            'name' => ['required', 'string', 'max:255'],
-            'symbol' => ['required', 'string', 'max:8'],
-        ], [], ['code' => 'oznaka', 'name' => 'naziv', 'symbol' => 'simbol']);
-
-        $data['code'] = strtoupper($data['code']);
+        $data = $request->validated();
 
         DB::transaction(function () use ($request, $currency, $data) {
             $currency->fill($data);

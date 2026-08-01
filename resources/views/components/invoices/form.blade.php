@@ -8,17 +8,8 @@
     'defaultCurrency' => 'BAM',
     'defaultDueDays' => 15,
     'defaultNotes' => null,
+    'defaultPaymentType' => 'Cash',
 ])
-
-{{--
-    Forma prati v1 FormDrawer stavku po stavku: Osnovni podaci, Dodatna polja pod
-    prekidačem, Stavke i pregled iznosa. Red stavke, kao u v1, ima samo izbor
-    artikla, količinu i cijenu — naziv, jedinica i poreska oznaka dolaze sa artikla
-    i serveru idu kao skrivena polja.
-
-    Izostavljen je samo Ponavljajući račun — v2 nema ponavljanja. Jezik se čuva i
-    prikazuje, ali PDF za sada izlazi na jednom jeziku.
---}}
 
 @php
     $isEdit = $invoice !== null;
@@ -67,7 +58,6 @@
 
 <form method="POST" action="{{ $isEdit ? route('invoices.update', $invoice) : route('invoices.store') }}"
       class="space-y-3"
-      x-on:submit="$data.submitForm && ($event.preventDefault(), $data.submitForm($event))"
       x-data="invoiceForm({
           items: @js($oldItems),
           articles: @js($articleOptions),
@@ -80,18 +70,12 @@
     @csrf
     @if ($isEdit) @method('PUT') @endif
 
-    <template x-if="Object.keys($data.formErrors || {}).length">
-        <div data-error-summary class="p-3 rounded-2xl border border-red-500/30 bg-red-500/10 space-y-1">
-            <template x-for="messages in Object.values($data.formErrors)" :key="messages[0]">
-                <p class="text-[11px] font-bold text-red-500" x-text="messages[0]"></p>
-            </template>
-        </div>
-    </template>
+    <x-form-errors />
 
     <x-section-block variant="card">
-        <x-section-header icon="contact" title="Osnovni podaci" />
+        <x-section-header icon="contact" title="Osnovni podaci" :help="route('help').'#racuni'" />
 
-        {{-- Klijent — pretraživi izbor, kao v1 SearchSelect --}}
+        {{-- Klijent se bira pretragom po nazivu, emailu ili telefonu. --}}
         <div class="space-y-1.5">
             <x-field-label required>Klijent</x-field-label>
 
@@ -163,65 +147,63 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-start">
-            <x-input label="Datum" name="date" type="date" icon="calendar" required compact
-                     :value="$invoice?->date->format('Y-m-d') ?? now()->format('Y-m-d')" />
+            <x-form-input label="Datum" name="date" type="date" icon="calendar" required compact
+                          :value="$invoice?->date->format('Y-m-d') ?? now()->format('Y-m-d')" />
 
-            <x-input label="Dospijeće" name="due_date" type="date" icon="clock" required compact
-                     :value="$invoice?->due_date->format('Y-m-d') ?? now()->addDays($defaultDueDays)->format('Y-m-d')" />
+            <x-form-input label="Dospijeće" name="due_date" type="date" icon="clock" required compact
+                          :value="$invoice?->due_date->format('Y-m-d') ?? now()->addDays($defaultDueDays)->format('Y-m-d')" />
 
-            <x-select-field label="Način plaćanja" name="payment_type" icon="credit-card" compact
-                            :value="$invoice?->payment_type->value ?? 'Cash'"
+            <x-form-select label="Način plaćanja" name="payment_type" icon="credit-card" compact :show-placeholder="false"
+                            :value="$invoice?->payment_type->value ?? $defaultPaymentType"
                             :options="\App\Enums\PaymentType::options()" />
         </div>
     </x-section-block>
 
     <x-section-block variant="accent">
-        <x-section-toggle title="Dodatna polja" subtitle="Valuta, predložak, napomena..." open="showMore" />
+        <x-section-toggle title="Dodatna polja" subtitle="Valuta, predložak i jezik" open="showMore" :help="route('help').'#racuni'" />
 
         <div x-show="showMore" x-cloak
              class="space-y-3 pt-3 mt-2 border-t-2 border-dashed border-[var(--color-page-border-subtle)]">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 items-start">
-                <x-select-field label="Valuta" name="currency" icon="credit-card" :value="$currencyCode"
+                <x-form-select label="Valuta" name="currency" icon="credit-card" :show-placeholder="false" :value="$currencyCode"
                                 x-on:change="currency = $event.target.value"
                                 :options="$currencies->pluck('code', 'code')->all()" />
 
-                <x-select-field label="Jezik" name="language" icon="globe"
+                <x-form-select label="Jezik" name="language" icon="globe" :show-placeholder="false"
                                 :value="$invoice?->language?->value ?? $defaultLanguage"
                                 :options="\App\Enums\DocumentLanguage::options()" />
 
-                <x-select-field label="Predložak" name="template" icon="file-text"
+                <x-form-select label="Predložak" name="template" icon="file-text" :show-placeholder="false"
                                 :value="$invoice?->template?->value ?? $defaultTemplate"
                                 :options="\App\Enums\DocumentTemplate::options()" />
             </div>
 
-            <div class="rounded-xl border border-dashed border-[var(--color-border)] overflow-hidden">
-                <div class="flex items-center gap-2 p-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]/50">
-                    <div class="h-7 w-7 bg-amber-500/10 text-amber-500 rounded-lg flex items-center justify-center shrink-0">
-                        <x-icon name="sticky-note" class="h-3.5 w-3.5" />
-                    </div>
-                    <span class="text-[11px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">Napomena</span>
-                </div>
-                <textarea name="notes" rows="2" placeholder="Dodatne napomene..."
-                          class="w-full bg-[var(--color-surface)] border-none text-[var(--color-text-main)] font-bold text-sm px-4 py-3 outline-none focus:ring-0 placeholder:text-[var(--color-text-dim)] resize-none">{{ old('notes', $invoice?->notes ?? ($isEdit ? null : $defaultNotes)) }}</textarea>
-            </div>
-
-            @error('notes')
-                <p class="text-[11px] font-bold text-[var(--color-error)] ml-1">{{ $message }}</p>
-            @enderror
         </div>
     </x-section-block>
 
     <x-section-block variant="card">
-        <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-                <div class="h-7 w-7 bg-primary/10 text-primary rounded-lg flex items-center justify-center shrink-0">
-                    <x-icon name="boxes" class="h-4 w-4" />
-                </div>
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-dim)]">
-                    Stavke (<span x-text="items.length"></span>)
-                </p>
-            </div>
-        </div>
+        <x-section-header icon="sticky-note" title="Napomena" subtitle="Možete izmijeniti zadanu napomenu samo za ovaj račun." />
+
+        <textarea id="notes" name="notes" rows="3" placeholder="Dodatne napomene..." aria-describedby="notes-help"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm font-bold text-[var(--color-text-main)] outline-none transition-all placeholder:text-[var(--color-text-dim)] focus:border-primary focus:ring-1 focus:ring-primary resize-none">{{ old('notes', $invoice?->notes ?? ($isEdit ? null : $defaultNotes)) }}</textarea>
+
+        @if (! $isEdit)
+            <p id="notes-help" class="text-xs font-medium text-[var(--color-text-dim)]">
+                @if (filled($defaultNotes))
+                    Zadana napomena iz Podešavanja je unesena iznad i možete je izmijeniti samo za ovaj račun.
+                @else
+                    Zadana napomena nije postavljena. <a href="{{ route('settings.general.edit') }}" class="font-bold text-primary hover:underline">Postavite je u Podešavanjima</a> za sljedeće račune.
+                @endif
+            </p>
+        @endif
+
+        @error('notes')
+            <p class="mt-1 text-[11px] font-bold text-[var(--color-error)]">{{ $message }}</p>
+        @enderror
+    </x-section-block>
+
+    <x-section-block variant="card">
+        <x-section-header icon="boxes" title="Stavke" :help="route('help').'#racuni'" />
 
         <template x-for="(item, index) in items" :key="index">
             <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3 space-y-2">
@@ -388,14 +370,6 @@
         </div>
     </div>
 
-    <div class="flex flex-col gap-2 pt-2">
-        <button type="submit" :disabled="$data.saving"
-                class="w-full py-3.5 bg-primary text-white rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-glow-primary hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60">
-            <span x-show="$data.saving" x-cloak class="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            <span>{{ $isEdit ? 'Sačuvaj izmjene' : 'Kreiraj račun' }}</span>
-        </button>
-        <x-drawer-secondary-button label="Odustani"
-                                   :x-on:click="'$data.closeForm ? $data.closeForm() : (window.location = '
-                                       .\Illuminate\Support\Js::from($isEdit ? route('invoices.show', $invoice) : route('invoices.index')).')'" />
-    </div>
+    <x-form-actions :label="$isEdit ? 'Sačuvaj izmjene' : 'Kreiraj račun'"
+                    :cancel="$isEdit ? route('invoices.show', $invoice) : route('invoices.index')" />
 </form>

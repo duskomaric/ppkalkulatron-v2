@@ -2,34 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\DocumentLanguage;
-use App\Enums\DocumentTemplate;
+use App\Http\Requests\UpdateGeneralSettingsRequest;
+use App\Settings\CompanySettings;
 use App\Settings\DocumentSettings;
 use App\Settings\NumberingSettings;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class GeneralSettingsController extends Controller
 {
-    public function edit(NumberingSettings $numbering, DocumentSettings $document)
+    public function edit(NumberingSettings $numbering, DocumentSettings $document, CompanySettings $company)
     {
-        return view('settings.general', compact('numbering', 'document'));
+        return view('settings.general', compact('numbering', 'document', 'company'));
     }
 
-    public function update(Request $request, NumberingSettings $numbering, DocumentSettings $document)
+    public function update(UpdateGeneralSettingsRequest $request, NumberingSettings $numbering, DocumentSettings $document)
     {
-        $data = $request->validate([
-            'pad_zeros' => ['required', 'integer', 'min:1', 'max:10'],
-            'invoice_prefix' => ['nullable', 'string', 'max:16'],
-            'invoice_starting_number' => ['required', 'integer', 'min:1'],
-            'template' => ['required', Rule::enum(DocumentTemplate::class)],
-            'language' => ['required', Rule::enum(DocumentLanguage::class)],
-            'invoice_due_days' => ['required', 'integer', 'min:0', 'max:365'],
-            'invoice_notes' => ['nullable', 'string', 'max:2000'],
-        ], [], [
-            'pad_zeros' => 'broj nula', 'template' => 'predložak', 'language' => 'jezik',
-            'invoice_due_days' => 'rok plaćanja', 'invoice_notes' => 'napomena',
-        ]);
+        $data = $request->validated();
 
         $numbering->fill(collect($data)->only([
             'pad_zeros', 'invoice_prefix', 'invoice_starting_number',

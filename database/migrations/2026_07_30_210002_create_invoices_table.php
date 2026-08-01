@@ -26,14 +26,6 @@ return new class extends Migration
             // Storno veza na originalni račun
             $table->foreignId('refund_invoice_id')->nullable()->constrained('invoices')->nullOnDelete();
 
-            // Fiskalizacija
-            $table->boolean('is_fiscalized')->default(false);
-            $table->string('fiscal_invoice_number')->nullable();
-            $table->string('fiscal_counter', 64)->nullable();
-            $table->text('fiscal_verification_url')->nullable();
-            $table->string('fiscal_request_id', 32)->nullable();
-            $table->timestamp('fiscalized_at')->nullable();
-
             // Iznosi u pfeningu
             $table->integer('subtotal')->default(0);
             $table->integer('tax_total')->default(0);

@@ -215,6 +215,10 @@ return [
         // Putanje sa razvojne mašine i eventualni zaostali fiskalni ključevi.
         'NATIVEPHP_ANDROID_SDK_LOCATION',
         'NATIVEPHP_GRADLE_PATH',
+        // `ANDROID_KEYSTORE_*` nije hvatalo `ANDROID_KEY_ALIAS` ni
+        // `ANDROID_KEY_PASSWORD`, pa je lozinka potpisnog ključa išla u .env unutar
+        // APK-a — a APK svako može raspakovati. `ANDROID_*` hvata sve.
+        'ANDROID_*',
         'OFS_*',
         'MAIL_PASSWORD',
         'MAIL_USERNAME',
@@ -237,6 +241,7 @@ return [
         'storage/framework/testing',
         'storage/logs/laravel.log',
         'database/database.sqlite',
+        'credentials',
         'dist',
     ],
 
@@ -287,7 +292,7 @@ return [
         |          'dark'  - Dark icons
         |
         */
-        'status_bar_style' => 'auto',
+        'status_bar_style' => env('NATIVEPHP_ANDROID_STATUS_BAR_STYLE', 'auto'),
 
         /*
         |--------------------------------------------------------------------------
@@ -404,6 +409,8 @@ return [
             'resources',
             'routes',
             'config',
+            // Migracije i seed podešavanja mijenjaju šta aplikacija vidi na startu.
+            'database',
             'public',
         ],
 

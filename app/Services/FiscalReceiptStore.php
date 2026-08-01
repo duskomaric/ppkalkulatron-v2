@@ -2,15 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\FiscalReceiptImage;
+use App\Models\FiscalReceipt;
 use App\Models\FiscalRecord;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 /**
  * Računi koje je fiskalni uređaj vratio.
  *
- * Preneseno iz v1, bez rezervnog čitanja sa diska: v2 nikad nije pisao račune u
- * datoteke, sve što postoji je u bazi.
+ * Original ostaje u privatnom storageu uređaja, a baza čuva samo metapodatke.
  */
 class FiscalReceiptStore
 {
@@ -47,11 +48,28 @@ class FiscalReceiptStore
     }
 
     /** Sačuvaj račun uz zapis; zamjenjuje raniji ako ga je bilo. */
-    public function store(FiscalRecord $record, string $binary, string $extension = 'png'): FiscalReceiptImage
+    public function store(FiscalRecord $record, string $binary, string $extension = 'png'): FiscalReceipt
     {
-        return FiscalReceiptImage::updateOrCreate(
+        $extension = strtolower($extension);
+        $path = 'fiscal-receipts/'.$record->id.'.'.$extension;
+        $previousPath = $record->receipt?->path;
+
+        if (! Storage::disk('local')->put($path, $binary)) {
+            throw new RuntimeException('Fiskalni dokument nije moguće sačuvati.');
+        }
+
+        if ($previousPath && $previousPath !== $path) {
+            Storage::disk('local')->delete($previousPath);
+        }
+
+        return FiscalReceipt::updateOrCreate(
             ['fiscal_record_id' => $record->id],
-            ['extension' => $extension, 'contents' => base64_encode($binary)],
+            [
+                'extension' => $extension,
+                'path' => $path,
+                'checksum' => hash('sha256', $binary),
+                'size' => strlen($binary),
+            ],
         );
     }
 
@@ -62,20 +80,20 @@ class FiscalReceiptStore
 
     public function binary(FiscalRecord $record): ?string
     {
-        $contents = $record->receiptImage?->contents;
+        $path = $record->receipt?->path;
 
-        if (! $contents) {
+        if (! $path || ! Storage::disk('local')->exists($path)) {
             return null;
         }
 
-        $binary = base64_decode($contents, true);
+        $binary = Storage::disk('local')->get($path);
 
-        return ($binary === false || $binary === '') ? null : $binary;
+        return $binary === '' ? null : $binary;
     }
 
     public function extension(FiscalRecord $record): string
     {
-        return strtolower($record->receiptImage?->extension ?: 'png');
+        return strtolower($record->receipt?->extension ?: 'png');
     }
 
     public function mime(FiscalRecord $record): string

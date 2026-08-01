@@ -30,32 +30,59 @@ class OFSService
     private bool $usesCloud;
 
     public function __construct(
-        ?string $baseUrl = null,
-        protected ?string $apiKey = null,
-        protected ?string $serialNumber = null,
-        protected ?string $pac = null,
-        private ?Diagnostics $diagnostics = null,
+        private FiscalSettings $settings,
+        private Diagnostics $diagnostics,
     ) {
-        $settings = app(FiscalSettings::class);
-
-        $this->baseUrl = rtrim($baseUrl ?: $settings->base_url, '/');
+        $this->baseUrl = rtrim($settings->base_url, '/');
         $this->usesCloud = $settings->device_mode === 'cloud';
-        $this->apiKey ??= $settings->api_key;
-        $this->serialNumber ??= $settings->serial_number;
-        $this->pac ??= $settings->pac;
-        $this->diagnostics ??= app(Diagnostics::class);
+    }
+
+    /**
+     * Klon za provjeru druge kase iz komandne linije. Aplikacija inače uvijek
+     * koristi vezu iz fiskalnih podešavanja.
+     */
+    public function withOverrides(?string $baseUrl = null, ?string $apiKey = null, ?string $serialNumber = null, ?string $pac = null): self
+    {
+        $service = clone $this;
+        $service->baseUrl = rtrim($baseUrl ?: $this->settings->base_url, '/');
+        $service->apiKey = $apiKey ?: $this->settings->api_key;
+        $service->serialNumber = $serialNumber ?: $this->settings->serial_number;
+        $service->pac = $pac ?: $this->settings->pac;
+
+        return $service;
     }
 
     /** Cloud traži dodatne identifikatore; lokalnom ESIR-u se šalje samo API ključ. */
     protected function headers(): array
     {
         return array_filter([
-            'Authorization' => $this->apiKey ? 'Bearer '.$this->apiKey : null,
-            'X-Teron-SerialNumber' => $this->usesCloud ? $this->serialNumber : null,
-            'X-PAC' => $this->usesCloud ? $this->pac : null,
+            'Authorization' => $this->apiKey() ? 'Bearer '.$this->apiKey() : null,
+            'X-Teron-SerialNumber' => $this->usesCloud ? $this->serialNumber() : null,
+            'X-PAC' => $this->usesCloud ? $this->pac() : null,
             'Content-Type' => 'application/json; charset=UTF-8',
             'Accept' => 'application/json',
         ]);
+    }
+
+    private ?string $apiKey = null;
+
+    private ?string $serialNumber = null;
+
+    private ?string $pac = null;
+
+    private function apiKey(): ?string
+    {
+        return $this->apiKey ?? $this->settings->api_key;
+    }
+
+    private function serialNumber(): ?string
+    {
+        return $this->serialNumber ?? $this->settings->serial_number;
+    }
+
+    private function pac(): ?string
+    {
+        return $this->pac ?? $this->settings->pac;
     }
 
     protected function client(array $headers, int $timeout = self::TIMEOUT): PendingRequest

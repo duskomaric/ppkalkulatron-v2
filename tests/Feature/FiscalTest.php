@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\ExchangeRate;
 use App\Models\Invoice;
 use App\Models\TaxRate;
+use App\Services\Diagnostics;
 use App\Services\FiscalReceiptStore;
 use App\Services\FiscalService;
 use App\Services\InvoiceWriter;
@@ -476,6 +477,18 @@ it('čita podešavanja fiskalnog uređaja preko OFS klijenta', function () {
     Http::assertSent(fn ($request) => str_ends_with($request->url(), '/api/settings'));
 });
 
+it('može provjeriti drugu kasu bez mijenjanja aktivnih podešavanja', function () {
+    Http::fake(['http://esir.test/api/settings' => Http::response(['device' => 'test-esir'])]);
+
+    $response = app(OFSService::class)
+        ->withOverrides(baseUrl: 'http://esir.test/', apiKey: 'test-key')
+        ->getSettings();
+
+    expect($response->json('device'))->toBe('test-esir');
+    Http::assertSent(fn ($request) => $request->url() === 'http://esir.test/api/settings'
+        && $request->header('Authorization') === ['Bearer test-key']);
+});
+
 it('za staru nevažeću kombinaciju A4 i PNG bira podržani format dokumenta', function () {
     $settings = app(FiscalSettings::class);
     $settings->receipt_layout = 'Invoice';
@@ -502,7 +515,7 @@ it('lokalni opseg uvijek sadrži samo privatne IPv4 adrese kada je dostupan', fu
 });
 
 it('traži privatnu adresu mrežnog interfejsa kada socket vrati javnu adresu', function () {
-    $scanner = new class extends NetworkScanner
+    $scanner = new class(app(Diagnostics::class)) extends NetworkScanner
     {
         protected function socketLocalIp(): ?string
         {
@@ -521,7 +534,7 @@ it('traži privatnu adresu mrežnog interfejsa kada socket vrati javnu adresu', 
 });
 
 it('ne pokušava skeniranje kada nijedan mrežni interfejs nema privatnu adresu', function () {
-    $scanner = new class extends NetworkScanner
+    $scanner = new class(app(Diagnostics::class)) extends NetworkScanner
     {
         protected function socketLocalIp(): ?string
         {
@@ -540,7 +553,7 @@ it('ne pokušava skeniranje kada nijedan mrežni interfejs nema privatnu adresu'
 });
 
 it('čita dostupne IP adrese iz stvarnih mrežnih interfejsa uređaja', function () {
-    $scanner = new class extends NetworkScanner
+    $scanner = new class(app(Diagnostics::class)) extends NetworkScanner
     {
         /** @return array<int, string> */
         public function availableInterfaceIps(): array

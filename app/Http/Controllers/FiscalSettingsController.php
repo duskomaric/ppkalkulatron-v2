@@ -50,10 +50,9 @@ class FiscalSettingsController extends Controller
     }
 
     /** Provjera dostupnosti i poreskih oznaka uređaja. */
-    public function test(FiscalSettings $settings, FiscalDeviceHealth $health)
+    public function test(FiscalDeviceHealth $health, OFSService $ofs)
     {
         try {
-            $ofs = new OFSService($settings->base_url, $settings->api_key, $settings->serial_number, $settings->pac);
             $attention = $ofs->testAttention();
 
             if (! $attention->successful()) {
@@ -138,12 +137,11 @@ class FiscalSettingsController extends Controller
     }
 
     /** PIN sigurnosnog elementa; uređaj ga traži poslije napajanja. */
-    public function pin(EnterFiscalPinRequest $request, FiscalSettings $settings)
+    public function pin(EnterFiscalPinRequest $request, OFSService $ofs)
     {
         $data = $request->validated();
 
         try {
-            $ofs = new OFSService($settings->base_url, $settings->api_key, $settings->serial_number, $settings->pac);
             $response = $ofs->enterPin($data['security_pin']);
             $code = trim($response->body(), " \t\n\r\0\x0B\"");
 
@@ -158,12 +156,11 @@ class FiscalSettingsController extends Controller
     }
 
     /** Potraga za izgubljenim odgovorom uređaja po RequestId-u. */
-    public function findRequest(FindFiscalRequestRequest $request, FiscalSettings $settings)
+    public function findRequest(FindFiscalRequestRequest $request, OFSService $ofs)
     {
         $data = $request->validated();
 
         try {
-            $ofs = new OFSService($settings->base_url, $settings->api_key, $settings->serial_number, $settings->pac);
             $response = $ofs->getInvoiceByRequestId($data['request_id']);
 
             if (! $response->successful()) {

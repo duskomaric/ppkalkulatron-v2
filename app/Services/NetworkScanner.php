@@ -21,6 +21,8 @@ class NetworkScanner
 
     private const CONNECT_TIMEOUT = 0.3;
 
+    public function __construct(private Diagnostics $diagnostics) {}
+
     /** @return string[] Adrese na kojima je uređaj odgovorio, npr. http://192.168.31.102:3566 */
     public function scan(?string $range = null, ?string $apiKey = null, ?int $port = null): array
     {
@@ -62,7 +64,7 @@ class NetworkScanner
         $ip = $this->localIp();
 
         if (! $ip) {
-            app(Diagnostics::class)->error('Skeniranje mreže: lokalna adresa nije pronađena.');
+            $this->diagnostics->error('Skeniranje mreže: lokalna adresa nije pronađena.');
 
             return [];
         }

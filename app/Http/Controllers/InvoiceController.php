@@ -7,19 +7,15 @@ use App\Enums\PaymentType;
 use App\Http\Requests\InvoiceRequest;
 use App\Http\Requests\SendInvoiceEmailRequest;
 use App\Mail\InvoiceMail;
-use App\Models\Article;
-use App\Models\Client;
-use App\Models\Currency;
 use App\Models\FiscalRecord;
 use App\Models\Invoice;
 use App\Services\Diagnostics;
 use App\Services\FiscalDeviceHealth;
 use App\Services\FiscalReceiptStore;
+use App\Services\InvoiceFormData;
 use App\Services\InvoicePdfService;
 use App\Services\InvoiceWriter;
 use App\Services\MailService;
-use App\Settings\DocumentSettings;
-use App\Settings\FiscalSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Native\Mobile\Facades\Share;
@@ -28,8 +24,7 @@ class InvoiceController extends Controller
 {
     public function __construct(
         private InvoiceWriter $writer,
-        private DocumentSettings $documents,
-        private FiscalSettings $fiscalSettings,
+        private InvoiceFormData $formData,
         private Diagnostics $diagnostics,
     ) {}
 
@@ -126,7 +121,7 @@ class InvoiceController extends Controller
 
     public function create()
     {
-        return view('invoices.create', $this->formData());
+        return view('invoices.create', $this->formData->for());
     }
 
     public function store(InvoiceRequest $request)
@@ -155,7 +150,7 @@ class InvoiceController extends Controller
                 ->with('error', 'Fiskalizovan račun se ne može mijenjati.');
         }
 
-        return view('invoices.edit', $this->formData(['invoice' => $invoice->load('items')]));
+        return view('invoices.edit', $this->formData->for($invoice->load('items')));
     }
 
     public function update(InvoiceRequest $request, Invoice $invoice)
@@ -324,23 +319,5 @@ class InvoiceController extends Controller
         }
 
         return $receipts->response($record);
-    }
-
-    private function formData(array $extra = []): array
-    {
-        return $extra + [
-            'invoice' => null,
-            'clients' => Client::where('is_active', true)->orderBy('name')
-                ->get(['id', 'name', 'email', 'phone']),
-            'articles' => Article::where('is_active', true)->orderBy('name')
-                ->get(['id', 'name', 'description', 'unit', 'tax_label', 'last_unit_price']),
-            'currencies' => Currency::orderByDesc('is_default')->orderBy('code')->get(['code', 'name']),
-            'defaultTemplate' => $this->documents->template,
-            'defaultLanguage' => $this->documents->language,
-            'defaultCurrency' => Currency::where('is_default', true)->value('code') ?? 'BAM',
-            'defaultDueDays' => $this->documents->invoice_due_days,
-            'defaultNotes' => $this->documents->invoice_notes,
-            'defaultPaymentType' => $this->fiscalSettings->default_payment_type,
-        ];
     }
 }

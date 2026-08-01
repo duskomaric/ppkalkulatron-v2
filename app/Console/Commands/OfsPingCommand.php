@@ -22,16 +22,16 @@ class OfsPingCommand extends Command
 
     protected $description = 'Pozovi /api/attention i /api/status na fiskalnom uređaju';
 
-    public function handle(): int
+    public function handle(OFSService $ofs, FiscalSettings $settings): int
     {
-        $ofs = new OFSService(
+        $ofs = $ofs->withOverrides(
             baseUrl: $this->option('url') ?: null,
             apiKey: $this->option('key') ?: null,
             serialNumber: $this->option('serial') ?: null,
             pac: $this->option('pac') ?: null,
         );
 
-        $this->line('Uređaj: '.($this->option('url') ?: app(FiscalSettings::class)->base_url));
+        $this->line('Uređaj: '.($this->option('url') ?: $settings->base_url));
         $this->newLine();
 
         try {

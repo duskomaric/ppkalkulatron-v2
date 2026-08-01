@@ -6,18 +6,16 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentType;
 use App\Http\Requests\InvoiceRequest;
 use App\Http\Requests\SendInvoiceEmailRequest;
-use App\Mail\InvoiceMail;
 use App\Models\FiscalRecord;
 use App\Models\Invoice;
 use App\Services\Diagnostics;
 use App\Services\FiscalDeviceHealth;
 use App\Services\FiscalReceiptStore;
+use App\Services\InvoiceEmailSender;
 use App\Services\InvoiceFormData;
 use App\Services\InvoicePdfService;
 use App\Services\InvoiceWriter;
-use App\Services\MailService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Native\Mobile\Facades\Share;
 
 class InvoiceController extends Controller
@@ -240,40 +238,17 @@ class InvoiceController extends Controller
     public function email(
         SendInvoiceEmailRequest $request,
         Invoice $invoice,
-        MailService $mail,
-        InvoicePdfService $pdf,
-        FiscalReceiptStore $receipts,
+        InvoiceEmailSender $sender,
     ) {
-        $invoice->load(['client', 'items', 'fiscalRecords.receipt']);
-
-        // Zapis bez sačuvanog računa bi tiho ispao iz priloga, a korisnik bi dobio
-        // poruku da je sve poslato — zato se odvaja da odgovor može to reći.
-        [$available, $missing] = collect($request->validated('attach_fiscal_record_ids') ?? [])
-            ->map(fn ($id) => $invoice->fiscalRecords->firstWhere('id', $id))
-            ->filter()
-            ->partition(fn ($record) => $receipts->has($record));
-
-        $pdfPath = null;
-
-        if ($request->boolean('attach_pdf')) {
-            $pdfPath = storage_path('app/private/racun-'.Str::random(16).'.pdf');
-            @mkdir(dirname($pdfPath), 0755, true);
-            file_put_contents($pdfPath, $pdf->contents($invoice));
-        }
-
         try {
-            [$fromAddress, $fromName] = $mail->from();
-
-            $mail->send($request->validated('to'), new InvoiceMail(
+            $result = $sender->send(
                 invoice: $invoice,
-                emailSubject: $request->validated('subject'),
+                to: $request->validated('to'),
+                subject: $request->validated('subject'),
                 body: $request->validated('body'),
-                verificationUrl: $invoice->fiscalRecords->last()?->verification_url,
-                pdfPath: $pdfPath,
-                attachFiscalRecordIds: $available->pluck('id')->values()->all(),
-                fromAddress: $fromAddress,
-                fromName: $fromName,
-            ));
+                attachPdf: $request->boolean('attach_pdf'),
+                fiscalRecordIds: $request->validated('attach_fiscal_record_ids') ?? [],
+            );
         } catch (\RuntimeException $e) {
             report($e);
 
@@ -282,14 +257,10 @@ class InvoiceController extends Controller
             report($e);
 
             return response()->json(['message' => 'Slanje emaila trenutno nije uspjelo. Pokušajte ponovo.'], 422);
-        } finally {
-            if ($pdfPath && file_exists($pdfPath)) {
-                @unlink($pdfPath);
-            }
         }
 
         return response()->json([
-            'message' => $missing->isEmpty()
+            'message' => ! $result['missing_fiscal_documents']
                 ? 'Račun je poslat na email.'
                 : 'Račun je poslat, ali fiskalni račun nije priložen jer sadržaja nema.',
         ]);

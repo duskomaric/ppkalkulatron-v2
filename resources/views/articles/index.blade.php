@@ -56,9 +56,7 @@
                             <x-slot:mobile>
                                 <div class="flex justify-between items-center">
                                     <div class="flex items-center gap-2 min-w-0">
-                                        <div class="p-1.5 rounded-lg bg-primary/10 shrink-0">
-                                            <x-icon name="boxes" class="w-3.5 h-3.5 text-primary" />
-                                        </div>
+                                        <x-icon name="boxes" class="w-4 h-4 shrink-0 text-primary" />
                                         <div class="flex flex-col min-w-0">
                                             <span class="text-base font-black tracking-tighter italic leading-tight truncate group-hover:text-primary transition-colors">
                                                 {{ $article->name }}
@@ -97,9 +95,7 @@
                             <x-slot:desktop>
                                 <div class="grid grid-cols-[minmax(0,1.4fr)_0.6fr_0.6fr_0.7fr_1fr] gap-3 items-center">
                                     <div class="flex items-center gap-3 min-w-0">
-                                        <div class="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                            <x-icon name="boxes" class="h-5 w-5" />
-                                        </div>
+                                        <x-icon name="boxes" class="h-5 w-5 shrink-0 text-primary" />
                                         <div class="min-w-0">
                                             <p class="text-sm font-black tracking-tighter italic truncate group-hover:text-primary transition-colors">
                                                 {{ $article->name }}

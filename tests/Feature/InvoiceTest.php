@@ -458,6 +458,15 @@ it('prikazuje izmjenjivu zadanu napomenu pri kreiranju računa', function () {
         ->assertSee('Hvala na povjerenju.');
 });
 
+it('smješta napomenu u sklopiva dodatna polja računa', function () {
+    $html = $this->get(route('invoices.create'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('Valuta, predložak, jezik i napomena')
+        ->and(strpos($html, 'x-show="showMore"'))->toBeLessThan(strpos($html, 'id="notes"'));
+});
+
 it('prenosi napomenu sačuvanu kroz podešavanja u formu novog računa', function () {
     $documents = app(DocumentSettings::class);
     $numbering = app(NumberingSettings::class);

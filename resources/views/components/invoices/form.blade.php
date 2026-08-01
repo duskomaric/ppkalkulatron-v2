@@ -160,7 +160,7 @@
     </x-section-block>
 
     <x-section-block variant="accent">
-        <x-section-toggle title="Dodatna polja" subtitle="Valuta, predložak i jezik" open="showMore" :help="route('help').'#racuni'" />
+        <x-section-toggle title="Dodatna polja" subtitle="Valuta, predložak, jezik i napomena" open="showMore" :help="route('help').'#racuni'" />
 
         <div x-show="showMore" x-cloak
              class="space-y-3 pt-3 mt-2 border-t-2 border-dashed border-[var(--color-page-border-subtle)]">
@@ -174,32 +174,30 @@
                                 :options="\App\Enums\DocumentLanguage::options()" />
 
                 <x-form-select label="Predložak" name="template" icon="file-text" :show-placeholder="false"
-                                :value="$invoice?->template?->value ?? $defaultTemplate"
-                                :options="\App\Enums\DocumentTemplate::options()" />
+                               :value="$invoice?->template?->value ?? $defaultTemplate"
+                               :options="\App\Enums\DocumentTemplate::options()" />
             </div>
 
-        </div>
-    </x-section-block>
+            <div class="space-y-1.5">
+                <x-field-label for="notes">Napomena</x-field-label>
+                <textarea id="notes" name="notes" rows="3" placeholder="Dodatne napomene..." aria-describedby="notes-help"
+                          class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm font-bold text-[var(--color-text-main)] outline-none transition-all placeholder:text-[var(--color-text-dim)] focus:border-primary focus:ring-1 focus:ring-primary resize-none">{{ old('notes', $invoice?->notes ?? ($isEdit ? null : $defaultNotes)) }}</textarea>
 
-    <x-section-block variant="card">
-        <x-section-header icon="sticky-note" title="Napomena" subtitle="Možete izmijeniti zadanu napomenu samo za ovaj račun." />
-
-        <textarea id="notes" name="notes" rows="3" placeholder="Dodatne napomene..." aria-describedby="notes-help"
-                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm font-bold text-[var(--color-text-main)] outline-none transition-all placeholder:text-[var(--color-text-dim)] focus:border-primary focus:ring-1 focus:ring-primary resize-none">{{ old('notes', $invoice?->notes ?? ($isEdit ? null : $defaultNotes)) }}</textarea>
-
-        @if (! $isEdit)
-            <p id="notes-help" class="text-xs font-medium text-[var(--color-text-dim)]">
-                @if (filled($defaultNotes))
-                    Zadana napomena iz Podešavanja je unesena iznad i možete je izmijeniti samo za ovaj račun.
-                @else
-                    Zadana napomena nije postavljena. <a href="{{ route('settings.general.edit') }}" class="font-bold text-primary hover:underline">Postavite je u Podešavanjima</a> za sljedeće račune.
+                @if (! $isEdit)
+                    <p id="notes-help" class="text-xs font-medium text-[var(--color-text-dim)]">
+                        @if (filled($defaultNotes))
+                            Zadana napomena iz Podešavanja je unesena iznad i možete je izmijeniti samo za ovaj račun.
+                        @else
+                            Zadana napomena nije postavljena. <a href="{{ route('settings.general.edit') }}" class="font-bold text-primary hover:underline">Postavite je u Podešavanjima</a> za sljedeće račune.
+                        @endif
+                    </p>
                 @endif
-            </p>
-        @endif
 
-        @error('notes')
-            <p class="mt-1 text-[11px] font-bold text-[var(--color-error)]">{{ $message }}</p>
-        @enderror
+                @error('notes')
+                    <p class="text-[11px] font-bold text-[var(--color-error)]">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
     </x-section-block>
 
     <x-section-block variant="card">

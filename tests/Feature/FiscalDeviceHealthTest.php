@@ -145,45 +145,27 @@ it('odbija katalog bez trenutno važećih stopa', function () {
         ->assertSessionHas('error', 'Fiskalni uređaj nije poslao trenutno važeće poreske stope.');
 });
 
-it('ne dozvoljava unos artikla kada kasa nije dostupna', function () {
+it('ne preuzima stope pri otvaranju ili spremanju artikla', function () {
     $this->app['env'] = 'production';
     $this->withoutMiddleware(PreventRequestForgery::class);
-    Http::fake(['*/api/attention' => Http::response('', 503)]);
+    Http::fake();
+
+    unlocked()->get(route('articles.create'))->assertSuccessful();
 
     unlocked()->post(route('articles.store'), [
         'name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F',
-    ])->assertRedirect()
-        ->assertSessionHas('error', 'Fiskalni uređaj nije dostupan (HTTP 503).');
-});
-
-it('vraća JSON grešku kada fiskalna kasa nije dostupna', function () {
-    $this->app['env'] = 'production';
-    $this->withoutMiddleware(PreventRequestForgery::class);
-    Http::fake(['*/api/attention' => Http::response('', 503)]);
-
-    unlocked()->postJson(route('articles.store'), [
-        'name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F',
-    ])->assertUnprocessable()
-        ->assertJson(['message' => 'Fiskalni uređaj nije dostupan (HTTP 503).']);
-});
-
-it('sinhronizuje stope prije spremanja artikla', function () {
-    $this->app['env'] = 'production';
-    $this->withoutMiddleware(PreventRequestForgery::class);
-    Http::fake([
-        '*/api/attention' => Http::response('', 200),
-        '*/api/status' => Http::response([
-            'currentTaxRates' => ['groupId' => 2, 'taxCategories' => [[
-                'name' => 'О-ПДВ', 'taxRates' => [['label' => 'Ђ', 'rate' => 20]],
-            ]]],
-        ]),
-    ]);
-
-    unlocked()->post(route('articles.store'), [
-        'name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'Ђ',
     ])->assertRedirect(route('articles.index'));
 
-    expect(FiscalTaxRate::query()->current()->sole()->label)->toBe('Ђ');
+    Http::assertNothingSent();
+});
+
+it('ne preuzima stope pri otvaranju novog računa', function () {
+    $this->app['env'] = 'production';
+    Http::fake();
+
+    unlocked()->get(route('invoices.create'))->assertSuccessful();
+
+    Http::assertNothingSent();
 });
 
 it('označava uređaj nedostupnim kada ručna provjera ne prođe', function () {

@@ -19,7 +19,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UnlockController;
 use App\Http\Middleware\EnsureUnlocked;
 use App\Http\Middleware\LogDiagnosticAction;
-use App\Http\Middleware\SyncFiscalTaxRates;
 use Illuminate\Support\Facades\Route;
 
 // Ekran za otključavanje mora biti dostupan i zaključanoj aplikaciji.
@@ -43,14 +42,12 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
     Route::get('/fiskalni-racun/{record}', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
     Route::resource('racuni', InvoiceController::class)
         ->parameters(['racuni' => 'invoice'])
-        ->names('invoices')
-        ->middlewareFor(['create', 'store', 'edit', 'update'], SyncFiscalTaxRates::class);
+        ->names('invoices');
     Route::resource('klijenti', ClientController::class)->parameters(['klijenti' => 'client'])->names('clients')->except('show');
     Route::resource('artikli', ArticleController::class)
         ->parameters(['artikli' => 'article'])
         ->names('articles')
-        ->except('show')
-        ->middlewareFor(['create', 'store', 'edit', 'update'], SyncFiscalTaxRates::class);
+        ->except('show');
 
     Route::resource('bankovni-racuni', BankAccountController::class)->parameters(['bankovni-racuni' => 'bankAccount'])->names('bank-accounts')->except('show');
     Route::post('/valute/{currency}/kurs', [CurrencyController::class, 'storeRate'])->name('currencies.rates.store');

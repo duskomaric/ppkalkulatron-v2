@@ -53,8 +53,8 @@ class FiscalSettingsController extends Controller
         return response()->json($health->refreshIfStale());
     }
 
-    /** Provjera dostupnosti i poreskih oznaka uređaja. */
-    public function test(FiscalDeviceHealth $health, OFSService $ofs, FiscalTaxRateSynchronizer $taxRates): RedirectResponse
+    /** Provjera dostupnosti uređaja bez izmjene lokalnog kataloga poreskih stopa. */
+    public function test(FiscalDeviceHealth $health, OFSService $ofs): RedirectResponse
     {
         try {
             $attention = $ofs->testAttention();
@@ -84,10 +84,7 @@ class FiscalSettingsController extends Controller
 
             $health->markReady();
 
-            $synced = $taxRates->sync($data);
-
-            return redirect()->route('settings.fiscal.edit')->with('status', 'Uređaj je dostupan. UID '.($data['uid'] ?? '—').
-                ". Preuzeto poreskih stopa: {$synced['count']}.");
+            return redirect()->route('settings.fiscal.edit')->with('status', 'Uređaj je dostupan. UID '.($data['uid'] ?? '—').'.');
         } catch (Throwable $e) {
             $health->markUnavailable();
 

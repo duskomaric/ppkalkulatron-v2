@@ -60,7 +60,7 @@ it('ažurira indikator nakon ručne provjere uređaja', function () {
         ->toMatchArray(['state' => 'ready', 'label' => 'Uređaj povezan', 'is_stale' => false]);
 });
 
-it('iz ručne provjere prikazuje poreske oznake i UID uređaja', function () {
+it('ručna provjera ne preuzima stope bez izričite radnje', function () {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response([
@@ -74,7 +74,9 @@ it('iz ručne provjere prikazuje poreske oznake i UID uređaja', function () {
 
     unlocked()->post(route('settings.fiscal.test'))
         ->assertRedirect(route('settings.fiscal.edit'))
-        ->assertSessionHas('status', 'Uređaj je dostupan. UID esir-123. Preuzeto poreskih stopa: 1.');
+        ->assertSessionHas('status', 'Uređaj je dostupan. UID esir-123.');
+
+    expect(FiscalTaxRate::query()->current()->count())->toBe(1);
 });
 
 it('preuzima poreske oznake bez promjene ćirilice', function () {

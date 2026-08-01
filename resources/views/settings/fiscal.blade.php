@@ -14,8 +14,8 @@
                 <div class="flex items-start gap-3">
                     <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
                     <div>
-                        <p class="text-sm font-black text-[var(--color-text-main)]">Poreske stope sa fiskalne kase</p>
-                        <p class="mt-1 text-xs text-[var(--color-text-dim)]">Oznake se preuzimaju bez izmjene, uključujući ćirilicu. Bez dostupne kase nema dodavanja artikala ni računa.</p>
+                        <p class="text-sm font-black text-[var(--color-text-main)]">1. Poreske stope</p>
+                        <p class="mt-1 text-xs text-[var(--color-text-dim)]">Preuzimaju se samo ovom radnjom, doslovno kako ih kasa vrati, uključujući ćirilicu. Bez stopa nema artikala ni računa.</p>
                     </div>
                 </div>
                 <x-button variant="primary" type="submit" form="sync-tax-rates" class="w-full sm:w-auto">Preuzmi stope</x-button>
@@ -33,7 +33,7 @@
         </x-section-block>
 
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="file-text" title="Uređaj" :help="route('help').'#fiskalizacija'" />
+            <x-section-header icon="file-text" title="2. Povezivanje sa kasom" :help="route('help').'#fiskalizacija'" />
 
             <div class="space-y-2">
                 <p class="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-text-dim)]">Način uređaja</p>
@@ -81,7 +81,7 @@
         </x-section-block>
 
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="file-text" title="Štampa računa" :help="route('help').'#stampa-racuna'" />
+            <x-section-header icon="file-text" title="3. Izdavanje fiskalnih računa" :help="route('help').'#stampa-racuna'" />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <x-form-select label="Izgled računa" name="receipt_layout" :value="$settings->receipt_layout" required
@@ -110,7 +110,7 @@
         </x-section-block>
 
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="hash" title="Veleprodaja" :help="route('help').'#fiskalizacija'" />
+            <x-section-header icon="hash" title="4. Veleprodaja" :help="route('help').'#fiskalizacija'" />
 
             <x-toggle name="wholesale" :checked="$settings->wholesale" label="Veleprodaja (VP)" />
 

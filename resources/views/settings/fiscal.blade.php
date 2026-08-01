@@ -9,31 +9,8 @@
         @csrf
         @method('PUT')
 
-        <x-section-block variant="accent" class="sm:p-6 space-y-4">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex items-start gap-3">
-                    <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
-                    <div>
-                        <p class="text-sm font-black text-[var(--color-text-main)]">1. Poreske stope</p>
-                        <p class="mt-1 text-xs text-[var(--color-text-dim)]">Preuzimaju se samo ovom radnjom, doslovno kako ih kasa vrati, uključujući ćirilicu. Bez stopa nema artikala ni računa.</p>
-                    </div>
-                </div>
-                <x-button variant="primary" type="submit" form="sync-tax-rates" class="w-full sm:w-auto">Preuzmi stope</x-button>
-            </div>
-
-            @if ($taxRates->isEmpty())
-                <p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">Stope još nisu preuzete.</p>
-            @else
-                <div class="flex flex-wrap gap-2">
-                    @foreach ($taxRates as $taxRate)
-                        <span class="rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">{{ $taxRate->label }} · {{ $taxRate->category_name }} · {{ $taxRate->rate }}%</span>
-                    @endforeach
-                </div>
-            @endif
-        </x-section-block>
-
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="file-text" title="2. Povezivanje sa kasom" :help="route('help').'#fiskalizacija'" />
+            <x-section-header icon="file-text" title="Fiskalna kasa" :help="route('help').'#fiskalizacija'" />
 
             <div class="space-y-2">
                 <p class="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-text-dim)]">Način uređaja</p>
@@ -80,8 +57,31 @@
             </div>
         </x-section-block>
 
+        <x-section-block variant="accent" class="sm:p-6 space-y-4">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-start gap-3">
+                    <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
+                    <div>
+                        <p class="text-sm font-black text-[var(--color-text-main)]">Poreske stope sa kase</p>
+                        <p class="mt-1 text-xs text-[var(--color-text-dim)]">Nakon što sačuvate i provjerite kasu, preuzmite njene stope. Oznake ostaju identične odgovoru uređaja, uključujući ćirilicu.</p>
+                    </div>
+                </div>
+                <x-button variant="primary" type="submit" form="sync-tax-rates" class="w-full sm:w-auto">Preuzmi stope</x-button>
+            </div>
+
+            @if ($taxRates->isEmpty())
+                <p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">Stope još nisu preuzete. Bez njih nije moguće dodati artikal ni napraviti račun.</p>
+            @else
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($taxRates as $taxRate)
+                        <span class="rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">{{ $taxRate->label }} · {{ $taxRate->category_name }} · {{ $taxRate->rate }}%</span>
+                    @endforeach
+                </div>
+            @endif
+        </x-section-block>
+
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="file-text" title="3. Izdavanje fiskalnih računa" :help="route('help').'#stampa-racuna'" />
+            <x-section-header icon="file-text" title="Štampa računa" :help="route('help').'#stampa-racuna'" />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <x-form-select label="Izgled računa" name="receipt_layout" :value="$settings->receipt_layout" required
@@ -110,7 +110,7 @@
         </x-section-block>
 
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="hash" title="4. Veleprodaja" :help="route('help').'#fiskalizacija'" />
+            <x-section-header icon="hash" title="Veleprodaja" :help="route('help').'#fiskalizacija'" />
 
             <x-toggle name="wholesale" :checked="$settings->wholesale" label="Veleprodaja (VP)" />
 

@@ -30,4 +30,4 @@ vendor/bin/pint --dirty --format agent
 ## Android release
 
 Upute za potpisani APK, automatsko povećanje verzije i Firebase distribuciju su u
-[BUILD2.md](BUILD2.md).
+[BUILD.md](BUILD.md).

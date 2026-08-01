@@ -25,6 +25,7 @@ class FiscalService
         private FiscalPayloadFactory $payloads,
         private OFSService $ofs,
         private Diagnostics $diagnostics,
+        private FiscalDeviceErrorMessage $errorMessages,
     ) {}
 
     public function fiscalize(Invoice $invoice): FiscalRecord
@@ -127,10 +128,13 @@ class FiscalService
 
         if (! $response->successful()) {
             $this->diagnostics->error('Fiskalizacija nije uspjela', [
-                'invoice_id' => $invoice->id, 'status' => $response->status(), 'body' => $response->body(),
+                'invoice_id' => $invoice->id,
+                'request_id' => $record->request_id,
+                'status' => $response->status(),
+                'body' => $response->body(),
             ]);
 
-            throw new RuntimeException('Uređaj je odbio račun (HTTP '.$response->status().'): '.Str::limit($response->body(), 200));
+            throw new RuntimeException($this->errorMessages->forInvoice($response));
         }
 
         $data = (array) $response->json();

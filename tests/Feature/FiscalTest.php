@@ -5,6 +5,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\ExchangeRate;
 use App\Models\Invoice;
 use App\Services\Diagnostics;
+use App\Services\FiscalDeviceErrorMessage;
 use App\Services\FiscalReceiptStore;
 use App\Services\FiscalService;
 use App\Services\NetworkScanner;
@@ -229,11 +230,40 @@ it('odbija fiskalizaciju bez kursa za tu valutu', function () {
     app(FiscalService::class)->fiscalize($invoice->fresh());
 })->throws(RuntimeException::class, 'Nema kursa za EUR');
 
-it('vraća poruku uređaja kad odbije račun', function () {
-    Http::fake(['*/api/invoices' => Http::response('Neispravan PIN', 400)]);
+it('prevodi nevažeću poresku oznaku uređaja u jasnu uputu', function () {
+    Http::fake(['*/api/invoices' => Http::response(['message' => 'Unknown tax label F'], 400)]);
 
     app(FiscalService::class)->fiscalize(makeInvoice());
-})->throws(RuntimeException::class, 'Uređaj je odbio račun (HTTP 400)');
+})->throws(RuntimeException::class, 'Poreska oznaka na računu nije važeća na fiskalnom uređaju. U Fiskalizaciji preuzmite aktuelne stope');
+
+it('upozorava da se račun ne šalje ponovo kada uređaj ne može štampati', function () {
+    Http::fake(['*/api/invoices' => Http::response([
+        'message' => 'Printer is out of paper',
+        'invoiceResponse' => ['invoiceNumber' => 'ABC12345-ABC12345-1'],
+    ], 500)]);
+
+    app(FiscalService::class)->fiscalize(makeInvoice());
+})->throws(RuntimeException::class, 'Račun je moguće da je fiskalizovan, ali štampa nije uspjela.');
+
+it('ne prikazuje sirovi odgovor uređaja za nepoznatu grešku', function () {
+    Http::fake(['*/api/invoices' => Http::response('Internal device detail: 1234', 400)]);
+
+    app(FiscalService::class)->fiscalize(makeInvoice());
+})->throws(RuntimeException::class, 'Fiskalni uređaj je odbio podatke računa.');
+
+it('prevodi ostale poznate odgovore fiskalnog uređaja', function (mixed $body, int $status, string $expected) {
+    Http::fake(['*/api/invoices' => Http::response($body, $status)]);
+
+    $response = Http::post('http://fiscal-device.test/api/invoices');
+
+    expect(app(FiscalDeviceErrorMessage::class)->forInvoice($response))->toBe($expected);
+})->with([
+    'PIN sigurnosnog elementa' => ['PIN required', 400, 'Fiskalni uređaj traži PIN sigurnosnog elementa. Unesite ga u Fiskalizaciji, pa pokušajte ponovo.'],
+    'neispravan pristup' => ['', 401, 'Fiskalni uređaj nije prihvatio pristupne podatke. Provjerite API ključ i, za cloud kasu, serijski broj i PAK.'],
+    'zahtjev je već u obradi' => ['', 409, 'Fiskalni uređaj već obrađuje ovaj zahtjev. Ne šaljite račun ponovo; prvo ga provjerite po RequestId-u u Fiskalizaciji.'],
+    'nedostupan servis' => ['', 503, 'Fiskalni uređaj trenutno ne može obraditi račun. Sačekajte trenutak, provjerite vezu i prije ponovnog slanja provjerite prethodni zahtjev po RequestId-u.'],
+    'neispravan barkod' => ['Invalid GTIN', 400, 'Jedan artikal ima neispravan GTIN/barkod. Provjerite podatke artikla, pa pokušajte ponovo.'],
+]);
 
 it('ne dozvoljava dva storna istog računa', function () {
     $invoice = fiscalizedInvoice();

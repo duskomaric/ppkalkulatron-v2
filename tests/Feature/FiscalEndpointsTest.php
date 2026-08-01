@@ -32,12 +32,12 @@ it('vraća poruku greške sa fiskalizacije kao 422', function () {
         ->assertJson(['message' => 'Račun nije moguće fiskalizovati.']);
 });
 
-it('prijavljuje odbijenicu uređaja na ruti', function () {
-    Http::fake(['*/api/invoices' => Http::response('Neispravan PIN', 400)]);
+it('prijavljuje korisniku jasnu odbijenicu poreske oznake', function () {
+    Http::fake(['*/api/invoices' => Http::response(['message' => 'Unknown tax label F'], 400)]);
 
     $this->postJson(route('invoices.fiscalize', makeInvoice()))
         ->assertUnprocessable()
-        ->assertJsonPath('message', fn ($m) => str_contains($m, 'Uređaj je odbio račun (HTTP 400)'));
+        ->assertJsonPath('message', fn ($message) => str_contains($message, 'Poreska oznaka na računu nije važeća'));
 });
 
 it('ne otkriva tehnički detalj neočekivane greške fiskalizacije', function () {

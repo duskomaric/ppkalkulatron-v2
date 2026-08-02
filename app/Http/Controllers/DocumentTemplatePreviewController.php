@@ -11,12 +11,13 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Services\InvoicePdfService;
 use App\Settings\CompanySettings;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DocumentTemplatePreviewController extends Controller
 {
-    public function __invoke(DocumentTemplate $template, CompanySettings $company, InvoicePdfService $pdf): View
+    public function __invoke(Request $request, DocumentTemplate $template, CompanySettings $company, InvoicePdfService $pdf): View
     {
         $invoice = new Invoice([
             'invoice_number' => '0001/2026',
@@ -50,10 +51,19 @@ class DocumentTemplatePreviewController extends Controller
             ]),
         ]));
 
-        return view($pdf->viewFor($template), [
+        $data = [
             'invoice' => $invoice,
             'company' => $company,
             'bankAccounts' => new Collection,
+        ];
+
+        if ($request->boolean('embedded')) {
+            return view($pdf->viewFor($template), $data);
+        }
+
+        return view('settings.template-preview', [
+            'template' => $template,
+            'previewUrl' => route('settings.templates.preview', ['template' => $template, 'embedded' => 1]),
         ]);
     }
 }

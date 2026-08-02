@@ -16,10 +16,11 @@
             <label class="template-gallery-label">
                 <input type="radio" name="template" value="{{ $template->value }}" class="template-gallery-input" @checked($selectedTemplate === $template->value)>
                 <span class="template-gallery-card">
-                    <iframe class="template-preview-frame" src="{{ route('settings.templates.preview', $template) }}" title="Pregled: {{ $template->label() }}" loading="lazy" tabindex="-1"></iframe>
+                    <span class="template-preview-viewport"><iframe class="template-preview-frame" src="{{ route('settings.templates.preview', ['template' => $template, 'embedded' => 1]) }}" title="Pregled: {{ $template->label() }}" loading="lazy" tabindex="-1"></iframe></span>
                     <span class="template-gallery-name">{{ $template->label() }}<b aria-hidden="true">✓</b></span>
                 </span>
             </label>
+            <a class="template-preview-link" href="{{ route('settings.templates.preview', $template) }}">Puni pregled</a>
         @endforeach
     </div>
     <details class="template-gallery-more">
@@ -29,10 +30,11 @@
                 <label class="template-gallery-label">
                     <input type="radio" name="template" value="{{ $template->value }}" class="template-gallery-input" @checked($selectedTemplate === $template->value)>
                     <span class="template-gallery-card">
-                        <iframe class="template-preview-frame" src="{{ route('settings.templates.preview', $template) }}" title="Pregled: {{ $template->label() }}" loading="lazy" tabindex="-1"></iframe>
+                        <span class="template-preview-viewport"><iframe class="template-preview-frame" src="{{ route('settings.templates.preview', ['template' => $template, 'embedded' => 1]) }}" title="Pregled: {{ $template->label() }}" loading="lazy" tabindex="-1"></iframe></span>
                         <span class="template-gallery-name">{{ $template->label() }}<b aria-hidden="true">✓</b></span>
                     </span>
                 </label>
+                <a class="template-preview-link" href="{{ route('settings.templates.preview', $template) }}">Puni pregled</a>
             @endforeach
         </div>
     </details>

@@ -154,11 +154,18 @@ it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', funct
 });
 
 it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', function () {
-    $this->get(route('settings.templates.preview', DocumentTemplate::OpsConsole))
+    $this->get(route('settings.templates.preview', ['template' => DocumentTemplate::OpsConsole, 'embedded' => 1]))
         ->assertSuccessful()
         ->assertSee('OPS::RAČUN')
         ->assertSee('Primjer kupac d.o.o.')
         ->assertSee('Konsultantska usluga');
+});
+
+it('nudi puni pregled predloška bez prelamanja u minijaturi', function () {
+    $this->get(route('settings.templates.preview', DocumentTemplate::Terminal))
+        ->assertSuccessful()
+        ->assertSee('Ovo je stvarni A4 dizajn sa oglednim podacima.')
+        ->assertSee('template-full-preview-frame', false);
 });
 
 it('traži naziv banke i broj računa', function () {

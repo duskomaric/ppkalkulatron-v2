@@ -323,12 +323,12 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfVi
     'programmer' => 'pdf.invoice-programmer',
 ]);
 
-it('programerski predložak ima prepoznatljiv kodni izgled', function () {
+it('programerski predložak ima samostalan profesionalni izgled', function () {
     $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-programmer');
 
-    expect($html)->toContain('// INVOICE &lt;/&gt;')
-        ->and($html)->toContain('#4f46e5')
-        ->and($html)->toContain('// KUPAC');
+    expect($html)->toContain('BILLING / SOFTWARE SERVICES')
+        ->and($html)->toContain('#111a2e')
+        ->and($html)->toContain('Podaci za plaćanje');
 });
 
 it('nudi PDF na preuzimanje', function () {

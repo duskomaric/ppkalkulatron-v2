@@ -94,7 +94,7 @@ class BackupController extends Controller
             ]);
             report($exception);
 
-            return redirect()->route('settings.backup.edit')->with('error', 'Slanje backupa nije uspjelo: '.$exception->getMessage());
+            return redirect()->route('settings.backup.edit')->with('error', 'Backup nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.');
         } catch (Throwable $exception) {
             $diagnostics->error('Backup failed', [
                 'stage' => $backup === null ? 'archive' : 'mail',

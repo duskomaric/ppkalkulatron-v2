@@ -108,8 +108,8 @@ class OFSService
             $this->diagnostics->error('OFS uređaj nije dostupan', ['url' => $this->baseUrl, 'error' => $e->getMessage()]);
 
             throw new RuntimeException(
-                'Fiskalni uređaj nije dostupan na '.$this->baseUrl.'. '.
-                'Provjerite da je uključen i na istoj mreži, pa pokušajte ponovo.'
+                'Fiskalna kasa nije dostupna. '.
+                'Provjerite da je uključena i na istoj mreži, pa pokušajte ponovo.'
             );
         }
     }

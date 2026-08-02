@@ -36,7 +36,7 @@ it('dijagnostička OFS komanda prijavi prekid veze sa uređajem', function () {
     Http::fake(['http://esir.test/api/attention' => Http::failedConnection('Nema veze')]);
 
     $this->artisan('ofs:ping', ['--url' => 'http://esir.test'])
-        ->expectsOutputToContain('Uređaj nije dostupan: Fiskalni uređaj nije dostupan na http://esir.test.')
+        ->expectsOutputToContain('Uređaj nije dostupan: Fiskalna kasa nije dostupna.')
         ->assertExitCode(1);
 });
 

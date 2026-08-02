@@ -115,7 +115,7 @@ it('vraća grešku slanja kao 422, sa porukom iz izuzetka', function () {
     $this->postJson(route('invoices.email', Invoice::firstOrFail()), [
         'to' => 'kupac@example.com', 'subject' => 'Račun', 'body' => 'Tekst', 'attach_pdf' => true,
     ])->assertUnprocessable()
-        ->assertJson(['message' => 'Slanje nije uspjelo: SMTP nije podešen.']);
+        ->assertJson(['message' => 'Račun nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.']);
 });
 
 it('ne otkriva tehnički detalj neočekivane greške slanja', function () {
@@ -535,7 +535,7 @@ it('prikaže očekivanu grešku kada izrada backupa ne uspije', function () {
 
     $this->post(route('settings.backup.send'), ['delivery_format' => 'zip'])
         ->assertRedirect(route('settings.backup.edit'))
-        ->assertSessionHas('error', 'Slanje backupa nije uspjelo: Arhiva nije dostupna.');
+        ->assertSessionHas('error', 'Backup nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.');
 });
 
 it('ne otkriva tehnički detalj neočekivane greške backupa', function () {

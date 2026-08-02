@@ -60,7 +60,7 @@ class DiagnosticsController extends Controller
         } catch (RuntimeException $exception) {
             $diagnostics->error('Diagnostics report failed', ['exception' => $exception::class]);
 
-            return redirect()->route('settings.diagnostics.edit')->with('error', 'Slanje dijagnostike nije uspjelo: '.$exception->getMessage());
+            return redirect()->route('settings.diagnostics.edit')->with('error', 'Dijagnostički izvještaj nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.');
         } catch (Throwable $exception) {
             $diagnostics->error('Diagnostics report failed', ['exception' => $exception::class]);
             report($exception);

@@ -3,7 +3,6 @@
 use App\Models\FiscalTaxRate;
 use App\Services\FiscalDeviceHealth;
 use App\Services\NetworkScanner;
-use App\Settings\FiscalSettings;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Http;
 
@@ -83,7 +82,7 @@ it('ručna provjera ne preuzima stope bez izričite radnje', function () {
 
     unlocked()->post(route('settings.fiscal.test'))
         ->assertRedirect(route('settings.fiscal.edit'))
-        ->assertSessionHas('status', 'Uređaj je dostupan. UID esir-123.');
+        ->assertSessionHas('status', 'Fiskalna kasa je dostupna i spremna za fiskalizaciju.');
 
     expect(FiscalTaxRate::query()->count())->toBe(1);
 });
@@ -129,7 +128,7 @@ it('ne mijenja katalog kada kasa nije dostupna', function () {
 
     unlocked()->post(route('settings.fiscal.tax-rates.sync'))
         ->assertRedirect()
-        ->assertSessionHas('error', 'Fiskalni uređaj nije dostupan (HTTP 503).');
+        ->assertSessionHas('error', 'Fiskalna kasa nije dostupna. Provjerite mrežnu vezu i podatke za pristup.');
 
     expect(FiscalTaxRate::query()->count())->toBe(1);
 });
@@ -142,7 +141,7 @@ it('ne mijenja katalog kada status kase nije dostupan', function () {
 
     unlocked()->post(route('settings.fiscal.tax-rates.sync'))
         ->assertRedirect()
-        ->assertSessionHas('error', 'Fiskalni uređaj nije dostupan (HTTP 503).');
+        ->assertSessionHas('error', 'Fiskalna kasa trenutno nije spremna za fiskalizaciju. Provjerite status uređaja i PIN.');
 });
 
 it('odbija katalog bez trenutno važećih stopa', function () {
@@ -184,7 +183,7 @@ it('označava uređaj nedostupnim kada ručna provjera ne prođe', function () {
 
     unlocked()->post(route('settings.fiscal.test'))
         ->assertRedirect(route('settings.fiscal.edit'))
-        ->assertSessionHas('error', 'Uređaj nije dostupan (HTTP 503).');
+        ->assertSessionHas('error', 'Fiskalna kasa nije dostupna. Provjerite mrežnu vezu i podatke za pristup.');
 
     expect(app(FiscalDeviceHealth::class)->current()['state'])->toBe('unavailable');
 });
@@ -197,7 +196,7 @@ it('označava uređaj nedostupnim kada attention prođe, a status ne prođe', fu
 
     unlocked()->post(route('settings.fiscal.test'))
         ->assertRedirect(route('settings.fiscal.edit'))
-        ->assertSessionHas('error', 'Uređaj nije dostupan (HTTP 503).');
+        ->assertSessionHas('error', 'Fiskalna kasa trenutno nije spremna za fiskalizaciju. Provjerite status uređaja i PIN.');
 
     expect(app(FiscalDeviceHealth::class)->current()['state'])->toBe('unavailable');
 });
@@ -329,7 +328,7 @@ it('prijavi HTTP grešku pri potrazi za prethodnim fiskalnim zahtjevom', functio
 
     unlocked()->post(route('settings.fiscal.find-request'), ['request_id' => 'nedostupni-uredjaj'])
         ->assertRedirect(route('settings.fiscal.edit'))
-        ->assertSessionHas('error', 'Uređaj nije odgovorio (HTTP 503).');
+        ->assertSessionHas('error', 'Prethodni zahtjev nije moguće provjeriti. Provjerite vezu sa kasom, pa pokušajte ponovo.');
 });
 
 it('ne otkriva tehnički detalj pri neočekivanoj grešci potrage po RequestId-u', function () {
@@ -345,7 +344,5 @@ it('vrati korisnu poruku kada je veza prekinuta pri unosu fiskalnog PIN-a', func
 
     unlocked()->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
         ->assertRedirect(route('settings.fiscal.edit'))
-        ->assertSessionHas('error', fn (string $message): bool => $message === 'Fiskalni uređaj nije dostupan na '
-            .app(FiscalSettings::class)->base_url
-            .'. Provjerite da je uključen i na istoj mreži, pa pokušajte ponovo.');
+        ->assertSessionHas('error', 'Fiskalna kasa nije dostupna. Provjerite da je uključena i na istoj mreži, pa pokušajte ponovo.');
 });

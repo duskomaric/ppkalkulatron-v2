@@ -248,7 +248,7 @@ it('upozorava da se račun ne šalje ponovo kada uređaj ne može štampati', fu
     ], 500)]);
 
     app(FiscalService::class)->fiscalize(makeInvoice());
-})->throws(RuntimeException::class, 'Račun je fiskalizovan, ali štampa nije uspjela.');
+})->throws(RuntimeException::class, 'Račun je fiskalizovan, ali štampa nije uspjela. Provjerite štampač i papir; ne šaljite račun ponovo prije provjere prethodnog zahtjeva u Fiskalizaciji.');
 
 it('ne prikazuje sirovi odgovor uređaja za nepoznatu grešku', function () {
     Http::fake(['*/api/invoices' => Http::response('Internal device detail: 1234', 400)]);
@@ -265,8 +265,8 @@ it('prevodi ostale poznate odgovore fiskalnog uređaja', function (mixed $body, 
 })->with([
     'PIN sigurnosnog elementa' => ['PIN required', 400, 'Fiskalni uređaj traži PIN sigurnosnog elementa. Unesite ga u Fiskalizaciji, pa pokušajte ponovo.'],
     'neispravan pristup' => ['', 401, 'Fiskalni uređaj nije prihvatio pristupne podatke. Provjerite API ključ i, za cloud kasu, serijski broj i PAK.'],
-    'zahtjev je već u obradi' => ['', 409, 'Fiskalni uređaj već obrađuje ovaj zahtjev. Ne šaljite račun ponovo; prvo ga provjerite po RequestId-u u Fiskalizaciji.'],
-    'nedostupan servis' => ['', 503, 'Fiskalni uređaj trenutno ne može obraditi račun. Sačekajte trenutak, provjerite vezu i prije ponovnog slanja provjerite prethodni zahtjev po RequestId-u.'],
+    'zahtjev je već u obradi' => ['', 409, 'Fiskalna kasa već obrađuje ovaj zahtjev. Ne šaljite račun ponovo; prvo provjerite prethodni zahtjev u Fiskalizaciji.'],
+    'nedostupan servis' => ['', 503, 'Fiskalna kasa trenutno ne može obraditi račun. Sačekajte trenutak, provjerite vezu i prije ponovnog slanja provjerite prethodni zahtjev u Fiskalizaciji.'],
     'neispravan barkod' => ['Invalid GTIN', 400, 'Jedan artikal ima neispravan GTIN/barkod. Provjerite podatke artikla, pa pokušajte ponovo.'],
     'status pristupa ima prednost nad tekstom greške' => [['message' => 'Unknown tax label F'], 401, 'Fiskalni uređaj nije prihvatio pristupne podatke. Provjerite API ključ i, za cloud kasu, serijski broj i PAK.'],
 ]);
@@ -328,7 +328,7 @@ it('šalje PIN sigurnosnog elementa kao goli tekst', function () {
     Http::fake(['*/api/pin' => Http::response('"0100"', 200)]);
 
     unlocked()->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])
-        ->assertSessionHas('status', 'PIN je prihvaćen. Uređaj je spreman za fiskalizaciju.');
+        ->assertSessionHas('status', 'PIN je prihvaćen. Fiskalna kasa je spremna za fiskalizaciju.');
 
     Http::assertSent(fn ($request) => $request->body() === '1234');
 });
@@ -340,10 +340,10 @@ it('prevodi kod greške sa PIN-a u poruku', function (string $code, string $mess
         ->assertSessionHas('error', $message);
 })->with([
     ['1300', 'Sigurnosni element nije prisutan u uređaju.'],
-    ['2400', 'Lokalni ESIR (LPFR) nije spreman.'],
+    ['2400', 'Fiskalna kasa još nije spremna. Sačekajte trenutak, pa pokušajte ponovo.'],
     ['2800', 'PIN nije u ispravnom formatu — očekuje se 4 cifre.'],
     ['2806', 'PIN nije u ispravnom formatu — očekuje se 4 cifre.'],
-    ['9999', 'Uređaj je odbio PIN (kod 9999).'],
+    ['9999', 'Fiskalna kasa nije prihvatila PIN. Provjerite ga i pokušajte ponovo.'],
 ]);
 
 it('ne otkriva tehnički detalj greške fiskalnog uređaja', function () {

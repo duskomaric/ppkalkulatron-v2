@@ -79,7 +79,7 @@ it('prikaže jasnu grešku kada se dijagnostički prilog ne može pripremiti', f
 
     $this->post(route('settings.diagnostics.send'))
         ->assertRedirect(route('settings.diagnostics.edit'))
-        ->assertSessionHas('error', 'Slanje dijagnostike nije uspjelo: Prilog nije dostupan.');
+        ->assertSessionHas('error', 'Dijagnostički izvještaj nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.');
 });
 
 it('ne otkriva tehnički detalj neočekivane greške pri slanju dijagnostike', function () {

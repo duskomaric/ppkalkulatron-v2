@@ -21,13 +21,13 @@ class FiscalTaxRateSynchronizer
         $attention = $this->ofs->testAttention();
 
         if (! $attention->successful()) {
-            throw new RuntimeException("Fiskalni uređaj nije dostupan (HTTP {$attention->status()}).");
+            throw new RuntimeException('Fiskalna kasa nije dostupna. Provjerite mrežnu vezu i podatke za pristup.');
         }
 
         $status = $this->ofs->getStatus();
 
         if (! $status->successful()) {
-            throw new RuntimeException("Fiskalni uređaj nije dostupan (HTTP {$status->status()}).");
+            throw new RuntimeException('Fiskalna kasa trenutno nije spremna za fiskalizaciju. Provjerite status uređaja i PIN.');
         }
 
         return $this->sync((array) $status->json());

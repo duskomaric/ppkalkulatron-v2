@@ -249,10 +249,10 @@ class InvoiceController extends Controller
                 attachPdf: $request->boolean('attach_pdf'),
                 fiscalRecordIds: $request->validated('attach_fiscal_record_ids') ?? [],
             );
-        } catch (\RuntimeException $e) {
-            report($e);
+        } catch (\RuntimeException $exception) {
+            report($exception);
 
-            return response()->json(['message' => 'Slanje nije uspjelo: '.$e->getMessage()], 422);
+            return response()->json(['message' => 'Račun nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.'], 422);
         } catch (\Throwable $e) {
             report($e);
 

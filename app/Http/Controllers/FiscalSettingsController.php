@@ -68,7 +68,7 @@ class FiscalSettingsController extends Controller
             if (! $attention->successful()) {
                 $health->markUnavailable();
 
-                return redirect()->route('settings.fiscal.edit')->with('error', "Uređaj nije dostupan (HTTP {$attention->status()}).");
+                return redirect()->route('settings.fiscal.edit')->with('error', 'Fiskalna kasa nije dostupna. Provjerite mrežnu vezu i podatke za pristup.');
             }
 
             $status = $ofs->getStatus();
@@ -76,7 +76,7 @@ class FiscalSettingsController extends Controller
             if (! $status->successful()) {
                 $health->markUnavailable();
 
-                return redirect()->route('settings.fiscal.edit')->with('error', "Uređaj nije dostupan (HTTP {$status->status()}).");
+                return redirect()->route('settings.fiscal.edit')->with('error', 'Fiskalna kasa trenutno nije spremna za fiskalizaciju. Provjerite status uređaja i PIN.');
             }
 
             $data = $status->json() ?? [];
@@ -90,7 +90,7 @@ class FiscalSettingsController extends Controller
 
             $health->markReady();
 
-            return redirect()->route('settings.fiscal.edit')->with('status', 'Uređaj je dostupan. UID '.($data['uid'] ?? '—').'.');
+            return redirect()->route('settings.fiscal.edit')->with('status', 'Fiskalna kasa je dostupna i spremna za fiskalizaciju.');
         } catch (Throwable $e) {
             $health->markUnavailable();
 
@@ -126,7 +126,7 @@ class FiscalSettingsController extends Controller
     /** @var array<string, string> Kodovi koje /api/pin vraća na grešku. */
     public const PIN_ERRORS = [
         '1300' => 'Sigurnosni element nije prisutan u uređaju.',
-        '2400' => 'Lokalni ESIR (LPFR) nije spreman.',
+        '2400' => 'Fiskalna kasa još nije spremna. Sačekajte trenutak, pa pokušajte ponovo.',
         '2800' => 'PIN nije u ispravnom formatu — očekuje se 4 cifre.',
         '2806' => 'PIN nije u ispravnom formatu — očekuje se 4 cifre.',
     ];
@@ -169,10 +169,10 @@ class FiscalSettingsController extends Controller
             $code = trim($response->body(), " \t\n\r\0\x0B\"");
 
             if ($response->successful() && $code === self::PIN_OK) {
-                return redirect()->route('settings.fiscal.edit')->with('status', 'PIN je prihvaćen. Uređaj je spreman za fiskalizaciju.');
+                return redirect()->route('settings.fiscal.edit')->with('status', 'PIN je prihvaćen. Fiskalna kasa je spremna za fiskalizaciju.');
             }
 
-            return redirect()->route('settings.fiscal.edit')->with('error', self::PIN_ERRORS[$code] ?? "Uređaj je odbio PIN (kod {$code}).");
+            return redirect()->route('settings.fiscal.edit')->with('error', self::PIN_ERRORS[$code] ?? 'Fiskalna kasa nije prihvatila PIN. Provjerite ga i pokušajte ponovo.');
         } catch (Throwable $e) {
             return $this->fiscalError($e);
         }
@@ -187,7 +187,7 @@ class FiscalSettingsController extends Controller
             $response = $ofs->getInvoiceByRequestId($data['request_id']);
 
             if (! $response->successful()) {
-                return redirect()->route('settings.fiscal.edit')->with('error', "Uređaj nije odgovorio (HTTP {$response->status()}).");
+                return redirect()->route('settings.fiscal.edit')->with('error', 'Prethodni zahtjev nije moguće provjeriti. Provjerite vezu sa kasom, pa pokušajte ponovo.');
             }
 
             $found = (array) $response->json();

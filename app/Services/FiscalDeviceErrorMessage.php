@@ -13,7 +13,7 @@ class FiscalDeviceErrorMessage
     public function forInvoice(Response $response): string
     {
         if ($this->hasInvoiceResponse($response)) {
-            return 'Račun je fiskalizovan, ali štampa nije uspjela. Provjerite štampač i papir; ne šaljite račun ponovo dok ne provjerite prethodni zahtjev po RequestId-u.';
+            return 'Račun je fiskalizovan, ali štampa nije uspjela. Provjerite štampač i papir; ne šaljite račun ponovo prije provjere prethodnog zahtjeva u Fiskalizaciji.';
         }
 
         if ($response->status() === 401 || $response->status() === 403) {
@@ -21,7 +21,7 @@ class FiscalDeviceErrorMessage
         }
 
         if ($response->status() === 409) {
-            return 'Fiskalni uređaj već obrađuje ovaj zahtjev. Ne šaljite račun ponovo; prvo ga provjerite po RequestId-u u Fiskalizaciji.';
+            return 'Fiskalna kasa već obrađuje ovaj zahtjev. Ne šaljite račun ponovo; prvo provjerite prethodni zahtjev u Fiskalizaciji.';
         }
 
         if ($response->status() === 404) {
@@ -29,7 +29,7 @@ class FiscalDeviceErrorMessage
         }
 
         if ($response->status() === 429 || $response->serverError()) {
-            return 'Fiskalni uređaj trenutno ne može obraditi račun. Sačekajte trenutak, provjerite vezu i prije ponovnog slanja provjerite prethodni zahtjev po RequestId-u.';
+            return 'Fiskalna kasa trenutno ne može obraditi račun. Sačekajte trenutak, provjerite vezu i prije ponovnog slanja provjerite prethodni zahtjev u Fiskalizaciji.';
         }
 
         if ($this->hasModelStateError($response, 'labels', '2805')) {

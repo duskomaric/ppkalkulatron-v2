@@ -11,6 +11,9 @@ enum DocumentTemplate: string
     case Standard = 'standard';
     case Programmer = 'programmer';
     case Blueprint = 'blueprint';
+    case Terminal = 'terminal';
+    case Protocol = 'protocol';
+    case Kernel = 'kernel';
 
     public function label(): string
     {
@@ -21,6 +24,9 @@ enum DocumentTemplate: string
             self::Standard => 'Standardni',
             self::Programmer => 'Programerski',
             self::Blueprint => 'Blueprint',
+            self::Terminal => 'Terminal',
+            self::Protocol => 'Protocol',
+            self::Kernel => 'Kernel',
         };
     }
 

@@ -22,6 +22,9 @@ class InvoicePdfService
         'standard' => 'pdf.invoice-standard',
         'programmer' => 'pdf.invoice-programmer',
         'blueprint' => 'pdf.invoice-blueprint',
+        'terminal' => 'pdf.invoice-terminal',
+        'protocol' => 'pdf.invoice-protocol',
+        'kernel' => 'pdf.invoice-kernel',
     ];
 
     public function __construct(private CompanySettings $company) {}

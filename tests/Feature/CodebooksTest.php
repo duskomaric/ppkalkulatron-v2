@@ -113,7 +113,10 @@ it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', funct
     $this->get(route('settings.general.edit'))
         ->assertSuccessful()
         ->assertSee('Nije u PDV sistemu')
-        ->assertSee('Validna bez pečata');
+        ->assertSee('Validna bez pečata')
+        ->assertSee('Predložak računa')
+        ->assertSee('name="template" value="ops-console"', false)
+        ->assertSee('name="template" value="workstation"', false);
 
     $this->get(route('settings.company.edit'))
         ->assertSuccessful()

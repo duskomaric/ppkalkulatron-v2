@@ -9,6 +9,7 @@ enum DocumentTemplate: string
     case Modern = 'modern';
     case Minimal = 'minimal';
     case Standard = 'standard';
+    case Programmer = 'programmer';
 
     public function label(): string
     {
@@ -17,6 +18,7 @@ enum DocumentTemplate: string
             self::Modern => 'Moderan',
             self::Minimal => 'Minimalan',
             self::Standard => 'Standardni',
+            self::Programmer => 'Programerski',
         };
     }
 

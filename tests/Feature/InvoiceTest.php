@@ -295,7 +295,7 @@ it('učitava slike fiskalnih računa jednim upitom na detalju', function () {
     expect($receiptQueries)->toBe(1);
 });
 
-it('generiše PDF na sva četiri predloška', function (string $template) {
+it('generiše PDF na svim predlošcima', function (string $template) {
     $this->post(route('invoices.store'), invoicePayload(['template' => $template]));
     $invoice = Invoice::firstOrFail();
 
@@ -304,7 +304,7 @@ it('generiše PDF na sva četiri predloška', function (string $template) {
     expect($pdf)->toStartWith('%PDF-')
         ->and(strlen($pdf))->toBeGreaterThan(10000)
         ->toBeLessThan(150000);
-})->with(['classic', 'modern', 'minimal', 'standard']);
+})->with(['classic', 'modern', 'minimal', 'standard', 'programmer']);
 
 it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfView): void {
     Currency::query()->where('code', 'BAM')->update(['symbol' => 'KM']);
@@ -320,7 +320,16 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfVi
     'modern' => 'pdf.invoice-modern',
     'minimal' => 'pdf.invoice-minimal',
     'standard' => 'pdf.invoice-standard',
+    'programmer' => 'pdf.invoice-programmer',
 ]);
+
+it('programerski predložak ima prepoznatljiv kodni izgled', function () {
+    $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-programmer');
+
+    expect($html)->toContain('// INVOICE &lt;/&gt;')
+        ->and($html)->toContain('#4f46e5')
+        ->and($html)->toContain('// KUPAC');
+});
 
 it('nudi PDF na preuzimanje', function () {
     $this->post(route('invoices.store'), invoicePayload());

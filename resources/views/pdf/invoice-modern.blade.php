@@ -1,4 +1,5 @@
 @php
+    $programmer = $programmer ?? false;
     $formatAmount = fn ($pfening) => number_format($pfening / 100, 2, ',', '.');
     $currency = $invoice->currencySymbol();
     // Porez se prikazuje i kad kompanija nije obveznik, ako ga na računu ima —
@@ -7,11 +8,12 @@
     $smallNote = ($company->is_small_entrepreneur ?? false) ? trim((string) $company->small_entrepreneur_note) : '';
 
     // Boje iz dizajna
-    $color_primary = '#2f80ed';
-    $color_bg_light = '#f3f8fb';
-    $color_border = '#e5eaf0';
-    $color_text_dark = '#111827';
-    $color_text_muted = '#6b7280';
+    $color_primary = $programmer ? '#4f46e5' : '#2f80ed';
+    $color_bg_light = $programmer ? '#f5f3ff' : '#f3f8fb';
+    $color_border = $programmer ? '#ddd6fe' : '#e5eaf0';
+    $color_text_dark = $programmer ? '#172554' : '#111827';
+    $color_text_muted = $programmer ? '#64748b' : '#6b7280';
+    $color_accent = $programmer ? '#0f766e' : $color_primary;
 
 @endphp
     <!DOCTYPE html>
@@ -37,6 +39,7 @@
             background: #fff;
             width: 210mm;
         }
+        .code-face { font-family: 'DejaVu Sans Mono', monospace; }
 
         /* Tanka akcentna traka na vrhu stranice */
         .accent-stripe {
@@ -75,7 +78,7 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            color: {{ $color_primary }};
+            color: {{ $color_accent }};
             margin-bottom: 8px;
         }
 
@@ -118,6 +121,7 @@
         .document-title-bar { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid {{ $color_border }}; }
         .document-title-line { font-size: 22pt; font-weight: bold; color: {{ $color_text_dark }}; letter-spacing: -0.5px; }
         .document-title-line .document-title-number { color: {{ $color_primary }}; }
+        .programmer-mark { margin-bottom: 6px; color: {{ $color_accent }}; font-size: 7pt; font-weight: bold; letter-spacing: 0.8px; }
         .status-chip {
             display: inline-block;
             padding: 4px 10px;
@@ -299,7 +303,7 @@
         <tr>
             <td>
                 <div class="client-card">
-                    <div class="card-eyebrow">Kupac</div>
+                    <div class="card-eyebrow{{ $programmer ? ' code-face' : '' }}">{{ $programmer ? '// KUPAC' : 'Kupac' }}</div>
                     <div class="client-name">{{ $invoice->client?->name }}</div>
                     <div class="client-detail">
                         @if($invoice->client?->address){{ $invoice->client->address }}<br>@endif
@@ -313,7 +317,7 @@
             </td>
             <td>
                 <div class="document-details-box">
-                    <div class="card-eyebrow">Detalji</div>
+                    <div class="card-eyebrow{{ $programmer ? ' code-face' : '' }}">{{ $programmer ? '// DETALJI' : 'Detalji' }}</div>
                     <div class="document-details-row"><span class="document-details-label">Rok dospijeća</span> <span class="document-details-value">{{ $invoice->due_date?->format('d.m.Y.') ?? '-' }}</span></div>
                     <div class="document-details-row"><span class="document-details-label">Datum izdavanja</span> <span class="document-details-value">{{ $invoice->date?->format('d.m.Y.') ?? '-' }}</span></div>
                     <div class="document-details-row"><span class="document-details-label">Način plaćanja</span> <span class="document-details-value">{{ $invoice->payment_type?->label() ?? '-' }}</span></div>
@@ -329,6 +333,7 @@
     </table>
 
     <div class="document-title-bar">
+        @if ($programmer)<div class="programmer-mark code-face">// INVOICE &lt;/&gt;</div>@endif
         <div class="document-title-line">
             Račun <span class="document-title-number">{{ $invoice->invoice_number }}</span>
         </div>

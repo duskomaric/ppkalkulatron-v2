@@ -20,6 +20,7 @@ class InvoicePdfService
         'modern' => 'pdf.invoice-modern',
         'minimal' => 'pdf.invoice-minimal',
         'standard' => 'pdf.invoice-standard',
+        'programmer' => 'pdf.invoice-programmer',
     ];
 
     public function __construct(private CompanySettings $company) {}

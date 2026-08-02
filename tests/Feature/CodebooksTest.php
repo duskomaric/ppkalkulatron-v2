@@ -169,7 +169,9 @@ it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', fun
         ->assertSee('Addiko Bank a.d. Banja Luka')
         ->assertSee('Izdao')
         ->assertSee('Primio')
-        ->assertSee(config('app.name'));
+        ->assertSee(config('app.name'))
+        ->assertSee('v'.config('nativephp.version'))
+        ->assertSee('build '.config('nativephp.version_code'));
 });
 
 it('nudi puni pregled predloška bez prelamanja u minijaturi', function () {

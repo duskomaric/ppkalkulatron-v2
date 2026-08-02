@@ -79,6 +79,8 @@ class InvoicePdfService
 
         $footer = view('pdf.partials.app-brand', [
             'appName' => config('app.name'),
+            'appVersion' => config('nativephp.version'),
+            'buildCode' => config('nativephp.version_code'),
         ])->render();
 
         if (! $hasBuiltInSignatures) {

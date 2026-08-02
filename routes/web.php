@@ -7,6 +7,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\DiagnosticsController;
+use App\Http\Controllers\DocumentTemplatePreviewController;
 use App\Http\Controllers\FiscalController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\GeneralSettingsController;
@@ -63,6 +64,7 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
 
     Route::get('/podesavanja/generalno', [GeneralSettingsController::class, 'edit'])->name('settings.general.edit');
     Route::put('/podesavanja/generalno', [GeneralSettingsController::class, 'update'])->name('settings.general.update');
+    Route::get('/podesavanja/predlosci/{template}/pregled', DocumentTemplatePreviewController::class)->name('settings.templates.preview');
 
     Route::get('/podesavanja/mail', [MailSettingsController::class, 'edit'])->name('settings.mail.edit');
     Route::put('/podesavanja/mail', [MailSettingsController::class, 'update'])->name('settings.mail.update');

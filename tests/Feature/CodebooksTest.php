@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\DocumentTemplate;
 use App\Models\Article;
 use App\Models\BankAccount;
 use App\Models\Client;
@@ -116,7 +117,8 @@ it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', funct
         ->assertSee('Validna bez pečata')
         ->assertSee('Predložak računa')
         ->assertSee('Prikaži još predložaka')
-        ->assertSee('template-preview-profile', false)
+        ->assertSee('template-preview-frame', false)
+        ->assertSee(route('settings.templates.preview', DocumentTemplate::OpsConsole), false)
         ->assertSee('name="template" value="ops-console"', false)
         ->assertSee('name="template" value="workstation"', false);
 
@@ -149,6 +151,14 @@ it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', funct
 
     expect(app(UserSettings::class)->fullName())->toBe('Ana Anić')
         ->and(app(UserSettings::class)->email)->toBe('ana@example.test');
+});
+
+it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', function () {
+    $this->get(route('settings.templates.preview', DocumentTemplate::OpsConsole))
+        ->assertSuccessful()
+        ->assertSee('OPS::RAČUN')
+        ->assertSee('Primjer kupac d.o.o.')
+        ->assertSee('Konsultantska usluga');
 });
 
 it('traži naziv banke i broj računa', function () {

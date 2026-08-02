@@ -55,6 +55,11 @@ class InvoicePdfService
         return $this->render($invoice, $template)->stream($this->filename($invoice));
     }
 
+    public function viewFor(DocumentTemplate $template): string
+    {
+        return self::VIEWS[$template->value];
+    }
+
     private function render(Invoice $invoice, ?DocumentTemplate $template)
     {
         // `loadMissing`, ne `load`: pozivalac koji je već učitao `fiscalRecords.receipt`
@@ -64,7 +69,7 @@ class InvoicePdfService
 
         $template ??= $invoice->template ?? DocumentTemplate::Classic;
 
-        return Pdf::loadView(self::VIEWS[$template->value], [
+        return Pdf::loadView($this->viewFor($template), [
             'invoice' => $invoice,
             'company' => $this->company,
             'bankAccounts' => BankAccount::where('show_on_documents', true)->orderBy('id')->get(),

@@ -14,6 +14,9 @@ enum DocumentTemplate: string
     case Terminal = 'terminal';
     case Protocol = 'protocol';
     case Kernel = 'kernel';
+    case TerminalLight = 'terminal-light';
+    case Editor = 'editor';
+    case Signal = 'signal';
 
     public function label(): string
     {
@@ -27,6 +30,9 @@ enum DocumentTemplate: string
             self::Terminal => 'Terminal',
             self::Protocol => 'Protocol',
             self::Kernel => 'Kernel',
+            self::TerminalLight => 'Svijetli terminal',
+            self::Editor => 'Editor',
+            self::Signal => 'Signal',
         };
     }
 

@@ -304,7 +304,7 @@ it('generiše PDF na svim predlošcima', function (string $template) {
     expect($pdf)->toStartWith('%PDF-')
         ->and(strlen($pdf))->toBeGreaterThan(10000)
         ->toBeLessThan(150000);
-})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel']);
+})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal']);
 
 it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfView): void {
     Currency::query()->where('code', 'BAM')->update(['symbol' => 'KM']);
@@ -325,6 +325,9 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfVi
     'terminal' => 'pdf.invoice-terminal',
     'protocol' => 'pdf.invoice-protocol',
     'kernel' => 'pdf.invoice-kernel',
+    'terminal-light' => 'pdf.invoice-terminal-light',
+    'editor' => 'pdf.invoice-editor',
+    'signal' => 'pdf.invoice-signal',
 ]);
 
 it('blueprint predložak ima zaseban nacrtni izgled', function () {
@@ -352,6 +355,9 @@ it('novi programerski predlošci imaju različite vizuelne identitete', function
     'terminal' => ['pdf.invoice-terminal', 'INVOICE.SESSION', '#a3e635'],
     'protocol' => ['pdf.invoice-protocol', 'PROTOCOL / INVOICE', '#2563eb'],
     'kernel' => ['pdf.invoice-kernel', 'KERNEL // BILLING', '#f97316'],
+    'terminal-light' => ['pdf.invoice-terminal-light', 'račun --izdaj', '#0f766e'],
+    'editor' => ['pdf.invoice-editor', 'račun.faktura', '#c084fc'],
+    'signal' => ['pdf.invoice-signal', 'SIGNAL_01', '#ec4899'],
 ]);
 
 it('nudi PDF na preuzimanje', function () {

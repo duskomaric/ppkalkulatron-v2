@@ -25,6 +25,9 @@ class InvoicePdfService
         'terminal' => 'pdf.invoice-terminal',
         'protocol' => 'pdf.invoice-protocol',
         'kernel' => 'pdf.invoice-kernel',
+        'terminal-light' => 'pdf.invoice-terminal-light',
+        'editor' => 'pdf.invoice-editor',
+        'signal' => 'pdf.invoice-signal',
     ];
 
     public function __construct(private CompanySettings $company) {}

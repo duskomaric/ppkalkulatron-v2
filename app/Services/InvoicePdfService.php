@@ -31,15 +31,11 @@ class InvoicePdfService
         'ops-console' => 'pdf.invoice-ops-console',
         'shell' => 'pdf.invoice-shell',
         'workstation' => 'pdf.invoice-workstation',
-        'terminal-paper' => 'pdf.invoice-light-lab',
-        'programmer-paper' => 'pdf.invoice-light-lab',
-        'programmer-grid' => 'pdf.invoice-light-lab',
-        'editor-daylight' => 'pdf.invoice-light-lab',
-        'editor-solarized' => 'pdf.invoice-light-lab',
-        'signal-pastel' => 'pdf.invoice-light-lab',
-        'signal-studio' => 'pdf.invoice-light-lab',
-        'ops-ice' => 'pdf.invoice-light-lab',
-        'ops-graph' => 'pdf.invoice-light-lab',
+        'terminal-matrix' => 'pdf.invoice-light-systems',
+        'programmer-catalog' => 'pdf.invoice-light-systems',
+        'editor-margin' => 'pdf.invoice-light-systems',
+        'signal-plot' => 'pdf.invoice-light-systems',
+        'ops-board' => 'pdf.invoice-light-systems',
     ];
 
     public function __construct(private CompanySettings $company) {}

@@ -20,15 +20,11 @@ enum DocumentTemplate: string
     case OpsConsole = 'ops-console';
     case Shell = 'shell';
     case Workstation = 'workstation';
-    case TerminalPaper = 'terminal-paper';
-    case ProgrammerPaper = 'programmer-paper';
-    case ProgrammerGrid = 'programmer-grid';
-    case EditorDaylight = 'editor-daylight';
-    case EditorSolarized = 'editor-solarized';
-    case SignalPastel = 'signal-pastel';
-    case SignalStudio = 'signal-studio';
-    case OpsIce = 'ops-ice';
-    case OpsGraph = 'ops-graph';
+    case TerminalMatrix = 'terminal-matrix';
+    case ProgrammerCatalog = 'programmer-catalog';
+    case EditorMargin = 'editor-margin';
+    case SignalPlot = 'signal-plot';
+    case OpsBoard = 'ops-board';
 
     public function label(): string
     {
@@ -48,15 +44,11 @@ enum DocumentTemplate: string
             self::OpsConsole => 'Ops konzola',
             self::Shell => 'Shell',
             self::Workstation => 'Radna stanica',
-            self::TerminalPaper => 'Terminal papir',
-            self::ProgrammerPaper => 'Programerski papir',
-            self::ProgrammerGrid => 'Programerska mreža',
-            self::EditorDaylight => 'Editor daylight',
-            self::EditorSolarized => 'Editor solarized',
-            self::SignalPastel => 'Signal pastel',
-            self::SignalStudio => 'Signal studio',
-            self::OpsIce => 'Ops led',
-            self::OpsGraph => 'Ops graf',
+            self::TerminalMatrix => 'Terminal matrica',
+            self::ProgrammerCatalog => 'Programerski katalog',
+            self::EditorMargin => 'Editor margin',
+            self::SignalPlot => 'Signal plot',
+            self::OpsBoard => 'Ops tabla',
         };
     }
 

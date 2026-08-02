@@ -304,7 +304,7 @@ it('generiše PDF na svim predlošcima', function (string $template) {
     expect($pdf)->toStartWith('%PDF-')
         ->and(strlen($pdf))->toBeGreaterThan(10000)
         ->toBeLessThan(150000);
-})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-paper', 'programmer-paper', 'programmer-grid', 'editor-daylight', 'editor-solarized', 'signal-pastel', 'signal-studio', 'ops-ice', 'ops-graph']);
+})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board']);
 
 it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfView): void {
     Currency::query()->where('code', 'BAM')->update(['symbol' => 'KM']);
@@ -331,15 +331,11 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfVi
     'ops-console' => 'pdf.invoice-ops-console',
     'shell' => 'pdf.invoice-shell',
     'workstation' => 'pdf.invoice-workstation',
-    'terminal-paper' => 'pdf.invoice-light-lab',
-    'programmer-paper' => 'pdf.invoice-light-lab',
-    'programmer-grid' => 'pdf.invoice-light-lab',
-    'editor-daylight' => 'pdf.invoice-light-lab',
-    'editor-solarized' => 'pdf.invoice-light-lab',
-    'signal-pastel' => 'pdf.invoice-light-lab',
-    'signal-studio' => 'pdf.invoice-light-lab',
-    'ops-ice' => 'pdf.invoice-light-lab',
-    'ops-graph' => 'pdf.invoice-light-lab',
+    'terminal-matrix' => 'pdf.invoice-light-systems',
+    'programmer-catalog' => 'pdf.invoice-light-systems',
+    'editor-margin' => 'pdf.invoice-light-systems',
+    'signal-plot' => 'pdf.invoice-light-systems',
+    'ops-board' => 'pdf.invoice-light-systems',
 ]);
 
 it('blueprint predložak ima zaseban nacrtni izgled', function () {

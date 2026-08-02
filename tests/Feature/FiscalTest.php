@@ -290,6 +290,16 @@ it('stavlja čuvanje fiskalnih podešavanja na kraj ekrana', function () {
         ->and(strrpos($html, 'Sačuvaj izmjene'))->toBeGreaterThan(strpos($html, 'Potraga po RequestId'));
 });
 
+it('prikazuje unos fiskalnog PIN-a samo kada ga kasa zatraži', function () {
+    $html = $this->get(route('settings.fiscal.edit'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('x-show="fiscalState === \'pin_required\'"')
+        ->and($html)->toContain('Kasa traži PIN')
+        ->and($html)->toContain(route('settings.fiscal.pin'));
+});
+
 it('objašnjava zašto se stope ne mogu preuzeti dok kasa nije spremna', function () {
     $html = $this->get(route('settings.fiscal.edit'))
         ->assertSuccessful()

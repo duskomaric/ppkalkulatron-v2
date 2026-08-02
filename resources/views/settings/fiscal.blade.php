@@ -171,11 +171,13 @@
             </template>
         </x-section-block>
 
-        <x-section-block variant="card">
-            <x-section-header icon="lock" title="PIN sigurnosnog elementa" :help="route('help').'#fiskalizacija'" />
+        <x-section-block variant="accent" x-cloak x-show="fiscalState === 'pin_required'"
+                         x-data="{ fiscalState: @js($fiscalHealth['state']) }"
+                         @fiscal-health-updated.window="fiscalState = $event.detail.state">
+            <x-section-header icon="lock" title="Kasa traži PIN" :help="route('help').'#fiskalizacija'" />
 
             <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
-                Lokalni uređaj traži PIN poslije uključivanja. Dok ga ne dobije, fiskalizacija ne prolazi.
+                Unesite četverocifreni PIN sigurnosnog elementa da biste nastavili fiskalizaciju.
             </p>
 
             <form method="POST" action="{{ route('settings.fiscal.pin') }}" class="flex flex-col sm:flex-row gap-3 sm:items-end">

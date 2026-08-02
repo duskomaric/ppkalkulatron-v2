@@ -1,4 +1,4 @@
-<table style="position: fixed; right: 16mm; bottom: 14mm; left: 16mm; width: 178mm; color: #64748b; font-family: DejaVu Sans, sans-serif; font-size: 7pt; text-align: center;">
+<table style="position: fixed; right: 16mm; bottom: 35mm; left: 16mm; width: 178mm; color: #64748b; font-family: DejaVu Sans, sans-serif; font-size: 7pt; text-align: center;">
     <tr>
         <td style="width: 50%; padding-right: 18mm;">
             <div style="margin-bottom: 3mm;">M.P.</div>

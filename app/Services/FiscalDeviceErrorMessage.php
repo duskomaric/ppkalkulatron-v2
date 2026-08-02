@@ -32,6 +32,10 @@ class FiscalDeviceErrorMessage
             return 'Fiskalni uređaj trenutno ne može obraditi račun. Sačekajte trenutak, provjerite vezu i prije ponovnog slanja provjerite prethodni zahtjev po RequestId-u.';
         }
 
+        if ($this->hasModelStateError($response, 'labels', '2805')) {
+            return 'Poreska oznaka na računu nije važeća na fiskalnom uređaju. U Fiskalizaciji preuzmite aktuelne stope, zatim provjerite artikle na računu.';
+        }
+
         $message = mb_strtolower($this->responseMessage($response));
 
         if ($this->containsAny($message, ['currenttaxrates', 'tax label', 'tax rate', 'poresk', 'пореск'])) {
@@ -70,6 +74,24 @@ class FiscalDeviceErrorMessage
             $this->stringValue($json['detail'] ?? null),
             $this->stringValue($json['errors'] ?? null),
         ]));
+    }
+
+    private function hasModelStateError(Response $response, string $propertyFragment, string $errorCode): bool
+    {
+        $json = $response->json();
+        $modelState = is_array($json) ? ($json['modelState'] ?? []) : [];
+
+        foreach ((array) $modelState as $error) {
+            if (! is_array($error) || ! str_contains((string) ($error['property'] ?? ''), $propertyFragment)) {
+                continue;
+            }
+
+            if (in_array($errorCode, (array) ($error['errors'] ?? []), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function stringValue(mixed $value): string

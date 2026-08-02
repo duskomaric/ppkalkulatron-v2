@@ -231,7 +231,13 @@ it('odbija fiskalizaciju bez kursa za tu valutu', function () {
 })->throws(RuntimeException::class, 'Nema kursa za EUR');
 
 it('prevodi nevažeću poresku oznaku uređaja u jasnu uputu', function () {
-    Http::fake(['*/api/invoices' => Http::response(['message' => 'Unknown tax label F'], 400)]);
+    Http::fake(['*/api/invoices' => Http::response([
+        'message' => 'Bad Request',
+        'modelState' => [[
+            'property' => 'items[0].labels',
+            'errors' => ['2805'],
+        ]],
+    ], 400)]);
 
     app(FiscalService::class)->fiscalize(makeInvoice());
 })->throws(RuntimeException::class, 'Poreska oznaka na računu nije važeća na fiskalnom uređaju. U Fiskalizaciji preuzmite aktuelne stope');

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\DocumentTemplate;
 use App\Enums\InvoiceStatus;
 use App\Mail\InvoiceMail;
 use App\Models\Article;
@@ -305,6 +306,36 @@ it('generiše PDF na svim predlošcima', function (string $template) {
         ->and(strlen($pdf))->toBeGreaterThan(10000)
         ->toBeLessThan(150000);
 })->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board', 'git-diff', 'network-packet', 'vscode-dark', 'vscode-light', 'phpstorm-dark', 'phpstorm-light']);
+
+it('dodaje potpis ovlaštenog lica na svaki PDF predložak', function (string $template): void {
+    $invoice = makeInvoice(['template' => $template]);
+
+    expect(app(InvoicePdfService::class)->html($invoice, DocumentTemplate::from($template)))
+        ->toContain(in_array($template, ['classic', 'modern', 'minimal', 'standard'], true)
+            ? 'Izdao'
+            : 'Potpis ovlaštenog lica');
+})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board', 'git-diff', 'network-packet', 'vscode-dark', 'vscode-light', 'phpstorm-dark', 'phpstorm-light']);
+
+it('prikazuje potpis i u pregledu predloška', function (): void {
+    $this->get(route('settings.templates.preview', [
+        'template' => DocumentTemplate::Terminal,
+        'embedded' => 1,
+    ]))
+        ->assertSuccessful()
+        ->assertSee('Potpis ovlaštenog lica');
+});
+
+it('koristi lokalizovane oznake u programerskim predlošcima', function (): void {
+    $invoice = makeInvoice(['template' => 'terminal']);
+
+    expect(app(InvoicePdfService::class)->html($invoice, DocumentTemplate::Terminal))
+        ->not->toContain('INVOICE.SESSION')
+        ->not->toContain('RESOURCE')
+        ->not->toContain('PAYMENT_ENDPOINTS')
+        ->toContain('RAČUN')
+        ->toContain('STAVKA')
+        ->toContain('PLAĆANJE');
+});
 
 it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfView): void {
     Currency::query()->where('code', 'BAM')->update(['symbol' => 'KM']);

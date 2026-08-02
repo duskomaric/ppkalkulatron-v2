@@ -163,10 +163,11 @@ it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', fun
 
     $this->get(route('settings.templates.preview', ['template' => DocumentTemplate::OpsConsole, 'embedded' => 1]))
         ->assertSuccessful()
-        ->assertSee('OPS::RAČUN')
+        ->assertSee('◆ / RAČUN')
         ->assertSee('Primjer kupac d.o.o.')
         ->assertSee('Konsultantska usluga')
-        ->assertSee('Addiko Bank a.d. Banja Luka');
+        ->assertSee('Addiko Bank a.d. Banja Luka')
+        ->assertSee('Potpis ovlaštenog lica');
 });
 
 it('nudi puni pregled predloška bez prelamanja u minijaturi', function () {

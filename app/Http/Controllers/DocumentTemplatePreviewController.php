@@ -5,20 +5,19 @@ namespace App\Http\Controllers;
 use App\Enums\DocumentTemplate;
 use App\Enums\PaymentType;
 use App\Enums\Unit;
-use App\Models\BankAccount;
 use App\Models\Client;
 use App\Models\Currency;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Services\InvoicePdfService;
-use App\Settings\CompanySettings;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DocumentTemplatePreviewController extends Controller
 {
-    public function __invoke(Request $request, DocumentTemplate $template, CompanySettings $company, InvoicePdfService $pdf): View
+    public function __invoke(Request $request, DocumentTemplate $template, InvoicePdfService $pdf): Response|View
     {
         $invoice = new Invoice([
             'invoice_number' => '0001/2026',
@@ -52,14 +51,8 @@ class DocumentTemplatePreviewController extends Controller
             ]),
         ]));
 
-        $data = [
-            'invoice' => $invoice,
-            'company' => $company,
-            'bankAccounts' => BankAccount::query()->where('show_on_documents', true)->orderBy('id')->get(),
-        ];
-
         if ($request->boolean('embedded')) {
-            return view($pdf->viewFor($template), $data);
+            return response($pdf->html($invoice, $template));
         }
 
         return view('settings.template-preview', [

@@ -56,6 +56,32 @@ class InvoicePdfService
         return $this->render($invoice, $template)->output();
     }
 
+    public function html(Invoice $invoice, ?DocumentTemplate $template = null): string
+    {
+        $invoice->loadMissing(['client', 'currencyDefinition', 'items', 'fiscalRecords']);
+
+        $template ??= $invoice->template ?? DocumentTemplate::Classic;
+
+        $html = view($this->viewFor($template), [
+            'invoice' => $invoice,
+            'company' => $this->company,
+            'bankAccounts' => BankAccount::query()->where('show_on_documents', true)->orderBy('id')->get(),
+        ])->render();
+
+        $html = $this->localizedTemplateText($template, $html);
+
+        if (in_array($template, [
+            DocumentTemplate::Classic,
+            DocumentTemplate::Modern,
+            DocumentTemplate::Minimal,
+            DocumentTemplate::Standard,
+        ], true)) {
+            return $html;
+        }
+
+        return str_replace('</body>', view('pdf.partials.signature')->render().'</body>', $html);
+    }
+
     public function download(Invoice $invoice, ?DocumentTemplate $template = null): Response
     {
         return $this->render($invoice, $template)->download($this->filename($invoice));
@@ -76,14 +102,81 @@ class InvoicePdfService
         // `loadMissing`, ne `load`: pozivalac koji je već učitao `fiscalRecords.receipt`
         // (slanje mailom) inače dobije zapise bez slika, pa se svaka slika čita ponovo
         // — jedan upit po fiskalnom zapisu, i to nad base64 sadržajem od stotinak kilobajta.
-        $invoice->loadMissing(['client', 'currencyDefinition', 'items', 'fiscalRecords']);
+        return Pdf::loadHtml($this->html($invoice, $template))
+            ->setPaper('a4')
+            ->setOption('isFontSubsettingEnabled', true);
+    }
 
-        $template ??= $invoice->template ?? DocumentTemplate::Classic;
+    private function localizedTemplateText(DocumentTemplate $template, string $html): string
+    {
+        $replacements = match ($template) {
+            DocumentTemplate::Terminal => [
+                '$ ./billing --issue' => '▸ račun / izdan',
+                'INVOICE.SESSION' => 'RAČUN',
+                '// BILL_TO' => '// KUPAC',
+                '// PARAMETERS' => '// PODACI',
+                'RESOURCE' => 'STAVKA',
+                'QTY' => 'KOL.',
+                'UNIT' => 'CIJENA',
+                'VALUE' => 'IZNOS',
+                'subtotal' => 'osnovica',
+                'TOTAL' => 'UKUPNO',
+                '// NOTE' => '// NAPOMENA',
+                '// PAYMENT_ENDPOINTS' => '// PLAĆANJE',
+                'STATUS: ISSUED' => '✓',
+            ],
+            DocumentTemplate::Protocol => [
+                'PROTOCOL / INVOICE' => '▣ / RAČUN',
+                'DOCUMENT ID' => '#',
+                'CLIENT_PROFILE' => 'KUPAC',
+                'TRANSACTION' => 'PLAĆANJE',
+                'ITEM' => 'STAVKA',
+                'QTY' => 'KOL.',
+                'RATE' => 'CIJENA',
+                'AMOUNT' => 'IZNOS',
+                'MESSAGE' => 'NAPOMENA',
+                'PAYMENT ROUTING' => 'PLAĆANJE',
+                'PROTOCOL VERIFIED' => '✓',
+            ],
+            DocumentTemplate::Kernel => [
+                'KERNEL // BILLING' => '▣ // IZDAVALAC',
+                'INVOICE' => 'RAČUN',
+                'KERNEL /' => '▣ /',
+            ],
+            DocumentTemplate::Editor => [
+                'editor / sačuvano' => '✓ /',
+                'kupac.json' => 'kupac',
+                'postavke.toml' => 'plaćanje',
+            ],
+            DocumentTemplate::Signal => [
+                'SIGNAL_01 / RAČUN' => '◆ / RAČUN',
+                'signal je potvrđen' => '◆ ✓',
+            ],
+            DocumentTemplate::OpsConsole => [
+                'OPS::RAČUN / IZDAN' => '◆ / RAČUN',
+                'ops konzola' => '◆',
+            ],
+            DocumentTemplate::Shell => [
+                'shell / završeno bez greške' => '✓',
+            ],
+            DocumentTemplate::TerminalMatrix => [
+                'TERMINAL_MATRIX' => '[●]',
+            ],
+            DocumentTemplate::ProgrammerCatalog => [
+                'KATALOG_USLUGA' => '[■]',
+            ],
+            DocumentTemplate::EditorMargin => [
+                'EDITOR_MARGIN' => '[◆]',
+            ],
+            DocumentTemplate::SignalPlot => [
+                'SIGNAL_PLOT' => '[◇]',
+            ],
+            DocumentTemplate::OpsBoard => [
+                'OPS_TABLA' => '[▲]',
+            ],
+            default => [],
+        };
 
-        return Pdf::loadView($this->viewFor($template), [
-            'invoice' => $invoice,
-            'company' => $this->company,
-            'bankAccounts' => BankAccount::where('show_on_documents', true)->orderBy('id')->get(),
-        ])->setPaper('a4')->setOption('isFontSubsettingEnabled', true);
+        return strtr($html, $replacements);
     }
 }

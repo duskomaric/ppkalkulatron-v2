@@ -311,9 +311,9 @@ it('dodaje potpis ovlaštenog lica na svaki PDF predložak', function (string $t
     $invoice = makeInvoice(['template' => $template]);
 
     expect(app(InvoicePdfService::class)->html($invoice, DocumentTemplate::from($template)))
-        ->toContain(in_array($template, ['classic', 'modern', 'minimal', 'standard'], true)
-            ? 'Izdao'
-            : 'Potpis ovlaštenog lica');
+        ->toContain('Izdao')
+        ->toContain('Primio')
+        ->toContain('Kalkulatron');
 })->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board', 'git-diff', 'network-packet', 'vscode-dark', 'vscode-light', 'phpstorm-dark', 'phpstorm-light']);
 
 it('prikazuje potpis i u pregledu predloška', function (): void {
@@ -322,7 +322,9 @@ it('prikazuje potpis i u pregledu predloška', function (): void {
         'embedded' => 1,
     ]))
         ->assertSuccessful()
-        ->assertSee('Potpis ovlaštenog lica');
+        ->assertSee('Izdao')
+        ->assertSee('Primio')
+        ->assertSee('Kalkulatron');
 });
 
 it('koristi lokalizovane oznake u programerskim predlošcima', function (): void {

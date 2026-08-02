@@ -70,16 +70,20 @@ class InvoicePdfService
 
         $html = $this->localizedTemplateText($template, $html);
 
-        if (in_array($template, [
+        $hasBuiltInSignatures = in_array($template, [
             DocumentTemplate::Classic,
             DocumentTemplate::Modern,
             DocumentTemplate::Minimal,
             DocumentTemplate::Standard,
-        ], true)) {
-            return $html;
+        ], true);
+
+        $footer = view('pdf.partials.app-brand')->render();
+
+        if (! $hasBuiltInSignatures) {
+            $footer .= view('pdf.partials.signature')->render();
         }
 
-        return str_replace('</body>', view('pdf.partials.signature')->render().'</body>', $html);
+        return str_replace('</body>', $footer.'</body>', $html);
     }
 
     public function download(Invoice $invoice, ?DocumentTemplate $template = null): Response

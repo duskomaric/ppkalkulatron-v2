@@ -167,7 +167,9 @@ it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', fun
         ->assertSee('Primjer kupac d.o.o.')
         ->assertSee('Konsultantska usluga')
         ->assertSee('Addiko Bank a.d. Banja Luka')
-        ->assertSee('Potpis ovlaštenog lica');
+        ->assertSee('Izdao')
+        ->assertSee('Primio')
+        ->assertSee('Kalkulatron');
 });
 
 it('nudi puni pregled predloška bez prelamanja u minijaturi', function () {

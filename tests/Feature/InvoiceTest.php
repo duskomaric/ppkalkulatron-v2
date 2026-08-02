@@ -304,7 +304,7 @@ it('generiše PDF na svim predlošcima', function (string $template) {
     expect($pdf)->toStartWith('%PDF-')
         ->and(strlen($pdf))->toBeGreaterThan(10000)
         ->toBeLessThan(150000);
-})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board', 'git-diff', 'network-packet']);
+})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board', 'git-diff', 'network-packet', 'vscode-dark', 'vscode-light', 'phpstorm-dark', 'phpstorm-light']);
 
 it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfView): void {
     Currency::query()->where('code', 'BAM')->update(['symbol' => 'KM']);
@@ -338,6 +338,10 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfVi
     'ops-board' => 'pdf.invoice-light-systems',
     'git-diff' => 'pdf.invoice-git-diff',
     'network-packet' => 'pdf.invoice-network-packet',
+    'vscode-dark' => 'pdf.invoice-vscode-dark',
+    'vscode-light' => 'pdf.invoice-vscode-light',
+    'phpstorm-dark' => 'pdf.invoice-phpstorm-dark',
+    'phpstorm-light' => 'pdf.invoice-phpstorm-light',
 ]);
 
 it('blueprint predložak ima zaseban nacrtni izgled', function () {

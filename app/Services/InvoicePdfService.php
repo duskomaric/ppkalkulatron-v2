@@ -38,6 +38,10 @@ class InvoicePdfService
         'ops-board' => 'pdf.invoice-light-systems',
         'git-diff' => 'pdf.invoice-git-diff',
         'network-packet' => 'pdf.invoice-network-packet',
+        'vscode-dark' => 'pdf.invoice-vscode-dark',
+        'vscode-light' => 'pdf.invoice-vscode-light',
+        'phpstorm-dark' => 'pdf.invoice-phpstorm-dark',
+        'phpstorm-light' => 'pdf.invoice-phpstorm-light',
     ];
 
     public function __construct(private CompanySettings $company) {}

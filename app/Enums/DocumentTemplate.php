@@ -27,6 +27,10 @@ enum DocumentTemplate: string
     case OpsBoard = 'ops-board';
     case GitDiff = 'git-diff';
     case NetworkPacket = 'network-packet';
+    case VsCodeDark = 'vscode-dark';
+    case VsCodeLight = 'vscode-light';
+    case PhpStormDark = 'phpstorm-dark';
+    case PhpStormLight = 'phpstorm-light';
 
     public function label(): string
     {
@@ -53,6 +57,10 @@ enum DocumentTemplate: string
             self::OpsBoard => 'Ops tabla',
             self::GitDiff => 'Git diff',
             self::NetworkPacket => 'Mrežni paket',
+            self::VsCodeDark => 'VS Code tamni',
+            self::VsCodeLight => 'VS Code svijetli',
+            self::PhpStormDark => 'PhpStorm Darcula',
+            self::PhpStormLight => 'PhpStorm svijetli',
         };
     }
 

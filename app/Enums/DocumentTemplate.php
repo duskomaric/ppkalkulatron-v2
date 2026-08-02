@@ -17,6 +17,9 @@ enum DocumentTemplate: string
     case TerminalLight = 'terminal-light';
     case Editor = 'editor';
     case Signal = 'signal';
+    case OpsConsole = 'ops-console';
+    case Shell = 'shell';
+    case Workstation = 'workstation';
 
     public function label(): string
     {
@@ -33,6 +36,9 @@ enum DocumentTemplate: string
             self::TerminalLight => 'Svijetli terminal',
             self::Editor => 'Editor',
             self::Signal => 'Signal',
+            self::OpsConsole => 'Ops konzola',
+            self::Shell => 'Shell',
+            self::Workstation => 'Radna stanica',
         };
     }
 

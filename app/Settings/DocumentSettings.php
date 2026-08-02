@@ -7,7 +7,7 @@ use Spatie\LaravelSettings\Settings;
 /** Podrazumijevane vrijednosti na novim dokumentima. */
 class DocumentSettings extends Settings
 {
-    /** classic | modern | minimal | standard | programmer | blueprint | terminal | protocol | kernel | terminal-light | editor | signal | ops-console | shell | workstation */
+    /** Vrijednost je jedan od App\Enums\DocumentTemplate predložaka. */
     public string $template;
 
     /** Vrijednost iz App\Enums\DocumentLanguage. */

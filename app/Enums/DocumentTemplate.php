@@ -25,6 +25,8 @@ enum DocumentTemplate: string
     case EditorMargin = 'editor-margin';
     case SignalPlot = 'signal-plot';
     case OpsBoard = 'ops-board';
+    case GitDiff = 'git-diff';
+    case NetworkPacket = 'network-packet';
 
     public function label(): string
     {
@@ -49,6 +51,8 @@ enum DocumentTemplate: string
             self::EditorMargin => 'Editor margin',
             self::SignalPlot => 'Signal plot',
             self::OpsBoard => 'Ops tabla',
+            self::GitDiff => 'Git diff',
+            self::NetworkPacket => 'Mrežni paket',
         };
     }
 

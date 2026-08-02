@@ -36,6 +36,8 @@ class InvoicePdfService
         'editor-margin' => 'pdf.invoice-light-systems',
         'signal-plot' => 'pdf.invoice-light-systems',
         'ops-board' => 'pdf.invoice-light-systems',
+        'git-diff' => 'pdf.invoice-git-diff',
+        'network-packet' => 'pdf.invoice-network-packet',
     ];
 
     public function __construct(private CompanySettings $company) {}

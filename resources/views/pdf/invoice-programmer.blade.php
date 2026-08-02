@@ -66,7 +66,7 @@
     <div class="hero">
         <table class="hero-table"><tr>
             <td class="hero-company">
-                <div class="brand">BILLING / SOFTWARE SERVICES</div>
+                <div class="brand">NAPLATA / SOFTVERSKE USLUGE</div>
                 <div class="company-name">{{ $company->name }}</div>
                 <div class="company-data">
                     @if($company->address){{ $company->address }}<br>@endif

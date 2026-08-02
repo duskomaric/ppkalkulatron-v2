@@ -333,7 +333,7 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfVi
 it('blueprint predložak ima zaseban nacrtni izgled', function () {
     $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-blueprint');
 
-    expect($html)->toContain('BLUEPRINT')
+    expect($html)->toContain('NACRT')
         ->and($html)->toContain('#0b6f8c')
         ->and($html)->toContain('Referenca');
 });
@@ -341,7 +341,7 @@ it('blueprint predložak ima zaseban nacrtni izgled', function () {
 it('programerski predložak ima samostalan profesionalni izgled', function () {
     $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-programmer');
 
-    expect($html)->toContain('BILLING / SOFTWARE SERVICES')
+    expect($html)->toContain('NAPLATA / SOFTVERSKE USLUGE')
         ->and($html)->toContain('#111a2e')
         ->and($html)->toContain('Podaci za plaćanje');
 });

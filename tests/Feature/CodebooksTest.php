@@ -169,7 +169,7 @@ it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', fun
         ->assertSee('Addiko Bank a.d. Banja Luka')
         ->assertSee('Izdao')
         ->assertSee('Primio')
-        ->assertSee('Kalkulatron');
+        ->assertSee(config('app.name'));
 });
 
 it('nudi puni pregled predloška bez prelamanja u minijaturi', function () {

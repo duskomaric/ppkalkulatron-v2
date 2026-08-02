@@ -313,7 +313,7 @@ it('dodaje potpis ovlaštenog lica na svaki PDF predložak', function (string $t
     expect(app(InvoicePdfService::class)->html($invoice, DocumentTemplate::from($template)))
         ->toContain('Izdao')
         ->toContain('Primio')
-        ->toContain('Kalkulatron');
+        ->toContain(config('app.name'));
 })->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board', 'git-diff', 'network-packet', 'vscode-dark', 'vscode-light', 'phpstorm-dark', 'phpstorm-light']);
 
 it('prikazuje potpis i u pregledu predloška', function (): void {
@@ -324,7 +324,14 @@ it('prikazuje potpis i u pregledu predloška', function (): void {
         ->assertSuccessful()
         ->assertSee('Izdao')
         ->assertSee('Primio')
-        ->assertSee('Kalkulatron');
+        ->assertSee(config('app.name'));
+});
+
+it('prikazuje naziv aplikacije iz konfiguracije na PDF-u', function (): void {
+    config()->set('app.name', 'Računi Pro');
+
+    expect(app(InvoicePdfService::class)->html(makeInvoice(), DocumentTemplate::Terminal))
+        ->toContain('Računi Pro');
 });
 
 it('koristi lokalizovane oznake u programerskim predlošcima', function (): void {

@@ -77,7 +77,9 @@ class InvoicePdfService
             DocumentTemplate::Standard,
         ], true);
 
-        $footer = view('pdf.partials.app-brand')->render();
+        $footer = view('pdf.partials.app-brand', [
+            'appName' => config('app.name'),
+        ])->render();
 
         if (! $hasBuiltInSignatures) {
             $footer .= view('pdf.partials.signature')->render();

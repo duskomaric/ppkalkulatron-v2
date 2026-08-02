@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\DocumentTemplate;
 use App\Enums\PaymentType;
 use App\Enums\Unit;
+use App\Models\BankAccount;
 use App\Models\Client;
 use App\Models\Currency;
 use App\Models\Invoice;
@@ -54,7 +55,7 @@ class DocumentTemplatePreviewController extends Controller
         $data = [
             'invoice' => $invoice,
             'company' => $company,
-            'bankAccounts' => new Collection,
+            'bankAccounts' => BankAccount::query()->where('show_on_documents', true)->orderBy('id')->get(),
         ];
 
         if ($request->boolean('embedded')) {

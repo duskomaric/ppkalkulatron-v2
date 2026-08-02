@@ -154,11 +154,19 @@ it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', funct
 });
 
 it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', function () {
+    BankAccount::query()->create([
+        'bank_name' => 'Addiko Bank a.d. Banja Luka',
+        'account_number' => '5510010000000003',
+        'swift' => 'HAABBA22',
+        'show_on_documents' => true,
+    ]);
+
     $this->get(route('settings.templates.preview', ['template' => DocumentTemplate::OpsConsole, 'embedded' => 1]))
         ->assertSuccessful()
         ->assertSee('OPS::RAČUN')
         ->assertSee('Primjer kupac d.o.o.')
-        ->assertSee('Konsultantska usluga');
+        ->assertSee('Konsultantska usluga')
+        ->assertSee('Addiko Bank a.d. Banja Luka');
 });
 
 it('nudi puni pregled predloška bez prelamanja u minijaturi', function () {

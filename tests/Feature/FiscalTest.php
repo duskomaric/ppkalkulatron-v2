@@ -238,12 +238,11 @@ it('prevodi nevažeću poresku oznaku uređaja u jasnu uputu', function () {
 
 it('upozorava da se račun ne šalje ponovo kada uređaj ne može štampati', function () {
     Http::fake(['*/api/invoices' => Http::response([
-        'message' => 'Printer is out of paper',
         'invoiceResponse' => ['invoiceNumber' => 'ABC12345-ABC12345-1'],
     ], 500)]);
 
     app(FiscalService::class)->fiscalize(makeInvoice());
-})->throws(RuntimeException::class, 'Račun je moguće da je fiskalizovan, ali štampa nije uspjela.');
+})->throws(RuntimeException::class, 'Račun je fiskalizovan, ali štampa nije uspjela.');
 
 it('ne prikazuje sirovi odgovor uređaja za nepoznatu grešku', function () {
     Http::fake(['*/api/invoices' => Http::response('Internal device detail: 1234', 400)]);
@@ -263,6 +262,7 @@ it('prevodi ostale poznate odgovore fiskalnog uređaja', function (mixed $body, 
     'zahtjev je već u obradi' => ['', 409, 'Fiskalni uređaj već obrađuje ovaj zahtjev. Ne šaljite račun ponovo; prvo ga provjerite po RequestId-u u Fiskalizaciji.'],
     'nedostupan servis' => ['', 503, 'Fiskalni uređaj trenutno ne može obraditi račun. Sačekajte trenutak, provjerite vezu i prije ponovnog slanja provjerite prethodni zahtjev po RequestId-u.'],
     'neispravan barkod' => ['Invalid GTIN', 400, 'Jedan artikal ima neispravan GTIN/barkod. Provjerite podatke artikla, pa pokušajte ponovo.'],
+    'status pristupa ima prednost nad tekstom greške' => [['message' => 'Unknown tax label F'], 401, 'Fiskalni uređaj nije prihvatio pristupne podatke. Provjerite API ključ i, za cloud kasu, serijski broj i PAK.'],
 ]);
 
 it('ne dozvoljava dva storna istog računa', function () {

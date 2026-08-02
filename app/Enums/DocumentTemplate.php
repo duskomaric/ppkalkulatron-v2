@@ -10,6 +10,7 @@ enum DocumentTemplate: string
     case Minimal = 'minimal';
     case Standard = 'standard';
     case Programmer = 'programmer';
+    case Blueprint = 'blueprint';
 
     public function label(): string
     {
@@ -19,6 +20,7 @@ enum DocumentTemplate: string
             self::Minimal => 'Minimalan',
             self::Standard => 'Standardni',
             self::Programmer => 'Programerski',
+            self::Blueprint => 'Blueprint',
         };
     }
 

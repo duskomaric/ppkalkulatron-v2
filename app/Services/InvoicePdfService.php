@@ -21,6 +21,7 @@ class InvoicePdfService
         'minimal' => 'pdf.invoice-minimal',
         'standard' => 'pdf.invoice-standard',
         'programmer' => 'pdf.invoice-programmer',
+        'blueprint' => 'pdf.invoice-blueprint',
     ];
 
     public function __construct(private CompanySettings $company) {}

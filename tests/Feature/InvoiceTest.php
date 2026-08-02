@@ -304,7 +304,7 @@ it('generiše PDF na svim predlošcima', function (string $template) {
     expect($pdf)->toStartWith('%PDF-')
         ->and(strlen($pdf))->toBeGreaterThan(10000)
         ->toBeLessThan(150000);
-})->with(['classic', 'modern', 'minimal', 'standard', 'programmer']);
+})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint']);
 
 it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfView): void {
     Currency::query()->where('code', 'BAM')->update(['symbol' => 'KM']);
@@ -321,7 +321,16 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfVi
     'minimal' => 'pdf.invoice-minimal',
     'standard' => 'pdf.invoice-standard',
     'programmer' => 'pdf.invoice-programmer',
+    'blueprint' => 'pdf.invoice-blueprint',
 ]);
+
+it('blueprint predložak ima zaseban nacrtni izgled', function () {
+    $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-blueprint');
+
+    expect($html)->toContain('BLUEPRINT')
+        ->and($html)->toContain('#0b6f8c')
+        ->and($html)->toContain('Referenca');
+});
 
 it('programerski predložak ima samostalan profesionalni izgled', function () {
     $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-programmer');

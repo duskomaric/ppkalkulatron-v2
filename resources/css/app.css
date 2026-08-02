@@ -140,7 +140,7 @@ body {
 /* Galerija PDF predložaka: eksplicitni CSS radi i u mobilnom WebView buildu. */
 .template-gallery {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
 }
 
@@ -149,28 +149,33 @@ body {
 .template-gallery-card { display: block; padding: 0.5rem; border: 2px solid var(--color-border); border-radius: 0.75rem; background: var(--color-surface); transition: border-color .15s, box-shadow .15s; }
 .template-gallery-input:checked + .template-gallery-card { border-color: var(--color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary), transparent 80%); }
 .template-gallery-label:hover .template-gallery-card { border-color: color-mix(in srgb, var(--color-primary), transparent 55%); }
-.template-preview { display: block; min-height: 6.7rem; padding: 0.55rem; border: 1px solid currentColor; border-radius: 0.5rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.template-preview { display: block; min-height: 19rem; padding: 1rem; border: 1px solid currentColor; border-radius: 0.5rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .template-preview--dark-cyan { color: #67e8f9; background: #07111d; }
 .template-preview--dark-violet { color: #d8b4fe; background: #1d1730; }
 .template-preview--dark-pink { color: #f9a8d4; background: #321334; }
 .template-preview--light-amber { color: #b45309; background: #fff7ed; }
 .template-preview--light-blue { color: #2563eb; background: #eff6ff; }
 .template-preview--light-teal { color: #0f766e; background: #f0fdfa; }
-.template-preview-dots { display: flex; gap: 0.2rem; margin-bottom: 0.6rem; }
-.template-preview-dots i { width: 0.28rem; height: 0.28rem; border-radius: 99px; background: currentColor; opacity: .75; }
+.template-preview-dots { display: flex; gap: 0.25rem; margin-bottom: 1rem; }
+.template-preview-dots i { width: 0.4rem; height: 0.4rem; border-radius: 99px; background: currentColor; opacity: .75; }
 .template-preview-title, .template-preview-subtitle, .template-preview-total, .template-preview-table i { display: block; background: currentColor; border-radius: 99px; }
-.template-preview-title { width: 82%; height: .48rem; opacity: .9; }
-.template-preview-subtitle { width: 55%; height: .25rem; margin-top: .34rem; opacity: .35; }
-.template-preview-table { display: grid; grid-template-columns: 1fr auto; gap: .3rem .5rem; padding: .45rem 0; margin-top: .65rem; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; opacity: .65; }
-.template-preview-table i { height: .22rem; }
-.template-preview-table i:nth-child(2), .template-preview-table i:nth-child(4) { width: 1.2rem; }
-.template-preview-total { width: 43%; height: .58rem; margin: .55rem 0 0 auto; opacity: .9; }
+.template-preview-title { width: 82%; height: .85rem; opacity: .9; }
+.template-preview-subtitle { width: 55%; height: .38rem; margin-top: .55rem; opacity: .35; }
+.template-preview-profile { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; padding: .9rem 0; margin-top: 1rem; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; opacity: .55; }
+.template-preview-profile i { display: block; height: 2.5rem; border: 1px solid currentColor; border-radius: .15rem; }
+.template-preview-table { display: grid; grid-template-columns: 1fr auto; gap: .5rem .8rem; padding: .7rem 0; margin-top: .8rem; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; opacity: .65; }
+.template-preview-table i { height: .36rem; }
+.template-preview-table i:nth-child(2), .template-preview-table i:nth-child(4) { width: 3rem; }
+.template-preview-total { width: 46%; height: .95rem; margin: 1rem 0 0 auto; opacity: .9; }
 .template-gallery-name { display: flex; align-items: center; justify-content: space-between; gap: .35rem; padding: .45rem .15rem 0; color: var(--color-text-main); font-size: .75rem; font-weight: 700; }
 .template-gallery-name b { opacity: 0; color: var(--color-primary); }
 .template-gallery-input:checked + .template-gallery-card .template-gallery-name b { opacity: 1; }
+.template-gallery-more { margin-top: 1rem; }
+.template-gallery-more summary { cursor: pointer; padding: .8rem 1rem; border: 1px solid var(--color-border); border-radius: .75rem; color: var(--color-text-main); font-size: .8rem; font-weight: 700; }
+.template-gallery-more[open] summary { margin-bottom: .75rem; border-color: var(--color-primary); }
 
 @media (min-width: 640px) {
-    .template-gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .template-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 1024px) {

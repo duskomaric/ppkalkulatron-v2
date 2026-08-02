@@ -115,6 +115,8 @@ it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', funct
         ->assertSee('Nije u PDV sistemu')
         ->assertSee('Validna bez pečata')
         ->assertSee('Predložak računa')
+        ->assertSee('Prikaži još predložaka')
+        ->assertSee('template-preview-profile', false)
         ->assertSee('name="template" value="ops-console"', false)
         ->assertSee('name="template" value="workstation"', false);
 

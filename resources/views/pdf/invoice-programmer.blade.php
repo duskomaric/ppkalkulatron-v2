@@ -149,8 +149,6 @@
             <div class="payment-line">Podaci za bankovni račun nisu uneseni.</div>
         @endforelse
     </div>
-
-    @if($smallNote)<div class="footer">{{ $smallNote }}</div>@endif
 </div>
 </body>
 </html>

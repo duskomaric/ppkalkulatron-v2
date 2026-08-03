@@ -6,7 +6,7 @@
     <x-form-errors />
 
     <x-section-block variant="card">
-        <x-section-header icon="contact" title="Osnovni podaci" :help="route('help').'#klijenti'" />
+        <x-section-header icon="contact" title="Osnovni podaci" />
 
         <x-form-input label="Naziv" name="name" :value="$client?->name" required autocomplete="organization"
                       placeholder="npr. Kafe Bar Centar" />
@@ -15,7 +15,7 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="mail" title="Kontakt" :help="route('help').'#klijenti'" />
+        <x-section-header icon="mail" title="Kontakt" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <x-form-input label="Email" name="email" type="email" :value="$client?->email" placeholder="info@klijent.com" />
@@ -24,7 +24,7 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="map-pin" title="Adresa" :help="route('help').'#klijenti'" />
+        <x-section-header icon="map-pin" title="Adresa" />
 
         <x-form-input label="Adresa" name="address" :value="$client?->address" />
 
@@ -36,7 +36,7 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="hash" title="Poreski podaci" :help="route('help').'#klijenti'" />
+        <x-section-header icon="hash" title="Poreski podaci" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <x-form-input label="JIB" name="vat_id" :value="$client?->vat_id" placeholder="Identifikacioni broj"

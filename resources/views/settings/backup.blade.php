@@ -4,7 +4,7 @@
 @section('content')
     <x-back-link :href="route('invoices.index')" />
 
-    <div class="max-w-3xl space-y-8 animate-fade-in">
+    <div class="space-y-8 animate-fade-in">
         <x-section-block variant="card" class="sm:p-8 space-y-6">
             <x-section-header icon="archive" title="Email backup" subtitle="ZIP sadrži PDF račune, originalne fiskalne dokumente i manifest.csv." :help="route('help').'#backup'" />
 

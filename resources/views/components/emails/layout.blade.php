@@ -15,7 +15,7 @@
             </td></tr>
             <tr><td style="padding:32px;">{{ $slot }}</td></tr>
             <tr><td style="padding:20px 32px;background:#f8fafc;border-top:1px solid #e5e7eb;">
-                <p style="margin:0;color:#667085;font-size:12px;">Ovaj email je poslan automatski iz ppKalkulatron aplikacije.</p>
+                <p style="margin:0;color:#667085;font-size:12px;">Ovaj email je poslan automatski iz {{ config('app.name') }} aplikacije.</p>
             </td></tr>
         </table>
     </td></tr>

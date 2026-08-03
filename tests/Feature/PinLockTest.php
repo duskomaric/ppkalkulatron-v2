@@ -178,7 +178,7 @@ it('ostaje na ekranu za otključavanje kad je PIN pogrešan', function () {
 });
 
 it('vraća standardni 405 kad se GET-om pogodi POST ruta', function () {
-    $this->get('/lock')->assertMethodNotAllowed();
+    $this->get('/zakljucaj')->assertMethodNotAllowed();
     $this->get('/podesavanja/fiskalizacija/provjera')->assertMethodNotAllowed();
 });
 

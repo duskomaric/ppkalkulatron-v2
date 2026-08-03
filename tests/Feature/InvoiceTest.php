@@ -297,18 +297,18 @@ it('učitava slike fiskalnih računa jednim upitom na detalju', function () {
 });
 
 it('generiše PDF na svim predlošcima', function (string $template) {
-    $this->post(route('invoices.store'), invoicePayload(['template' => $template]));
+    $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
-    $pdf = app(InvoicePdfService::class)->contents($invoice);
+    $pdf = app(InvoicePdfService::class)->contents($invoice, DocumentTemplate::from($template));
 
     expect($pdf)->toStartWith('%PDF-')
         ->and(strlen($pdf))->toBeGreaterThan(10000)
         ->toBeLessThan(150000);
-})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board', 'git-diff', 'network-packet', 'vscode-dark', 'vscode-light', 'phpstorm-dark', 'phpstorm-light']);
+})->with(DocumentTemplate::values());
 
 it('dodaje potpis ovlaštenog lica na svaki PDF predložak', function (string $template): void {
-    $invoice = makeInvoice(['template' => $template]);
+    $invoice = makeInvoice();
 
     expect(app(InvoicePdfService::class)->html($invoice, DocumentTemplate::from($template)))
         ->toContain('Izdao')
@@ -316,13 +316,10 @@ it('dodaje potpis ovlaštenog lica na svaki PDF predložak', function (string $t
         ->toContain(config('app.name'))
         ->toContain('v'.config('nativephp.version'))
         ->toContain('build '.config('nativephp.version_code'));
-})->with(['classic', 'modern', 'minimal', 'standard', 'programmer', 'blueprint', 'terminal', 'protocol', 'kernel', 'terminal-light', 'editor', 'signal', 'ops-console', 'shell', 'workstation', 'terminal-matrix', 'programmer-catalog', 'editor-margin', 'signal-plot', 'ops-board', 'git-diff', 'network-packet', 'vscode-dark', 'vscode-light', 'phpstorm-dark', 'phpstorm-light']);
+})->with(DocumentTemplate::values());
 
 it('prikazuje potpis i u pregledu predloška', function (): void {
-    $this->get(route('settings.templates.preview', [
-        'template' => DocumentTemplate::Terminal,
-        'embedded' => 1,
-    ]))
+    $this->get(route('settings.templates.preview', DocumentTemplate::Terminal))
         ->assertSuccessful()
         ->assertSee('Izdao')
         ->assertSee('Primio')
@@ -341,7 +338,7 @@ it('prikazuje naziv aplikacije iz konfiguracije na PDF-u', function (): void {
 });
 
 it('koristi lokalizovane oznake u programerskim predlošcima', function (): void {
-    $invoice = makeInvoice(['template' => 'terminal']);
+    $invoice = makeInvoice();
 
     expect(app(InvoicePdfService::class)->html($invoice, DocumentTemplate::Terminal))
         ->not->toContain('INVOICE.SESSION')
@@ -352,7 +349,7 @@ it('koristi lokalizovane oznake u programerskim predlošcima', function (): void
         ->toContain('PLAĆANJE');
 });
 
-it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfView): void {
+it('koristi podešeni simbol valute na računu i PDF-u', function (DocumentTemplate $template): void {
     Currency::query()->where('code', 'BAM')->update(['symbol' => 'KM']);
     $invoice = makeInvoice();
 
@@ -360,35 +357,8 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (string $pdfVi
         ->assertSuccessful()
         ->assertSee('1,00 KM');
 
-    expect(renderPdfView($invoice, view: $pdfView))->toContain('1,00 KM');
-})->with([
-    'classic' => 'pdf.invoice',
-    'modern' => 'pdf.invoice-modern',
-    'minimal' => 'pdf.invoice-minimal',
-    'standard' => 'pdf.invoice-standard',
-    'programmer' => 'pdf.invoice-programmer',
-    'blueprint' => 'pdf.invoice-blueprint',
-    'terminal' => 'pdf.invoice-terminal',
-    'protocol' => 'pdf.invoice-protocol',
-    'kernel' => 'pdf.invoice-kernel',
-    'terminal-light' => 'pdf.invoice-terminal-light',
-    'editor' => 'pdf.invoice-editor',
-    'signal' => 'pdf.invoice-signal',
-    'ops-console' => 'pdf.invoice-ops-console',
-    'shell' => 'pdf.invoice-shell',
-    'workstation' => 'pdf.invoice-workstation',
-    'terminal-matrix' => 'pdf.invoice-light-systems',
-    'programmer-catalog' => 'pdf.invoice-light-systems',
-    'editor-margin' => 'pdf.invoice-light-systems',
-    'signal-plot' => 'pdf.invoice-light-systems',
-    'ops-board' => 'pdf.invoice-light-systems',
-    'git-diff' => 'pdf.invoice-git-diff',
-    'network-packet' => 'pdf.invoice-network-packet',
-    'vscode-dark' => 'pdf.invoice-vscode-dark',
-    'vscode-light' => 'pdf.invoice-vscode-light',
-    'phpstorm-dark' => 'pdf.invoice-phpstorm-dark',
-    'phpstorm-light' => 'pdf.invoice-phpstorm-light',
-]);
+    expect(renderPdfView($invoice, view: $template->view()))->toContain('1,00 KM');
+})->with(DocumentTemplate::cases());
 
 it('blueprint predložak ima zaseban nacrtni izgled', function () {
     $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-blueprint');
@@ -412,9 +382,9 @@ it('novi programerski predlošci imaju različite vizuelne identitete', function
     expect($html)->toContain($marker)
         ->and($html)->toContain($color);
 })->with([
-    'terminal' => ['pdf.invoice-terminal', 'INVOICE.SESSION', '#a3e635'],
-    'protocol' => ['pdf.invoice-protocol', 'PROTOCOL / INVOICE', '#2563eb'],
-    'kernel' => ['pdf.invoice-kernel', 'KERNEL // BILLING', '#f97316'],
+    'terminal' => ['pdf.invoice-terminal', 'RAČUN', '#a3e635'],
+    'protocol' => ['pdf.invoice-protocol', '▣ / RAČUN', '#2563eb'],
+    'kernel' => ['pdf.invoice-kernel', '▣ // IZDAVALAC', '#f97316'],
     'terminal-light' => ['pdf.invoice-terminal-light', 'račun --izdaj', '#0f766e'],
     'editor' => ['pdf.invoice-editor', 'račun.faktura', '#c084fc'],
     'signal' => ['pdf.invoice-signal', 'SIGNAL_01', '#ec4899'],
@@ -581,7 +551,7 @@ it('smješta napomenu u sklopiva dodatna polja računa', function () {
         ->assertSuccessful()
         ->getContent();
 
-    expect($html)->toContain('Valuta, predložak, jezik i napomena')
+    expect($html)->toContain('Valuta, jezik i napomena')
         ->and(strpos($html, 'x-show="showMore"'))->toBeLessThan(strpos($html, 'id="notes"'));
 });
 

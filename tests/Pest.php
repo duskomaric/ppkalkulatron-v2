@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\DocumentTemplate;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Services\FiscalService;
+use App\Services\InvoicePdfService;
 use App\Services\InvoiceWriter;
 use App\Services\PinLock;
 use App\Settings\CompanySettings;
@@ -67,7 +69,6 @@ function invoicePayload(array $overrides = []): array
         'client_id' => Client::create(['name' => 'Kupac d.o.o.'])->id,
         'payment_type' => 'Cash',
         'currency' => 'BAM',
-        'template' => 'classic',
         'language' => 'sr_Latn',
         'date' => now()->format('Y-m-d'),
         'due_date' => now()->addDays(15)->format('Y-m-d'),
@@ -89,7 +90,6 @@ function makeInvoice(array $client = []): Invoice
         'client_id' => Client::create(['name' => 'Kupac d.o.o.'] + $client)->id,
         'payment_type' => 'Cash',
         'currency' => 'BAM',
-        'template' => 'classic',
         'language' => 'sr_Latn',
         'date' => now()->format('Y-m-d'),
         'due_date' => now()->addDay()->format('Y-m-d'),
@@ -164,9 +164,15 @@ function pretendPersistentRuntime(bool $booted = true): void
 /** HTML jednog PDF predloška, bez prolaska kroz dompdf. */
 function renderPdfView(Invoice $invoice, ?CompanySettings $company = null, string $view = 'pdf.invoice'): string
 {
+    // Predložak više ne stoji na računu, pa se za prikaz izvodi iz imena view-a.
+    $pdf = app(InvoicePdfService::class);
+    $template = collect(DocumentTemplate::cases())
+        ->first(fn (DocumentTemplate $case): bool => $pdf->viewFor($case) === $view) ?? DocumentTemplate::Classic;
+
     return view($view, [
         'invoice' => $invoice->load('client', 'items', 'fiscalRecords'),
         'company' => $company ?? app(CompanySettings::class),
+        'template' => $template,
         'bankAccounts' => collect(),
     ])->render();
 }

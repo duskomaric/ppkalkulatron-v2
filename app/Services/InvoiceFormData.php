@@ -29,7 +29,6 @@ class InvoiceFormData
                 ->get(['id', 'name', 'description', 'unit', 'tax_label', 'last_unit_price']),
             'currencies' => $currencies,
             'currencySymbols' => $currencies->pluck('symbol', 'code')->all(),
-            'defaultTemplate' => $this->documents->template,
             'defaultLanguage' => $this->documents->language,
             'defaultCurrency' => Currency::where('is_default', true)->value('code') ?? 'BAM',
             'defaultDueDays' => $this->documents->invoice_due_days,

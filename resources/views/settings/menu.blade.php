@@ -4,7 +4,7 @@
 @section('content')
     <x-back-link :href="route('invoices.index')" />
 
-    <form method="POST" action="{{ route('settings.menu.update') }}" class="space-y-8 animate-fade-in max-w-3xl"
+    <form method="POST" action="{{ route('settings.menu.update') }}" class="space-y-8 animate-fade-in"
           x-data="menuSettings({ modules: @js($moduleOptions), menuModules: @js($settings->menu_modules), maxMenuItems: @js($settings->max_menu_items) })">
         @csrf
         @method('PUT')

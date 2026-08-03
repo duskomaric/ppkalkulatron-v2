@@ -3,7 +3,7 @@
 @section('title', 'Profil')
 
 @section('content')
-    <div class="space-y-6 pb-20 max-w-3xl" x-data="{ editDrawer: {{ $errors->any() ? 'true' : 'false' }} }">
+    <div class="space-y-6 pb-20" x-data="{ editDrawer: {{ $errors->any() ? 'true' : 'false' }} }">
         <div class="p-5 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] relative overflow-hidden group">
             <div class="absolute top-0 right-0 p-6 opacity-5">
                 <x-icon name="user" class="h-16 w-16 text-[var(--color-text-dim)]" />

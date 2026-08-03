@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0B0B0F">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'ppKalkulatron')</title>
+    <title>@yield('title', config('app.name'))</title>
     {{-- Tema se primjenjuje prije iscrtavanja, inače tamna bljesne pri svijetloj temi. --}}
     <script>
         (() => {

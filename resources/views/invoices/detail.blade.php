@@ -6,7 +6,7 @@
 
     <div class="space-y-3">
         <x-section-block>
-            <x-section-header icon="file-text" title="Osnovni podaci" :help="route('help').'#racuni'" />
+            <x-section-header icon="file-text" title="Osnovni podaci" />
 
             <x-details-grid :columns="2">
                 <x-details-item icon="contact" label="Klijent" :value="$invoice->client?->name"
@@ -23,8 +23,6 @@
                                 color="bg-green-500/10 text-green-500" />
                 <x-details-item icon="credit-card" label="Valuta" :value="$invoice->currencySymbol()"
                                 color="bg-amber-500/10 text-amber-500" />
-                <x-details-item icon="file-text" label="Predložak" :value="$invoice->template->label()"
-                                color="bg-indigo-500/10 text-indigo-500" />
                 <x-details-item icon="credit-card" label="Način plaćanja" :value="$invoice->payment_type->label()"
                                 color="bg-teal-500/10 text-teal-500" />
             </x-details-grid>
@@ -41,7 +39,7 @@
         @endif
 
         <x-section-block>
-            <x-section-header icon="boxes" title="Stavke ({{ $invoice->items->count() }})" :help="route('help').'#racuni'" />
+            <x-section-header icon="boxes" title="Stavke ({{ $invoice->items->count() }})" />
 
             <div class="hidden md:grid grid-cols-[minmax(0,1fr)_70px_110px_80px_120px] gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-dim)] px-2">
                 <span>Stavka</span>

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0B0B0F">
-    <title>Otključaj — ppKalkulatron</title>
+    <title>Otključaj — {{ config('app.name') }}</title>
 
     <script>
         (() => {
@@ -31,7 +31,7 @@
                 <x-icon name="calculator" class="h-7 w-7" />
             </span>
 
-            <h1 class="text-2xl font-black tracking-tight italic mb-1">ppKalkulatron</h1>
+            <h1 class="text-2xl font-black tracking-tight italic mb-1">{{ config('app.name') }}</h1>
             <p class="text-sm text-[var(--color-text-dim)] mb-8">Unesite PIN</p>
 
             {{--

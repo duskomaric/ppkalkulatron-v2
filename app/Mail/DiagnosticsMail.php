@@ -21,7 +21,7 @@ class DiagnosticsMail extends Mailable
      */
     public function envelope(): Envelope
     {
-        $envelope = new Envelope(subject: 'ppKalkulatron — dijagnostika '.now()->format('d.m.Y.'));
+        $envelope = new Envelope(subject: config('app.name').' — dijagnostika '.now()->format('d.m.Y.'));
 
         if ($this->fromAddress) {
             $envelope->from($this->fromAddress, $this->fromName ?? '');

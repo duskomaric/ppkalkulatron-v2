@@ -10,21 +10,21 @@ use App\Models\Currency;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Services\InvoicePdfService;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
-use Illuminate\View\View;
 
+/**
+ * Vraća stvarni HTML predloška sa oglednim podacima; galerija ga učitava u iframe.
+ */
 class DocumentTemplatePreviewController extends Controller
 {
-    public function __invoke(Request $request, DocumentTemplate $template, InvoicePdfService $pdf): Response|View
+    public function __invoke(DocumentTemplate $template, InvoicePdfService $pdf): Response
     {
         $invoice = new Invoice([
             'invoice_number' => '0001/2026',
             'date' => now()->startOfYear(),
             'due_date' => now()->startOfYear()->addDays(15),
             'currency' => 'BAM',
-            'template' => $template,
             'payment_type' => PaymentType::WireTransfer,
             'subtotal' => 9200,
             'tax_total' => 800,
@@ -49,15 +49,41 @@ class DocumentTemplatePreviewController extends Controller
                 'tax_rate' => 900,
                 'total' => 10000,
             ]),
+
+            new InvoiceItem([
+                'name' => 'Konsultantska usluga2',
+                'unit' => Unit::Usl,
+                'quantity' => 1,
+                'tax_rate' => 900,
+                'total' => 11000,
+            ]),
+            new InvoiceItem([
+                'name' => 'Konsultantska usluga3',
+                'unit' => Unit::Usl,
+                'quantity' => 1,
+                'tax_rate' => 900,
+                'total' => 10000,
+
+            ]),
+
+            new InvoiceItem([
+                'name' => 'Konsultantska usluga4',
+                'unit' => Unit::Usl,
+                'quantity' => 2,
+                'tax_rate' => 900,
+                'total' => 10000,
+
+            ]),
+            new InvoiceItem([
+                'name' => 'Konsultantska usluga5',
+                'unit' => Unit::Usl,
+                'quantity' => 1,
+                'tax_rate' => 900,
+                'total' => 10000,
+
+            ]),
         ]));
 
-        if ($request->boolean('embedded')) {
-            return response($pdf->html($invoice, $template));
-        }
-
-        return view('settings.template-preview', [
-            'template' => $template,
-            'previewUrl' => route('settings.templates.preview', ['template' => $template, 'embedded' => 1]),
-        ]);
+        return response($pdf->html($invoice, $template));
     }
 }

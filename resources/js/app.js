@@ -10,7 +10,7 @@ const mobileLog = (event, context = {}) => {
         return;
     }
 
-    fetch('/dijagnostika/mobile', {
+    fetch('/dijagnostika/mobilna', {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
@@ -471,7 +471,7 @@ Alpine.data('pinEntry', () => ({
  * Zato se to prepozna i korisnik se pošalje na PIN.
  */
 const wentToUnlock = (response) => {
-    if (! response.redirected || ! response.url.includes('/unlock')) {
+    if (! response.redirected || ! response.url.includes('/otkljucaj')) {
         return false;
     }
 

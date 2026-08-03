@@ -4,7 +4,7 @@
 @section('content')
     <x-back-link :href="route('invoices.index')" />
 
-    <form method="POST" action="{{ route('settings.company.update') }}" class="max-w-3xl space-y-8 animate-fade-in">
+    <form method="POST" action="{{ route('settings.company.update') }}" class="space-y-8 animate-fade-in">
         @csrf
         @method('PUT')
 

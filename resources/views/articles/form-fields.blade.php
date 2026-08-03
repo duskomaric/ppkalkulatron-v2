@@ -6,7 +6,7 @@
     <x-form-errors />
 
     <x-section-block variant="card">
-        <x-section-header icon="boxes" title="Osnovni podaci" :help="route('help').'#artikli'" />
+        <x-section-header icon="boxes" title="Osnovni podaci" />
 
         <x-form-input label="Naziv" name="name" :value="$article?->name" required placeholder="npr. Web razvoj" />
         <x-form-textarea label="Opis" name="description" rows="2" :value="$article?->description"
@@ -17,7 +17,7 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="currency-euro" title="Cijena" :help="route('help').'#artikli'" />
+        <x-section-header icon="currency-euro" title="Cijena" />
 
         <x-form-input :label="'Cijena ('.$currencySymbol.')'" name="last_unit_price" type="number" step="0.01"
                       :value="$article?->last_unit_price ? number_format($article->last_unit_price / 100, 2, '.', '') : null"
@@ -25,7 +25,7 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="hash" title="Porez i barkod" :help="route('help').'#artikli'" />
+        <x-section-header icon="hash" title="Porez i barkod" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             @if ($taxRateOptions === [])
@@ -47,7 +47,7 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="check" title="Status" :help="route('help').'#artikli'" />
+        <x-section-header icon="check" title="Status" />
 
         <x-toggle name="is_active" :checked="old('is_active', $article?->is_active ?? true)" label="Artikl je aktivan" />
     </x-section-block>

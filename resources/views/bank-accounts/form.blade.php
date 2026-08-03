@@ -4,7 +4,7 @@
 @section('content')
     <x-back-link :href="route('bank-accounts.index')" />
 
-    <div class="max-w-3xl">
+    <div>
         @include('bank-accounts.form-fields')
     </div>
 @endsection

@@ -374,28 +374,10 @@
         </div>
     @endif
 
-    <table class="signature-section">
-        <tr>
-            <td class="signature-left">
-                <div class="mp-box">M.P.</div>
-                <div class="signature-line"></div>
-                <div>Izdao</div>
-            </td>
-            <td class="signature-right">
-                <div class="mp-box">M.P.</div>
-                <div class="signature-line"></div>
-                <div>Primio</div>
-            </td>
-        </tr>
-    </table>
-
     <div class="footer">
         {{ $company->name }} — {{ $company->address }}, {{ $company->city }}
     </div>
 
 </div>
-@if($smallNote)
-    <div style="padding: 0 28px 16px 28px; font-size: 7pt; font-style: italic;">{{ $smallNote }}</div>
-@endif
 </body>
 </html>

@@ -5,7 +5,7 @@
     <x-back-link :href="route('invoices.index')" />
 
     {{-- Isti raspored kao ostala podešavanja: kartica po sekciji, x-form-* polja. --}}
-    <div class="space-y-8 animate-fade-in max-w-3xl">
+    <div class="space-y-8 animate-fade-in">
         <form method="POST" action="{{ route('settings.pin.update') }}">
             @csrf
             @method('PUT')

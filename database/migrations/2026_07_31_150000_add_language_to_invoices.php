@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->string('language', 12)->default('sr_Latn')->after('template');
+            $table->string('language', 12)->default('sr_Latn')->after('currency');
         });
     }
 

@@ -4,34 +4,31 @@
 @section('content')
     <x-back-link :href="route('invoices.index')" />
 
-    <form method="POST" action="{{ route('settings.general.update') }}" class="max-w-3xl space-y-8 animate-fade-in">
+    <form method="POST" action="{{ route('settings.general.update') }}" class="space-y-8 animate-fade-in">
         @csrf
         @method('PUT')
 
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="hash" title="Numeracija" subtitle="Format: PREFIKS-broj/godina (npr. INV-0001/{{ date('Y') }})"
+            <x-section-header icon="hash" title="Numeracija računa" subtitle="Format: PREFIKS-broj/godina (npr. INV-0001/{{ date('Y') }})"
                               :help="route('help').'#numeracija'" />
 
-            <x-toggle name="reset_yearly" :checked="$numbering->reset_yearly" label="Resetuj numeraciju godišnje" />
-
-            <x-form-input label="Broj nula (padding)" name="pad_zeros" type="number" :value="$numbering->pad_zeros" required />
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <x-form-input label="Prefiks računa" name="invoice_prefix" :value="$numbering->invoice_prefix" placeholder="npr. INV" />
                 <x-form-input label="Početni broj računa" name="invoice_starting_number" type="number" :value="$numbering->invoice_starting_number" required />
+                <x-form-input label="Broj nula (padding)" name="pad_zeros" type="number" :value="$numbering->pad_zeros" required />
             </div>
+
+            <x-toggle name="reset_yearly" :checked="$numbering->reset_yearly" label="Resetuj numeraciju godišnje" />
         </x-section-block>
 
         <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="file-text" title="Zadane vrijednosti računa" :help="route('help').'#racuni'" />
+            <x-section-header icon="file-text" title="Zadane vrijednosti novog računa" :help="route('help').'#racuni'" />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <x-form-select label="Jezik" name="language" :value="$document->language" required
                                :options="\App\Enums\DocumentLanguage::options()" />
                 <x-form-input label="Rok plaćanja (dana)" name="invoice_due_days" type="number" :value="$document->invoice_due_days" required />
             </div>
-
-            <x-document-template-gallery :value="$document->template" />
 
             <div x-data>
                 <x-form-textarea label="Podrazumijevana napomena na računu" name="invoice_notes" rows="3"
@@ -47,6 +44,14 @@
                     </button>
                 </div>
             </div>
+        </x-section-block>
+
+        {{-- Uža ivica od ostalih kartica: minijature dobijaju svu širinu koju imaju. --}}
+        <x-section-block variant="card" class="sm:p-6 space-y-6">
+            <x-section-header icon="file-text" title="Izgled računa" subtitle="Minijatura je stvarni PDF sa oglednim podacima."
+                              :help="route('help').'#racuni'" />
+
+            <x-document-template-gallery :value="$document->template" />
         </x-section-block>
 
         <x-button variant="primary" class="w-full !py-3.5 !text-[11px] !uppercase !tracking-[0.2em] !font-black">

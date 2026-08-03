@@ -33,7 +33,6 @@ class FiscalRefundCreator
                 'due_date' => $invoice->due_date,
                 'notes' => $invoice->notes,
                 'currency' => $invoice->currency,
-                'template' => $invoice->template,
                 'language' => $invoice->language,
                 'payment_type' => $invoice->payment_type,
                 'subtotal' => abs($invoice->subtotal),

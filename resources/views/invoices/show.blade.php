@@ -7,7 +7,7 @@
     <x-back-link :href="route('invoices.index')" />
 
     {{-- Alpine je potreban samo za native plugin akcije na detalju računa. --}}
-    <div class="max-w-3xl" x-data="invoiceActions()">
+    <div x-data="invoiceActions()">
         @include('invoices.detail')
 
         <x-email-modal />

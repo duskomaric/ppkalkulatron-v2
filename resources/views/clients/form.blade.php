@@ -4,7 +4,7 @@
 @section('content')
     <x-back-link :href="route('clients.index')" />
 
-    <div class="max-w-3xl">
+    <div>
         @include('clients.form-fields')
     </div>
 @endsection

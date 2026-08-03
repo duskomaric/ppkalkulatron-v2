@@ -104,7 +104,7 @@ it('renderuje dijagnostički email u zajedničkom okviru i dodaje tekstualni pri
 
     expect($mail->render())
         ->toContain('Dijagnostički izvještaj')
-        ->toContain('ppKalkulatron podrška')
+        ->toContain(config('app.name').' podrška')
         ->and($mail->attachments()[0]->as)->toBe('dijagnostika.log');
 
     @unlink($path);

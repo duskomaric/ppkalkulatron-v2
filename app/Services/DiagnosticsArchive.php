@@ -41,7 +41,7 @@ class DiagnosticsArchive
     private function header(): string
     {
         return implode("\n", [
-            'ppKalkulatron — sigurni dijagnostički izvještaj',
+            config('app.name').' — sigurni dijagnostički izvještaj',
             'Ovaj prilog ne sadrži račune, fiskalne dokumente, kupce, API ključeve, PIN, PAK ni SMTP lozinku.',
             'Verzija: '.config('nativephp.version').' (build '.config('nativephp.version_code').')',
             'Vrijeme: '.now()->toIso8601String(),

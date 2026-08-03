@@ -3,7 +3,6 @@
     'clients',
     'articles',
     'currencies',
-    'defaultTemplate' => 'classic',
     'defaultLanguage' => 'sr_Latn',
     'defaultCurrency' => 'BAM',
     'currencySymbols' => [],
@@ -75,7 +74,7 @@
     <x-form-errors />
 
     <x-section-block variant="card">
-        <x-section-header icon="contact" title="Osnovni podaci" :help="route('help').'#racuni'" />
+        <x-section-header icon="contact" title="Osnovni podaci" />
 
         {{-- Klijent se bira pretragom po nazivu, emailu ili telefonu. --}}
         <div class="space-y-1.5">
@@ -162,11 +161,11 @@
     </x-section-block>
 
     <x-section-block variant="accent">
-        <x-section-toggle title="Dodatna polja" subtitle="Valuta, predložak, jezik i napomena" open="showMore" :help="route('help').'#racuni'" />
+        <x-section-toggle title="Dodatna polja" subtitle="Valuta, jezik i napomena" open="showMore" />
 
         <div x-show="showMore" x-cloak
              class="space-y-3 pt-3 mt-2 border-t-2 border-dashed border-[var(--color-page-border-subtle)]">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 items-start">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
                 <x-form-select label="Valuta" name="currency" icon="credit-card" :show-placeholder="false" :value="$currencyCode"
                                 x-on:change="currency = $event.target.value"
                                 :options="$currencies->mapWithKeys(fn ($currency) => [$currency->code => $currency->symbol.' — '.$currency->code])->all()" />
@@ -174,10 +173,6 @@
                 <x-form-select label="Jezik" name="language" icon="globe" :show-placeholder="false"
                                 :value="$invoice?->language?->value ?? $defaultLanguage"
                                 :options="\App\Enums\DocumentLanguage::options()" />
-
-                <x-form-select label="Predložak" name="template" icon="file-text" :show-placeholder="false"
-                               :value="$invoice?->template?->value ?? $defaultTemplate"
-                               :options="\App\Enums\DocumentTemplate::options()" />
             </div>
 
             <div class="space-y-1.5">
@@ -203,7 +198,7 @@
     </x-section-block>
 
     <x-section-block variant="card">
-        <x-section-header icon="boxes" title="Stavke" :help="route('help').'#racuni'" />
+        <x-section-header icon="boxes" title="Stavke" />
 
         <template x-for="(item, index) in items" :key="index">
             <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3 space-y-2">

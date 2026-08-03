@@ -473,25 +473,7 @@
         </table>
     </div>
 
-    <table class="signature-section">
-        <tr>
-            <td>
-                <div class="signature-mp">M.P.</div>
-                <div class="signature-line"></div>
-                <div class="signature-label">Izdao</div>
-            </td>
-            <td>
-                <div class="signature-mp">M.P.</div>
-                <div class="signature-line"></div>
-                <div class="signature-label">Primio</div>
-            </td>
-        </tr>
-    </table>
-
 </div>
 
-@if($smallNote)
-    <div style="padding: 0 28px 16px 28px; font-size: 7pt; font-style: italic;">{{ $smallNote }}</div>
-@endif
 </body>
 </html>

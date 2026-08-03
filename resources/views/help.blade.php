@@ -2,13 +2,13 @@
 @section('title', 'Pomoć')
 
 @section('content')
-    <div class="space-y-8 max-w-3xl pb-10">
+    <div class="space-y-8 pb-10">
         <div class="p-5 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] relative overflow-hidden">
             <div class="absolute top-0 right-0 p-6 opacity-5">
                 <x-icon name="info" class="h-16 w-16" />
             </div>
             <h2 class="text-xl font-black text-[var(--color-text-main)] tracking-tight italic relative z-10">
-                Dobrodošli u ppKalkulatron
+                Dobrodošli u {{ config('app.name') }}
             </h2>
             <p class="text-sm text-[var(--color-text-muted)] mt-2 relative z-10">
                 Aplikacija radi na uređaju: računi, klijenti i artikli su lokalni, a PHP dio aplikacije
@@ -51,7 +51,7 @@
 
         <x-help-section id="pocetak" title="Početak rada" icon="info">
             <p>
-                ppKalkulatron služi za izdavanje računa, njihovu fiskalizaciju i čuvanje pratećih dokumenata.
+                {{ config('app.name') }} služi za izdavanje računa, njihovu fiskalizaciju i čuvanje pratećih dokumenata.
                 Podaci se vode lokalno na uređaju na kojem koristite aplikaciju.
             </p>
             <ol class="list-decimal space-y-1 pl-5">
@@ -214,7 +214,7 @@
                         'Prijavite se na Google Account i otvorite sekciju Security.',
                         'Uključite 2-Step Verification ako već nije uključena.',
                         'Otvorite myaccount.google.com/apppasswords.',
-                        'U polje App name upišite ppKalkulatron i kliknite Create.',
+                        'U polje App name upišite '.config('app.name').' i kliknite Create.',
                         'Dobijenih 16 znakova unesite kao SMTP lozinku, bez razmaka.',
                     ]],
                     ['outlook', 'Outlook / Office365', 'smtp.office365.com', [
@@ -226,13 +226,13 @@
                     ['yahoo', 'Yahoo', 'smtp.mail.yahoo.com', [
                         'Otvorite Account Security u postavkama Yahoo naloga.',
                         'Kliknite Generate app password.',
-                        'Odaberite Other App i upišite ppKalkulatron.',
+                        'Odaberite Other App i upišite '.config('app.name').'.',
                         'Kopirajte dobijenu lozinku u aplikaciju.',
                     ]],
                     ['icloud', 'iCloud', 'smtp.mail.me.com', [
                         'Prijavite se na appleid.apple.com.',
                         'U sekciji Sign-In and Security odaberite App-Specific Passwords.',
-                        'Kliknite Generate an app-specific password i unesite ppKalkulatron.',
+                        'Kliknite Generate an app-specific password i unesite '.config('app.name').'.',
                         'Kopirajte lozinku u polje SMTP lozinka.',
                     ]],
                 ] as [$key, $label, $host, $steps])

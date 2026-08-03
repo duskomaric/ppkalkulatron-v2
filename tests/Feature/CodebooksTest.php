@@ -116,7 +116,9 @@ it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', funct
         ->assertSee('Nije u PDV sistemu')
         ->assertSee('Validna bez pečata')
         ->assertSee('Predložak računa')
-        ->assertSee('Prikaži još predložaka')
+        ->assertSee('Svi stilovi')
+        ->assertSee('Kod i editor')
+        ->assertSee('Tamni')
         ->assertSee('template-preview-frame', false)
         ->assertSee(route('settings.templates.preview', DocumentTemplate::OpsConsole), false)
         ->assertSee('name="template" value="ops-console"', false)
@@ -161,7 +163,7 @@ it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', fun
         'show_on_documents' => true,
     ]);
 
-    $this->get(route('settings.templates.preview', ['template' => DocumentTemplate::OpsConsole, 'embedded' => 1]))
+    $this->get(route('settings.templates.preview', DocumentTemplate::OpsConsole))
         ->assertSuccessful()
         ->assertSee('◆ / RAČUN')
         ->assertSee('Primjer kupac d.o.o.')
@@ -174,11 +176,41 @@ it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', fun
         ->assertSee('build '.config('nativephp.version_code'));
 });
 
-it('nudi puni pregled predloška bez prelamanja u minijaturi', function () {
-    $this->get(route('settings.templates.preview', DocumentTemplate::Terminal))
+it('vraća pregled predloška bez okvira aplikacije', function () {
+    $response = $this->get(route('settings.templates.preview', DocumentTemplate::Terminal))
         ->assertSuccessful()
-        ->assertSee('Ovo je stvarni A4 dizajn sa oglednim podacima.')
-        ->assertSee('template-full-preview-frame', false);
+        ->assertSee('Primjer kupac d.o.o.');
+
+    expect($response->getContent())->not->toContain('template-gallery');
+});
+
+it('grupiše predloške po stilu i temi za filtere', function () {
+    expect(DocumentTemplate::Classic->family())->toBe(DocumentTemplate::FAMILY_BUSINESS)
+        ->and(DocumentTemplate::PhpSource->family())->toBe(DocumentTemplate::FAMILY_EDITOR)
+        ->and(DocumentTemplate::Shell->family())->toBe(DocumentTemplate::FAMILY_TERMINAL)
+        ->and(DocumentTemplate::NetworkPacket->family())->toBe(DocumentTemplate::FAMILY_SIGNAL)
+        ->and(DocumentTemplate::PhpSourceDark->tone())->toBe('dark')
+        ->and(DocumentTemplate::PhpSource->tone())->toBe('light');
+
+    foreach (DocumentTemplate::cases() as $template) {
+        expect($template->familyLabel())->not->toBeEmpty();
+    }
+});
+
+it('uzima katalog predložaka isključivo iz enum-a', function () {
+    foreach (DocumentTemplate::cases() as $template) {
+        expect($template->view())->toBe('pdf.invoice-'.$template->value)
+            ->and(view()->exists($template->view()))->toBeTrue();
+    }
+
+    $this->put(route('settings.general.update'), [
+        'pad_zeros' => 4,
+        'invoice_prefix' => '',
+        'invoice_starting_number' => 1,
+        'template' => 'uklonjeni-predlozak',
+        'language' => 'bs',
+        'invoice_due_days' => 15,
+    ])->assertSessionHasErrors('template');
 });
 
 it('traži naziv banke i broj računa', function () {
@@ -255,7 +287,7 @@ it('otvara sve sekcije pomoći na koje podešavanja upućuju', function () {
 
     expect($help)->toContain('Napravi i pošalji backup')
         ->and($help)->toContain('Moj nalog')
-        ->and($help)->toContain('ppKalkulatron služi za izdavanje računa');
+        ->and($help)->toContain(config('app.name').' služi za izdavanje računa');
 });
 
 it('povezuje svaki radni obrazac sa odgovarajućom pomoći', function (string $route, string $anchor) {

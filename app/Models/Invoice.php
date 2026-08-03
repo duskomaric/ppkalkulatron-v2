@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\DocumentLanguage;
-use App\Enums\DocumentTemplate;
 use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentType;
@@ -20,14 +19,13 @@ class Invoice extends Model
 
     protected $fillable = [
         'invoice_number', 'client_id', 'status', 'date', 'due_date', 'notes',
-        'currency', 'template', 'language', 'payment_type', 'refund_invoice_id',
+        'currency', 'language', 'payment_type', 'refund_invoice_id',
         'subtotal', 'tax_total', 'discount_total', 'total',
     ];
 
     protected $casts = [
         'status' => InvoiceStatus::class,
         'payment_type' => PaymentType::class,
-        'template' => DocumentTemplate::class,
         'language' => DocumentLanguage::class,
         'date' => 'date',
         'due_date' => 'date',

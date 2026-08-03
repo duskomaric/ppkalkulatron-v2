@@ -4,7 +4,7 @@
 @section('content')
     <x-back-link :href="route('currencies.index')" />
 
-    <div class="max-w-3xl">
+    <div>
         @include('currencies.form-fields')
     </div>
 @endsection

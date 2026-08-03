@@ -23,19 +23,19 @@ use App\Http\Middleware\LogDiagnosticAction;
 use Illuminate\Support\Facades\Route;
 
 // Ekran za otključavanje mora biti dostupan i zaključanoj aplikaciji.
-Route::get('/unlock', [UnlockController::class, 'show'])->name('unlock');
-Route::post('/unlock', [UnlockController::class, 'store'])
+Route::get('/otkljucaj', [UnlockController::class, 'show'])->name('unlock');
+Route::post('/otkljucaj', [UnlockController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('unlock.store');
 
 Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(function () {
     Route::redirect('/', '/racuni');
 
-    Route::post('/lock', [UnlockController::class, 'destroy'])->name('unlock.destroy');
-    Route::post('/dijagnostika/mobile', [MobileDiagnosticsController::class, 'store'])->name('mobile.diagnostics.store');
+    Route::post('/zakljucaj', [UnlockController::class, 'destroy'])->name('unlock.destroy');
+    Route::post('/dijagnostika/mobilna', [MobileDiagnosticsController::class, 'store'])->name('mobile.diagnostics.store');
 
     Route::get('/racuni/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
-    Route::post('/racuni/{invoice}/mail', [InvoiceController::class, 'email'])->name('invoices.email');
+    Route::post('/racuni/{invoice}/posalji', [InvoiceController::class, 'email'])->name('invoices.email');
     Route::post('/racuni/{invoice}/fiskalizuj', [FiscalController::class, 'fiscalize'])->name('invoices.fiscalize');
     Route::post('/racuni/{invoice}/fiskalna-kopija', [FiscalController::class, 'copy'])->name('invoices.fiscal-copy');
     Route::post('/racuni/{invoice}/storno', [FiscalController::class, 'createRefund'])->name('invoices.create-refund');

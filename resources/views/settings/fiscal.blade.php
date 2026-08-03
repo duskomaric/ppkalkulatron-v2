@@ -4,7 +4,7 @@
 @section('content')
     <x-back-link :href="route('invoices.index')" />
 
-    <form id="fiscal-settings-form" method="POST" action="{{ route('settings.fiscal.update') }}" class="max-w-3xl space-y-8 animate-fade-in"
+    <form id="fiscal-settings-form" method="POST" action="{{ route('settings.fiscal.update') }}" class="space-y-8 animate-fade-in"
           x-data="{ layout: '{{ old('receipt_layout', $settings->receipt_layout) }}', deviceMode: '{{ old('device_mode', $settings->device_mode) }}' }">
         @csrf
         @method('PUT')
@@ -64,7 +64,7 @@
                     <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
                     <div>
                         <p class="text-sm font-black text-[var(--color-text-main)]">Poreske stope sa kase</p>
-                        <p class="mt-1 text-xs text-[var(--color-text-dim)]">Nakon što sačuvate i provjerite kasu, preuzmite njene stope. Oznake ostaju identične odgovoru uređaja, uključujući ćirilicu.</p>
+                        <p class="mt-1 text-xs text-[var(--color-text-dim)]">Nakon što sačuvate i provjerite kasu, preuzmite njene stope. Oznake i procenti se prikazuju tačno onako kako ih kasa vrati.</p>
                     </div>
                 </div>
                 <x-button variant="primary" type="submit" form="sync-tax-rates" class="w-full sm:w-auto"
@@ -136,7 +136,7 @@
     <form id="sync-tax-rates" method="POST" action="{{ route('settings.fiscal.tax-rates.sync') }}" class="hidden">@csrf</form>
 
     {{-- Servisne radnje prema uređaju, van forme sa podešavanjima. --}}
-    <div class="mt-8 space-y-8 max-w-3xl">
+    <div class="mt-8 space-y-8">
         <x-section-block variant="card" x-data="networkScan()">
             <x-section-header icon="search" title="Skeniranje mreže" :help="route('help').'#skeniranje'" />
 
@@ -208,7 +208,7 @@
         </x-section-block>
     </div>
 
-    <div class="mt-8 pb-4 max-w-3xl">
+    <div class="mt-8 pb-4">
         <x-button variant="primary" type="submit" form="fiscal-settings-form"
                   class="w-full !py-3.5 !text-[11px] !uppercase !tracking-[0.2em] !font-black">
             Sačuvaj izmjene

@@ -1,6 +1,6 @@
 <?php
 
-it('records a mobile WebView diagnostic event', function () {
+it('records a mobile WebView diagnostic event', function (): void {
     $this->postJson(route('mobile.diagnostics.store'), [
         'event' => 'fiscal_receipt_response',
         'context' => ['kind' => 'image', 'status' => 200],
@@ -9,13 +9,13 @@ it('records a mobile WebView diagnostic event', function () {
         ->assertJson(['logged' => true]);
 });
 
-it('requires a diagnostic event name', function () {
+it('requires a diagnostic event name', function (): void {
     $this->postJson(route('mobile.diagnostics.store'), [])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('event');
 });
 
-it('čuva grešku i bez detaljne dijagnostike, ali ne čuva običan događaj', function () {
+it('čuva grešku i bez detaljne dijagnostike, ali ne čuva običan događaj', function (): void {
     $normalEvent = 'diagnostic_test_normal_'.uniqid();
     $errorEvent = 'diagnostic_test_'.uniqid().'_failed';
     $path = storage_path('logs/support-diagnostics-'.now()->format('Y-m-d').'.log');

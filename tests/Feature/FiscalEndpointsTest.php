@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Http;
  * šta ekran računa zaista dobije — poruku, status i zapis u bazi.
  */
 
-it('fiskalizuje račun preko rute', function () {
+it('fiskalizuje račun preko rute', function (): void {
     fakeDevice();
     $invoice = makeInvoice();
 
@@ -24,7 +24,7 @@ it('fiskalizuje račun preko rute', function () {
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized);
 });
 
-it('vraća poruku greške sa fiskalizacije kao 422', function () {
+it('vraća poruku greške sa fiskalizacije kao 422', function (): void {
     $invoice = fiscalizedInvoice();
 
     $this->postJson(route('invoices.fiscalize', $invoice))
@@ -32,7 +32,7 @@ it('vraća poruku greške sa fiskalizacije kao 422', function () {
         ->assertJson(['message' => 'Račun nije moguće fiskalizovati.']);
 });
 
-it('prijavljuje korisniku jasnu odbijenicu poreske oznake', function () {
+it('prijavljuje korisniku jasnu odbijenicu poreske oznake', function (): void {
     Http::fake(['*/api/invoices' => Http::response(['message' => 'Unknown tax label F'], 400)]);
 
     $this->postJson(route('invoices.fiscalize', makeInvoice()))
@@ -40,7 +40,7 @@ it('prijavljuje korisniku jasnu odbijenicu poreske oznake', function () {
         ->assertJsonPath('message', fn ($message) => str_contains($message, 'Poreska oznaka na računu nije važeća'));
 });
 
-it('ne otkriva tehnički detalj neočekivane greške fiskalizacije', function () {
+it('ne otkriva tehnički detalj neočekivane greške fiskalizacije', function (): void {
     $this->mock(FiscalService::class, function ($mock): void {
         $mock->shouldReceive('fiscalize')->once()->andThrow(new LogicException('tajni tehnički detalj'));
     });
@@ -52,7 +52,7 @@ it('ne otkriva tehnički detalj neočekivane greške fiskalizacije', function ()
     expect(app(FiscalDeviceHealth::class)->current()['state'])->toBe('unavailable');
 });
 
-it('ne vjeruje odgovoru bez broja fiskalnog računa', function () {
+it('ne vjeruje odgovoru bez broja fiskalnog računa', function (): void {
     Http::fake(['*/api/invoices' => Http::response(['invoiceCounter' => '1/1ПП'])]);
 
     $this->postJson(route('invoices.fiscalize', makeInvoice()))
@@ -60,7 +60,7 @@ it('ne vjeruje odgovoru bez broja fiskalnog računa', function () {
         ->assertJson(['message' => 'Neispravan odgovor fiskalnog uređaja.']);
 });
 
-it('snima kopiju kao poseban zapis, bez promjene statusa računa', function () {
+it('snima kopiju kao poseban zapis, bez promjene statusa računa', function (): void {
     $invoice = fiscalizedInvoice();
 
     $this->postJson(route('invoices.fiscal-copy', $invoice))
@@ -72,7 +72,7 @@ it('snima kopiju kao poseban zapis, bez promjene statusa računa', function () {
         ->toBe([FiscalRecordType::Original, FiscalRecordType::Copy]);
 });
 
-it('ne štampa kopiju nefiskalizovanog računa', function () {
+it('ne štampa kopiju nefiskalizovanog računa', function (): void {
     fakeDevice();
 
     $this->postJson(route('invoices.fiscal-copy', makeInvoice()))
@@ -80,7 +80,7 @@ it('ne štampa kopiju nefiskalizovanog računa', function () {
         ->assertJson(['message' => 'Račun mora biti fiskalizovan prije štampe kopije.']);
 });
 
-it('pravi storno samo od fiskalizovanog računa', function () {
+it('pravi storno samo od fiskalizovanog računa', function (): void {
     $this->postJson(route('invoices.create-refund', makeInvoice()))
         ->assertUnprocessable()
         ->assertJson(['message' => 'Storno se pravi samo od fiskalizovanog računa.']);
@@ -88,7 +88,7 @@ it('pravi storno samo od fiskalizovanog računa', function () {
     expect(Invoice::count())->toBe(1);
 });
 
-it('storno preslikava stavke i iznose originala', function () {
+it('storno preslikava stavke i iznose originala', function (): void {
     $invoice = fiscalizedInvoice();
 
     $refund = refundFor($invoice);
@@ -105,13 +105,13 @@ it('storno preslikava stavke i iznose originala', function () {
         ->and($invoice->fresh()->refund_invoice_id)->toBe($refund->id);
 });
 
-it('storno dobija sljedeći broj u godini originala', function () {
+it('storno dobija sljedeći broj u godini originala', function (): void {
     $invoice = fiscalizedInvoice();
 
     expect(refundFor($invoice)->invoice_number)->toBe('0002/'.date('Y'));
 });
 
-it('fiskalizuje storno preko rute', function () {
+it('fiskalizuje storno preko rute', function (): void {
     $refund = refundFor(fiscalizedInvoice());
 
     $this->postJson(route('invoices.fiscal-refund', $refund))
@@ -121,7 +121,7 @@ it('fiskalizuje storno preko rute', function () {
     expect($refund->fresh()->fiscalRecords()->pluck('type')->all())->toBe([FiscalRecordType::Refund]);
 });
 
-it('ne fiskalizuje kao storno račun koji ničiji storno nije', function () {
+it('ne fiskalizuje kao storno račun koji ničiji storno nije', function (): void {
     $invoice = fiscalizedInvoice();
 
     $this->postJson(route('invoices.fiscal-refund', $invoice))
@@ -129,13 +129,13 @@ it('ne fiskalizuje kao storno račun koji ničiji storno nije', function () {
         ->assertJson(['message' => 'Ovaj račun nije storno nekog računa.']);
 });
 
-it('nema slike fiskalnog računa koja nije sačuvana', function () {
+it('nema slike fiskalnog računa koja nije sačuvana', function (): void {
     $record = makeInvoice()->fiscalRecords()->create(['type' => FiscalRecordType::Original]);
 
     $this->get(route('invoices.receipt', $record))->assertNotFound();
 });
 
-it('servira račun uređaja u formatu u kojem je došao', function (string $extension, string $mime) {
+it('servira račun uređaja u formatu u kojem je došao', function (string $extension, string $mime): void {
     $record = makeInvoice()->fiscalRecords()->create(['type' => FiscalRecordType::Original]);
     app(FiscalReceiptStore::class)->store($record, 'sadrzaj-racuna', $extension);
 
@@ -148,7 +148,7 @@ it('servira račun uređaja u formatu u kojem je došao', function (string $exte
     'html' => ['html', 'text/html; charset=UTF-8'],
 ]);
 
-it('šalje svaki podržani fiskalni dokument kao JSON payload kroz Jump proxy', function (string $extension, string $mime, string $contents) {
+it('šalje svaki podržani fiskalni dokument kao JSON payload kroz Jump proxy', function (string $extension, string $mime, string $contents): void {
     $record = makeInvoice()->fiscalRecords()->create(['type' => FiscalRecordType::Original]);
     app(FiscalReceiptStore::class)->store($record, $contents, $extension);
 
@@ -165,7 +165,7 @@ it('šalje svaki podržani fiskalni dokument kao JSON payload kroz Jump proxy', 
     'HTML' => ['html', 'text/html; charset=UTF-8', '<html>račun</html>'],
 ]);
 
-it('otvara svaki podržani fiskalni format u ugrađenom pregledu', function (string $extension, string $previewKind) {
+it('otvara svaki podržani fiskalni format u ugrađenom pregledu', function (string $extension, string $previewKind): void {
     $invoice = fiscalizedInvoice();
     $record = $invoice->fiscalRecords()->sole();
     $record->update(['verification_url' => 'https://provjeri.example.test/racun']);
@@ -186,7 +186,7 @@ it('otvara svaki podržani fiskalni format u ugrađenom pregledu', function (str
     'HTML' => ['html', 'html'],
 ]);
 
-it('pretvara binarni fiskalni dokument u prikaz koji Android WebView podržava', function () {
+it('pretvara binarni fiskalni dokument u prikaz koji Android WebView podržava', function (): void {
     $javascript = file_get_contents(resource_path('js/app.js'));
     $modal = file_get_contents(resource_path('views/components/receipt-modal.blade.php'));
     $fiscalView = file_get_contents(resource_path('views/invoices/fiscal.blade.php'));

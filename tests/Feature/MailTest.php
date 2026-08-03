@@ -44,23 +44,23 @@ function ownSmtp(array $overrides = []): MailSettings
     return $settings;
 }
 
-it('šalje sa adrese iz podešavanja', function () {
+it('šalje sa adrese iz podešavanja', function (): void {
     ownSmtp();
 
     expect(app(MailService::class)->from())->toBe(['racuni@firma.ba', 'Firma d.o.o.']);
 });
 
-it('pada na adresu iz konfiguracije kad podešavanja nemaju svoju', function () {
+it('pada na adresu iz konfiguracije kad podešavanja nemaju svoju', function (): void {
     config(['mail.from.address' => 'noreply@example.test', 'mail.from.name' => 'Kalkulatron']);
 
     expect(app(MailService::class)->from())->toBe(['noreply@example.test', 'Kalkulatron']);
 });
 
-it('ne gradi svoj mailer bez SMTP hosta', function () {
+it('ne gradi svoj mailer bez SMTP hosta', function (): void {
     expect(app(MailService::class)->mailer())->toBeNull();
 });
 
-it('gradi mailer iz podešenog SMTP-a', function () {
+it('gradi mailer iz podešenog SMTP-a', function (): void {
     ownSmtp();
 
     expect(app(MailService::class)->mailer())->not->toBeNull()
@@ -76,7 +76,7 @@ it('gradi mailer iz podešenog SMTP-a', function () {
         ]);
 });
 
-it('uzima port 587 kad podešavanja ne kažu koji', function () {
+it('uzima port 587 kad podešavanja ne kažu koji', function (): void {
     ownSmtp(['port' => null]);
 
     app(MailService::class)->mailer();
@@ -84,7 +84,7 @@ it('uzima port 587 kad podešavanja ne kažu koji', function () {
     expect(config('mail.mailers.app_smtp.port'))->toBe(587);
 });
 
-it('kaže da SMTP nije podešen umjesto da tiho ne pošalje', function () {
+it('kaže da SMTP nije podešen umjesto da tiho ne pošalje', function (): void {
     // Podrazumijevani mailer je smtp bez hosta — tako izgleda svježa instalacija.
     config(['mail.default' => 'smtp', 'mail.mailers.smtp' => ['transport' => 'smtp', 'host' => null]]);
 
@@ -93,7 +93,7 @@ it('kaže da SMTP nije podešen umjesto da tiho ne pošalje', function () {
     ));
 })->throws(RuntimeException::class, 'SMTP nije podešen.');
 
-it('u razvoju šalje kroz podrazumijevani mailer bez pogovora', function () {
+it('u razvoju šalje kroz podrazumijevani mailer bez pogovora', function (): void {
     Mail::fake();
 
     // MAIL_MAILER=array u phpunit.xml — host nije potreban.
@@ -104,10 +104,10 @@ it('u razvoju šalje kroz podrazumijevani mailer bez pogovora', function () {
     Mail::assertSent(InvoiceMail::class);
 });
 
-it('vraća grešku slanja kao 422, sa porukom iz izuzetka', function () {
+it('vraća grešku slanja kao 422, sa porukom iz izuzetka', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
 
-    $this->mock(MailService::class, function ($mock) {
+    $this->mock(MailService::class, function ($mock): void {
         $mock->shouldReceive('from')->andReturn([null, null]);
         $mock->shouldReceive('send')->andThrow(new RuntimeException('SMTP nije podešen.'));
     });
@@ -118,10 +118,10 @@ it('vraća grešku slanja kao 422, sa porukom iz izuzetka', function () {
         ->assertJson(['message' => 'Račun nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.']);
 });
 
-it('ne otkriva tehnički detalj neočekivane greške slanja', function () {
+it('ne otkriva tehnički detalj neočekivane greške slanja', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
 
-    $this->mock(MailService::class, function ($mock) {
+    $this->mock(MailService::class, function ($mock): void {
         $mock->shouldReceive('from')->andReturn([null, null]);
         $mock->shouldReceive('send')->andThrow(new LogicException('tajni tehnički detalj'));
     });
@@ -132,10 +132,10 @@ it('ne otkriva tehnički detalj neočekivane greške slanja', function () {
         ->assertJson(['message' => 'Slanje emaila trenutno nije uspjelo. Pokušajte ponovo.']);
 });
 
-it('ne ostavlja privremeni PDF kad slanje padne', function () {
+it('ne ostavlja privremeni PDF kad slanje padne', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
 
-    $this->mock(MailService::class, function ($mock) {
+    $this->mock(MailService::class, function ($mock): void {
         $mock->shouldReceive('from')->andReturn([null, null]);
         $mock->shouldReceive('send')->andThrow(new RuntimeException('Pao SMTP.'));
     });
@@ -147,7 +147,7 @@ it('ne ostavlja privremeni PDF kad slanje padne', function () {
     expect(glob(storage_path('app/private/racun-*.pdf')))->toBe([]);
 });
 
-it('nosi link za provjeru posljednjeg fiskalnog računa', function () {
+it('nosi link za provjeru posljednjeg fiskalnog računa', function (): void {
     $invoice = fiscalizedInvoice();
     Mail::fake();
 
@@ -158,7 +158,7 @@ it('nosi link za provjeru posljednjeg fiskalnog računa', function () {
     Mail::assertSent(fn (InvoiceMail $mail) => $mail->verificationUrl === 'https://example.test/v/?vl=x');
 });
 
-it('imenuje prilog fiskalnog računa po tipu i formatu zapisa', function (string $type, string $extension, string $expected) {
+it('imenuje prilog fiskalnog računa po tipu i formatu zapisa', function (string $type, string $extension, string $expected): void {
     $invoice = makeInvoice();
     $record = $invoice->fiscalRecords()->create(['type' => $type, 'fiscal_invoice_number' => 'X-1']);
     app(FiscalReceiptStore::class)->store($record, 'sadrzaj', $extension);
@@ -176,7 +176,7 @@ it('imenuje prilog fiskalnog računa po tipu i formatu zapisa', function (string
     'refundacija' => ['refund', 'html', '-refundacija'],
 ]);
 
-it('gradi sadržaj i pošiljaoca računa bez priloga koji ne postoji', function () {
+it('gradi sadržaj i pošiljaoca računa bez priloga koji ne postoji', function (): void {
     $invoice = makeInvoice();
     $company = app(CompanySettings::class);
     $company->name = 'Kalkulatron d.o.o.';
@@ -203,7 +203,7 @@ it('gradi sadržaj i pošiljaoca računa bez priloga koji ne postoji', function 
         ->and($mail->render())->toContain('https://provjeri.example.test/racun');
 });
 
-it('ne prilaže tuđi ili nedostajući fiskalni dokument i ostavlja zapis u logu', function () {
+it('ne prilaže tuđi ili nedostajući fiskalni dokument i ostavlja zapis u logu', function (): void {
     $invoice = makeInvoice();
     $missing = $invoice->fiscalRecords()->create(['type' => 'original']);
     $foreign = makeInvoice()->fiscalRecords()->create(['type' => 'copy']);
@@ -228,7 +228,7 @@ it('ne prilaže tuđi ili nedostajući fiskalni dokument i ostavlja zapis u logu
     expect($attachments)->toBe([]);
 });
 
-it('čuva mail podešavanja', function () {
+it('čuva mail podešavanja', function (): void {
     $this->put(route('settings.mail.update'), [
         'from_address' => 'racuni@firma.ba', 'from_name' => 'Firma', 'host' => 'smtp.firma.ba',
         'port' => 587, 'username' => 'racuni', 'password' => 'tajna', 'encryption' => 'tls',
@@ -240,7 +240,7 @@ it('čuva mail podešavanja', function () {
         ->encryption->toBe('tls');
 });
 
-it('ne briše sačuvanu lozinku praznim poljem', function () {
+it('ne briše sačuvanu lozinku praznim poljem', function (): void {
     ownSmtp();
 
     // Polje lozinke se nikad ne popunjava nazad, pa prazno znači „ne mijenjaj".
@@ -251,7 +251,7 @@ it('ne briše sačuvanu lozinku praznim poljem', function () {
     expect(app(MailSettings::class)->password)->toBe('tajna');
 });
 
-it('odbija neispravna mail podešavanja', function (array $payload, string $error) {
+it('odbija neispravna mail podešavanja', function (array $payload, string $error): void {
     $this->put(route('settings.mail.update'), $payload)->assertSessionHasErrors($error);
 })->with([
     'adresa nije email' => [['from_address' => 'nije-email'], 'from_address'],
@@ -262,12 +262,12 @@ it('odbija neispravna mail podešavanja', function (array $payload, string $erro
     'predug host' => [['host' => str_repeat('a', 256)], 'host'],
 ]);
 
-it('prima mail podešavanja bez ijednog polja', function () {
+it('prima mail podešavanja bez ijednog polja', function (): void {
     // Prazna podešavanja su ispravna: tada se šalje preko podrazumijevanog mailera.
     $this->put(route('settings.mail.update'), [])->assertSessionHasNoErrors();
 });
 
-it('pravi samostalan ZIP sa PDF računima, fiskalnim dokumentima i manifestom', function () {
+it('pravi samostalan ZIP sa PDF računima, fiskalnim dokumentima i manifestom', function (): void {
     $invoice = makeInvoice();
     $original = $invoice->fiscalRecords()->create(['type' => 'original', 'fiscal_invoice_number' => 'F-1']);
     $copy = $invoice->fiscalRecords()->create(['type' => 'copy', 'fiscal_invoice_number' => 'F-2']);
@@ -293,7 +293,7 @@ it('pravi samostalan ZIP sa PDF računima, fiskalnim dokumentima i manifestom', 
     unlink($backup['path']);
 });
 
-it('gradi UTF-8 manifest sa jednim redom po fiskalnom dokumentu', function () {
+it('gradi UTF-8 manifest sa jednim redom po fiskalnom dokumentu', function (): void {
     $invoice = makeInvoice();
     $record = $invoice->fiscalRecords()->create([
         'type' => 'original',
@@ -310,7 +310,7 @@ it('gradi UTF-8 manifest sa jednim redom po fiskalnom dokumentu', function () {
         ->toContain('"F;1"', '0001/2026', 'html', 'https://example.test/verify');
 });
 
-it('uključuje svaki račun u backup i kada datumi nisu redom upisa', function () {
+it('uključuje svaki račun u backup i kada datumi nisu redom upisa', function (): void {
     $newer = makeInvoice();
     $newer->update(['date' => now()->addDay()]);
 
@@ -329,7 +329,7 @@ it('uključuje svaki račun u backup i kada datumi nisu redom upisa', function (
     unlink($backup['path']);
 });
 
-it('ZIP backup uključuje samo odabrani sadržaj', function () {
+it('ZIP backup uključuje samo odabrani sadržaj', function (): void {
     $invoice = makeInvoice();
     $record = $invoice->fiscalRecords()->create(['type' => 'original', 'fiscal_invoice_number' => 'F-1']);
     app(FiscalReceiptStore::class)->store($record, 'fiskalni dokument', 'html');
@@ -352,7 +352,7 @@ it('ZIP backup uključuje samo odabrani sadržaj', function () {
     unlink($backup['path']);
 });
 
-it('pravi pojedinačne priloge bez ZIP ekstenzije', function () {
+it('pravi pojedinačne priloge bez ZIP ekstenzije', function (): void {
     $invoice = makeInvoice();
     $record = $invoice->fiscalRecords()->create(['type' => 'original', 'fiscal_invoice_number' => 'F-1']);
     app(FiscalReceiptStore::class)->store($record, 'fiskalni dokument', 'html');
@@ -370,7 +370,7 @@ it('pravi pojedinačne priloge bez ZIP ekstenzije', function () {
         ->and($backup['fiscal_document_count'])->toBe(1);
 });
 
-it('prekida backup sa jasnom greškom kada ZIP datoteka ne može biti otvorena', function () {
+it('prekida backup sa jasnom greškom kada ZIP datoteka ne može biti otvorena', function (): void {
     $now = now()->setDate(2040, 1, 2)->setTime(3, 4, 5);
     Carbon::setTestNow($now);
     $path = storage_path('app/private/backups/kalkulatron-backup-2040-01-02_030405.zip');
@@ -384,7 +384,7 @@ it('prekida backup sa jasnom greškom kada ZIP datoteka ne može biti otvorena',
     }
 })->throws(RuntimeException::class, 'Nije moguće napraviti ZIP backup.');
 
-it('šalje ZIP backup na podešeni email i pamti posljednje uspješno slanje', function () {
+it('šalje ZIP backup na podešeni email i pamti posljednje uspješno slanje', function (): void {
     makeInvoice();
     ownSmtp();
     Mail::fake();
@@ -408,7 +408,7 @@ it('šalje ZIP backup na podešeni email i pamti posljednje uspješno slanje', f
         ->last_backup_fiscal_document_count->toBe(0);
 });
 
-it('šalje backup kao pojedinačne dokumente', function () {
+it('šalje backup kao pojedinačne dokumente', function (): void {
     $invoice = makeInvoice();
     $record = $invoice->fiscalRecords()->create(['type' => 'original', 'fiscal_invoice_number' => 'F-1']);
     app(FiscalReceiptStore::class)->store($record, 'fiskalni dokument', 'html');
@@ -433,12 +433,12 @@ it('šalje backup kao pojedinačne dokumente', function () {
     });
 });
 
-it('odbija nepoznat format backupa', function () {
+it('odbija nepoznat format backupa', function (): void {
     $this->post(route('settings.backup.send'), ['delivery_format' => 'nepoznat'])
         ->assertSessionHasErrors('delivery_format');
 });
 
-it('odbija backup bez PDF računa i fiskalnih dokumenata', function () {
+it('odbija backup bez PDF računa i fiskalnih dokumenata', function (): void {
     $this->post(route('settings.backup.send'), [
         'delivery_format' => 'zip',
         'include_invoices' => false,
@@ -447,7 +447,7 @@ it('odbija backup bez PDF računa i fiskalnih dokumenata', function () {
     ])->assertSessionHasErrors('include_invoices');
 });
 
-it('odbija backup bez ispravnog odredišnog emaila', function () {
+it('odbija backup bez ispravnog odredišnog emaila', function (): void {
     $this->put(route('settings.backup.update'), ['email' => 'nije-email'])
         ->assertSessionHasErrors('email');
 
@@ -455,7 +455,7 @@ it('odbija backup bez ispravnog odredišnog emaila', function () {
         ->assertSessionHas('error', 'Prvo unesite email na koji se šalje backup.');
 });
 
-it('jasno pokaže da je slanje backupa pokrenuto i spriječi dupli klik', function () {
+it('jasno pokaže da je slanje backupa pokrenuto i spriječi dupli klik', function (): void {
     $settings = app(BackupSettings::class);
     $settings->email = 'backup@firma.ba';
     $settings->save();
@@ -470,7 +470,7 @@ it('jasno pokaže da je slanje backupa pokrenuto i spriječi dupli klik', functi
         ->assertSee('Pojedinačni fajlovi');
 });
 
-it('prikazuje vrijeme posljednjeg backupa u sarajevskoj vremenskoj zoni', function () {
+it('prikazuje vrijeme posljednjeg backupa u sarajevskoj vremenskoj zoni', function (): void {
     $settings = app(BackupSettings::class);
     $settings->email = 'backup@firma.ba';
     $settings->last_backup_at = Carbon::parse('2026-08-01 12:00:00', 'UTC');
@@ -483,12 +483,12 @@ it('prikazuje vrijeme posljednjeg backupa u sarajevskoj vremenskoj zoni', functi
         ->assertSee('01.08.2026. u 14:00');
 });
 
-it('koristi sarajevsku vremensku zonu u cijeloj aplikaciji', function () {
+it('koristi sarajevsku vremensku zonu u cijeloj aplikaciji', function (): void {
     expect(config('app.timezone'))->toBe('Europe/Sarajevo')
         ->and(now()->getTimezone()->getName())->toBe('Europe/Sarajevo');
 });
 
-it('opisuje ZIP prilog i pošiljaoca backupa', function () {
+it('opisuje ZIP prilog i pošiljaoca backupa', function (): void {
     $mail = new BackupMail(
         archivePath: '/tmp/kalkulatron-backup.zip',
         archiveName: 'kalkulatron-backup.zip',
@@ -505,7 +505,7 @@ it('opisuje ZIP prilog i pošiljaoca backupa', function () {
         ->and($mail->attachments()[0]->mime)->toBe('application/zip');
 });
 
-it('gradi odvojene priloge za raw backup', function () {
+it('gradi odvojene priloge za raw backup', function (): void {
     $mail = new BackupMail(
         archivePath: '/tmp/kalkulatron-backup.zip',
         archiveName: 'kalkulatron-backup.zip',
@@ -524,7 +524,7 @@ it('gradi odvojene priloge za raw backup', function () {
         ->and($mail->attachments()[1]->as)->toBe('fiskalni.html');
 });
 
-it('prikaže očekivanu grešku kada izrada backupa ne uspije', function () {
+it('prikaže očekivanu grešku kada izrada backupa ne uspije', function (): void {
     $settings = app(BackupSettings::class);
     $settings->email = 'backup@firma.ba';
     $settings->save();
@@ -538,7 +538,7 @@ it('prikaže očekivanu grešku kada izrada backupa ne uspije', function () {
         ->assertSessionHas('error', 'Backup nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.');
 });
 
-it('ne otkriva tehnički detalj neočekivane greške backupa', function () {
+it('ne otkriva tehnički detalj neočekivane greške backupa', function (): void {
     $settings = app(BackupSettings::class);
     $settings->email = 'backup@firma.ba';
     $settings->save();

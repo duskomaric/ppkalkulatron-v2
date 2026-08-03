@@ -84,7 +84,7 @@ class CurrencyController extends Controller
     {
         $data = $request->validated();
 
-        DB::transaction(function () use ($request, $currency, $data) {
+        DB::transaction(function () use ($request, $currency, $data): void {
             $currency->fill($data);
 
             // Tačno jedna valuta je podrazumijevana.

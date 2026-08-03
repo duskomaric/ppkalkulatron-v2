@@ -12,7 +12,7 @@ function saveMenuLayout(array $menu, array $drawer, int $max = 4)
     ]);
 }
 
-it('premješta modul iz menija u drawer', function () {
+it('premješta modul iz menija u drawer', function (): void {
     saveMenuLayout(['invoices', 'currencies'], ['bank-accounts', 'clients', 'articles'])
         ->assertRedirect(route('settings.menu.edit'));
 
@@ -22,7 +22,7 @@ it('premješta modul iz menija u drawer', function () {
         ->and($settings->drawerModules())->toBe(['bank-accounts', 'clients', 'articles']);
 });
 
-it('prikazuje temu i opcije navigacije', function () {
+it('prikazuje temu i opcije navigacije', function (): void {
     $this->get(route('settings.menu.edit'))
         ->assertSuccessful()
         ->assertSee('Izgled aplikacije')
@@ -35,7 +35,7 @@ it('prikazuje temu i opcije navigacije', function () {
         ->assertSee('aria-label="Pomjeri modul dolje"', false);
 });
 
-it('čuva redoslijed i ograničenje menija', function () {
+it('čuva redoslijed i ograničenje menija', function (): void {
     saveMenuLayout(['articles', 'invoices', 'clients'], ['currencies', 'bank-accounts'], max: 2)
         ->assertRedirect(route('settings.menu.edit'));
 
@@ -45,7 +45,7 @@ it('čuva redoslijed i ograničenje menija', function () {
         ->and($settings->drawerModules())->toBe(['currencies', 'bank-accounts', 'clients']);
 });
 
-it('donji meni nosi samo stavke do ograničenja, ostalo ide u više modula', function () {
+it('donji meni nosi samo stavke do ograničenja, ostalo ide u više modula', function (): void {
     saveMenuLayout(['invoices', 'clients', 'articles'], ['bank-accounts', 'currencies'], max: 2);
 
     $html = $this->get(route('invoices.index'))->assertSuccessful()->getContent();
@@ -62,7 +62,7 @@ it('donji meni nosi samo stavke do ograničenja, ostalo ide u više modula', fun
         ->toBe(['bank-accounts', 'currencies', 'articles']);
 });
 
-it('drži modul u meniju izvan drawera i kad je poslat u oba', function () {
+it('drži modul u meniju izvan drawera i kad je poslat u oba', function (): void {
     saveMenuLayout(['invoices', 'clients'], ['clients', 'currencies']);
 
     $settings = app(MenuSettings::class);
@@ -71,7 +71,7 @@ it('drži modul u meniju izvan drawera i kad je poslat u oba', function () {
         ->and($settings->drawerModules())->not->toContain('clients');
 });
 
-it('spušta u drawer modul koji nije nigdje naveden', function () {
+it('spušta u drawer modul koji nije nigdje naveden', function (): void {
     saveMenuLayout(['invoices'], ['clients']);
 
     // Ništa se ne sakriva: articles, bank-accounts i currencies nisu poslati,
@@ -80,7 +80,7 @@ it('spušta u drawer modul koji nije nigdje naveden', function () {
         ->toBe(['clients', 'articles', 'bank-accounts', 'currencies']);
 });
 
-it('dozvoljava prazan meni i sve u draweru', function () {
+it('dozvoljava prazan meni i sve u draweru', function (): void {
     saveMenuLayout([], ['invoices', 'clients', 'articles', 'bank-accounts', 'currencies'], max: 1)
         ->assertRedirect(route('settings.menu.edit'));
 
@@ -88,14 +88,14 @@ it('dozvoljava prazan meni i sve u draweru', function () {
         ->and(app(MenuSettings::class)->drawerModules())->toHaveCount(5);
 });
 
-it('redoslijed za ekran podešavanja ide meni pa drawer', function () {
+it('redoslijed za ekran podešavanja ide meni pa drawer', function (): void {
     saveMenuLayout(['currencies', 'invoices'], ['articles', 'clients']);
 
     expect(app(MenuSettings::class)->orderedModules())
         ->toBe(['currencies', 'invoices', 'articles', 'clients', 'bank-accounts']);
 });
 
-it('ne prima nepoznat modul', function (array $payload) {
+it('ne prima nepoznat modul', function (array $payload): void {
     $this->put(route('settings.menu.update'), $payload + ['max_menu_items' => 4])
         ->assertSessionHasErrors();
 })->with([
@@ -104,7 +104,7 @@ it('ne prima nepoznat modul', function (array $payload) {
     'dupli u draweru' => [['menu_modules' => [], 'drawer_modules' => ['clients', 'clients']]],
 ]);
 
-it('ne prima više od četiri stavke u meniju', function () {
+it('ne prima više od četiri stavke u meniju', function (): void {
     $this->put(route('settings.menu.update'), [
         'menu_modules' => ['invoices', 'clients', 'articles', 'bank-accounts', 'currencies'],
         'drawer_modules' => [],
@@ -112,7 +112,7 @@ it('ne prima više od četiri stavke u meniju', function () {
     ])->assertSessionHasErrors('menu_modules');
 });
 
-it('ne prima ograničenje menija van jedan do četiri', function (mixed $max) {
+it('ne prima ograničenje menija van jedan do četiri', function (mixed $max): void {
     $this->put(route('settings.menu.update'), [
         'menu_modules' => ['invoices'],
         'drawer_modules' => [],

@@ -9,24 +9,24 @@ use Illuminate\Support\Facades\Schema;
 // Oznaka trajnog procesa je statična, pa se poslije svakog testa vraća na false.
 afterEach(fn () => pretendPersistentRuntime(false));
 
-it('pušta u račune kad PIN nije podešen', function () {
+it('pušta u račune kad PIN nije podešen', function (): void {
     $this->get('/')->assertRedirect(route('invoices.index'));
     $this->get(route('invoices.index'))->assertSuccessful();
 });
 
-it('koristi PIN zaključavanje bez Laravel auth tabela', function () {
+it('koristi PIN zaključavanje bez Laravel auth tabela', function (): void {
     expect(Schema::hasTable('users'))->toBeFalse()
         ->and(Schema::hasTable('password_reset_tokens'))->toBeFalse()
         ->and(Schema::hasTable('sessions'))->toBeTrue();
 });
 
-it('traži PIN kad je podešen', function () {
+it('traži PIN kad je podešen', function (): void {
     setPin();
 
     $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
 });
 
-it('prikazuje verziju i build na ekranu za otključavanje', function () {
+it('prikazuje verziju i build na ekranu za otključavanje', function (): void {
     setPin();
 
     $this->get(route('unlock'))
@@ -36,7 +36,7 @@ it('prikazuje verziju i build na ekranu za otključavanje', function () {
         ->assertViewHasAll(['appReleaseVersion', 'appBuildCode', 'assetBuildHash']);
 });
 
-it('šalje PIN automatski bez dugmeta za otključavanje', function () {
+it('šalje PIN automatski bez dugmeta za otključavanje', function (): void {
     setPin();
 
     $html = $this->get(route('unlock'))->assertSuccessful()->getContent();
@@ -47,28 +47,28 @@ it('šalje PIN automatski bez dugmeta za otključavanje', function () {
         ->and($html)->not->toContain('>Otključaj<');
 });
 
-it('otključava ispravnim PIN-om', function () {
+it('otključava ispravnim PIN-om', function (): void {
     setPin('4321');
 
     $this->post(route('unlock.store'), ['pin' => '4321'])->assertRedirect(route('invoices.index'));
     $this->get(route('invoices.index'))->assertSuccessful();
 });
 
-it('ne otključava pogrešnim PIN-om', function () {
+it('ne otključava pogrešnim PIN-om', function (): void {
     setPin('1111');
 
     $this->post(route('unlock.store'), ['pin' => '9999'])->assertSessionHasErrors('pin');
     $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
 });
 
-it('čuva PIN kao hash, nikad kao tekst', function () {
+it('čuva PIN kao hash, nikad kao tekst', function (): void {
     setPin('1111');
 
     expect(app(SecuritySettings::class)->pin_hash)->toStartWith('$2y$')
         ->and(DB::table('settings')->pluck('payload')->implode('|'))->not->toContain('1111');
 });
 
-it('postavlja PIN i ostavlja korisnika otključanim', function () {
+it('postavlja PIN i ostavlja korisnika otključanim', function (): void {
     $this->put(route('settings.pin.update'), ['pin' => '1111', 'pin_confirmation' => '1111'])
         ->assertRedirect(route('settings.pin.edit'));
 
@@ -76,19 +76,19 @@ it('postavlja PIN i ostavlja korisnika otključanim', function () {
     $this->get(route('invoices.index'))->assertSuccessful();
 });
 
-it('traži potvrdu PIN-a', function () {
+it('traži potvrdu PIN-a', function (): void {
     $this->put(route('settings.pin.update'), ['pin' => '1111', 'pin_confirmation' => '2222'])
         ->assertSessionHasErrors('pin');
 
     expect(app(PinLock::class)->isEnabled())->toBeFalse();
 });
 
-it('prihvata samo četiri cifre', function (string $candidate) {
+it('prihvata samo četiri cifre', function (string $candidate): void {
     $this->put(route('settings.pin.update'), ['pin' => $candidate, 'pin_confirmation' => $candidate])
         ->assertSessionHasErrors('pin');
 })->with(['123', '12345', 'abcd', '12a4', '']);
 
-it('uklanja PIN i pušta bez zaključavanja', function () {
+it('uklanja PIN i pušta bez zaključavanja', function (): void {
     setPin('1111');
 
     unlocked()->delete(route('settings.pin.destroy'))->assertRedirect(route('settings.pin.edit'));
@@ -97,13 +97,13 @@ it('uklanja PIN i pušta bez zaključavanja', function () {
     $this->get(route('invoices.index'))->assertSuccessful();
 });
 
-it('drži podešavanja iza zaključavanja', function () {
+it('drži podešavanja iza zaključavanja', function (): void {
     setPin('1111');
 
     $this->get(route('settings.pin.edit'))->assertRedirect(route('unlock'));
 });
 
-it('zaključava na zahtjev', function () {
+it('zaključava na zahtjev', function (): void {
     setPin('1111');
     $this->post(route('unlock.store'), ['pin' => '1111']);
 
@@ -111,7 +111,7 @@ it('zaključava na zahtjev', function () {
     $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
 });
 
-it('zaključava poslije neaktivnosti', function () {
+it('zaključava poslije neaktivnosti', function (): void {
     setPin('1111');
     $this->post(route('unlock.store'), ['pin' => '1111']);
     $this->get(route('invoices.index'))->assertSuccessful();
@@ -121,7 +121,7 @@ it('zaključava poslije neaktivnosti', function () {
     $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
 });
 
-it('ne zaključava dok se koristi', function () {
+it('ne zaključava dok se koristi', function (): void {
     setPin('1111');
     $this->post(route('unlock.store'), ['pin' => '1111']);
 
@@ -131,7 +131,7 @@ it('ne zaključava dok se koristi', function () {
     }
 });
 
-it('ne zaključava kad je automatsko zaključavanje isključeno', function () {
+it('ne zaključava kad je automatsko zaključavanje isključeno', function (): void {
     setPin('1111');
     $settings = app(SecuritySettings::class);
     $settings->auto_lock_minutes = 0;
@@ -143,7 +143,7 @@ it('ne zaključava kad je automatsko zaključavanje isključeno', function () {
     $this->get(route('invoices.index'))->assertSuccessful();
 });
 
-it('mijenja vrijeme automatskog zaključavanja', function () {
+it('mijenja vrijeme automatskog zaključavanja', function (): void {
     setPin('1111');
 
     unlocked()->put(route('settings.pin.update-lock'), ['auto_lock_minutes' => 30])
@@ -152,7 +152,7 @@ it('mijenja vrijeme automatskog zaključavanja', function () {
     expect(app(SecuritySettings::class)->auto_lock_minutes)->toBe(30);
 });
 
-it('prihvata samo ponuđene intervale zaključavanja', function (int $minutes) {
+it('prihvata samo ponuđene intervale zaključavanja', function (int $minutes): void {
     setPin('1111');
 
     unlocked()->put(route('settings.pin.update-lock'), ['auto_lock_minutes' => $minutes])
@@ -161,14 +161,14 @@ it('prihvata samo ponuđene intervale zaključavanja', function (int $minutes) {
     expect(app(SecuritySettings::class)->auto_lock_minutes)->toBe($minutes);
 })->with([0, 1, 5, 15, 30, 60]);
 
-it('odbija interval zaključavanja koji nije na listi', function (mixed $minutes) {
+it('odbija interval zaključavanja koji nije na listi', function (mixed $minutes): void {
     setPin('1111');
 
     unlocked()->put(route('settings.pin.update-lock'), ['auto_lock_minutes' => $minutes])
         ->assertSessionHasErrors('auto_lock_minutes');
 })->with([2, 7, 45, 120, -1, 'pola sata', '']);
 
-it('ostaje na ekranu za otključavanje kad je PIN pogrešan', function () {
+it('ostaje na ekranu za otključavanje kad je PIN pogrešan', function (): void {
     setPin('1111');
 
     // Validaciona greška se vraća na formu sa porukom u sesiji.
@@ -177,12 +177,12 @@ it('ostaje na ekranu za otključavanje kad je PIN pogrešan', function () {
         ->assertSessionHasErrors('pin');
 });
 
-it('vraća standardni 405 kad se GET-om pogodi POST ruta', function () {
+it('vraća standardni 405 kad se GET-om pogodi POST ruta', function (): void {
     $this->get('/zakljucaj')->assertMethodNotAllowed();
     $this->get('/podesavanja/fiskalizacija/provjera')->assertMethodNotAllowed();
 });
 
-it('traži PIN ponovo poslije restarta aplikacije', function () {
+it('traži PIN ponovo poslije restarta aplikacije', function (): void {
     pretendPersistentRuntime();
     setPin('1111');
     $this->post(route('unlock.store'), ['pin' => '1111']);
@@ -198,7 +198,7 @@ it('traži PIN ponovo poslije restarta aplikacije', function () {
     $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
 });
 
-it('ne pušta ni kad je automatsko zaključavanje isključeno a aplikacija restartovana', function () {
+it('ne pušta ni kad je automatsko zaključavanje isključeno a aplikacija restartovana', function (): void {
     pretendPersistentRuntime();
     setPin('1111');
     $settings = app(SecuritySettings::class);
@@ -213,7 +213,7 @@ it('ne pušta ni kad je automatsko zaključavanje isključeno a aplikacija resta
     $this->get(route('invoices.index'))->assertRedirect(route('unlock'));
 });
 
-it('ograničava broj pokušaja PIN-a', function () {
+it('ograničava broj pokušaja PIN-a', function (): void {
     setPin('1111');
 
     foreach (range(1, 5) as $ignored) {
@@ -223,7 +223,7 @@ it('ograničava broj pokušaja PIN-a', function () {
     $this->post(route('unlock.store'), ['pin' => '9999'])->assertTooManyRequests();
 });
 
-it('ne traži PIN na svaki klik van trajnog procesa', function () {
+it('ne traži PIN na svaki klik van trajnog procesa', function (): void {
     // Pod php-fpm i ugrađenim serverom svaki zahtjev je novi proces; da se oznaka
     // pokretanja tamo provjeravala, korisnik bi bio zaključan odmah poslije PIN-a.
     setPin('1111');
@@ -233,25 +233,25 @@ it('ne traži PIN na svaki klik van trajnog procesa', function () {
     $this->get(route('clients.index'))->assertSuccessful();
 });
 
-it('ne pokazuje ekran za otključavanje kad nema šta da se otključa', function () {
+it('ne pokazuje ekran za otključavanje kad nema šta da se otključa', function (): void {
     // Bez podešenog PIN-a ekran bi bio ćorsokak: unos ne bi imao sa čim da se poredi.
     $this->get(route('unlock'))->assertRedirect(route('invoices.index'));
     $this->post(route('unlock.store'), ['pin' => '1111'])->assertRedirect(route('invoices.index'));
 });
 
-it('ne pokazuje ekran za otključavanje otključanoj aplikaciji', function () {
+it('ne pokazuje ekran za otključavanje otključanoj aplikaciji', function (): void {
     setPin('1111');
 
     unlocked()->get(route('unlock'))->assertRedirect(route('invoices.index'));
 });
 
-it('traži PIN u zahtjevu za otključavanje', function () {
+it('traži PIN u zahtjevu za otključavanje', function (): void {
     setPin('1111');
 
     $this->post(route('unlock.store'), [])->assertSessionHasErrors('pin');
 });
 
-it('razlikuje postavljanje PIN-a od promjene', function () {
+it('razlikuje postavljanje PIN-a od promjene', function (): void {
     $this->put(route('settings.pin.update'), ['pin' => '1111', 'pin_confirmation' => '1111'])
         ->assertSessionHas('status', 'PIN je postavljen.');
 
@@ -264,11 +264,11 @@ it('razlikuje postavljanje PIN-a od promjene', function () {
     $this->post(route('unlock.store'), ['pin' => '2222'])->assertRedirect(route('invoices.index'));
 });
 
-it('ne provjerava PIN koji nije podešen', function () {
+it('ne provjerava PIN koji nije podešen', function (): void {
     expect(app(PinLock::class)->verify('1111'))->toBeFalse();
 });
 
-it('poslije neaktivnosti kaže zašto je zaključano', function () {
+it('poslije neaktivnosti kaže zašto je zaključano', function (): void {
     setPin('1111');
     $this->post(route('unlock.store'), ['pin' => '1111']);
     $this->get(route('invoices.index'))->assertSuccessful();

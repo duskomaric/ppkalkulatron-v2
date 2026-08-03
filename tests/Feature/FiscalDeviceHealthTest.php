@@ -6,11 +6,11 @@ use App\Services\NetworkScanner;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Http;
 
-beforeEach(function () {
+beforeEach(function (): void {
     app(FiscalDeviceHealth::class)->forget();
 });
 
-it('vraća spreman status uređaja i kešira ga jednu minutu', function () {
+it('vraća spreman status uređaja i kešira ga jednu minutu', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response(['gsc' => []], 200),
@@ -29,7 +29,7 @@ it('vraća spreman status uređaja i kešira ga jednu minutu', function () {
     Http::assertSentCount(2);
 });
 
-it('ne prikazuje interni JSON status kao stranicu', function () {
+it('ne prikazuje interni JSON status kao stranicu', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 503),
     ]);
@@ -38,7 +38,7 @@ it('ne prikazuje interni JSON status kao stranicu', function () {
         ->assertRedirect(route('settings.fiscal.edit'));
 });
 
-it('prijavljuje uređaj koji traži PIN', function () {
+it('prijavljuje uređaj koji traži PIN', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response(['gsc' => ['1500']], 200),
@@ -49,7 +49,7 @@ it('prijavljuje uređaj koji traži PIN', function () {
         ->assertJson(['state' => 'pin_required', 'label' => 'Potreban PIN uređaja']);
 });
 
-it('ažurira indikator nakon ručne provjere uređaja', function () {
+it('ažurira indikator nakon ručne provjere uređaja', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response([
@@ -68,7 +68,7 @@ it('ažurira indikator nakon ručne provjere uređaja', function () {
         ->toMatchArray(['state' => 'ready', 'label' => 'Uređaj povezan', 'is_stale' => false]);
 });
 
-it('ručna provjera ne preuzima stope bez izričite radnje', function () {
+it('ručna provjera ne preuzima stope bez izričite radnje', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response([
@@ -87,7 +87,7 @@ it('ručna provjera ne preuzima stope bez izričite radnje', function () {
     expect(FiscalTaxRate::query()->count())->toBe(1);
 });
 
-it('preuzima poreske oznake bez promjene ćirilice', function () {
+it('preuzima poreske oznake bez promjene ćirilice', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response([
@@ -123,7 +123,7 @@ it('preuzima poreske oznake bez promjene ćirilice', function () {
         ->and(FiscalTaxRate::query()->where('label', 'F')->exists())->toBeFalse();
 });
 
-it('ne mijenja katalog kada kasa nije dostupna', function () {
+it('ne mijenja katalog kada kasa nije dostupna', function (): void {
     Http::fake(['*/api/attention' => Http::response('', 503)]);
 
     unlocked()->post(route('settings.fiscal.tax-rates.sync'))
@@ -133,7 +133,7 @@ it('ne mijenja katalog kada kasa nije dostupna', function () {
     expect(FiscalTaxRate::query()->count())->toBe(1);
 });
 
-it('ne mijenja katalog kada status kase nije dostupan', function () {
+it('ne mijenja katalog kada status kase nije dostupan', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response('', 503),
@@ -144,7 +144,7 @@ it('ne mijenja katalog kada status kase nije dostupan', function () {
         ->assertSessionHas('error', 'Fiskalna kasa trenutno nije spremna za fiskalizaciju. Provjerite status uređaja i PIN.');
 });
 
-it('odbija katalog bez trenutno važećih stopa', function () {
+it('odbija katalog bez trenutno važećih stopa', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response(['currentTaxRates' => ['groupId' => 1]], 200),
@@ -155,7 +155,7 @@ it('odbija katalog bez trenutno važećih stopa', function () {
         ->assertSessionHas('error', 'Fiskalni uređaj nije poslao trenutno važeće poreske stope.');
 });
 
-it('ne preuzima stope pri otvaranju ili spremanju artikla', function () {
+it('ne preuzima stope pri otvaranju ili spremanju artikla', function (): void {
     $this->app['env'] = 'production';
     $this->withoutMiddleware(PreventRequestForgery::class);
     Http::fake();
@@ -169,7 +169,7 @@ it('ne preuzima stope pri otvaranju ili spremanju artikla', function () {
     Http::assertNothingSent();
 });
 
-it('ne preuzima stope pri otvaranju novog računa', function () {
+it('ne preuzima stope pri otvaranju novog računa', function (): void {
     $this->app['env'] = 'production';
     Http::fake();
 
@@ -178,7 +178,7 @@ it('ne preuzima stope pri otvaranju novog računa', function () {
     Http::assertNothingSent();
 });
 
-it('označava uređaj nedostupnim kada ručna provjera ne prođe', function () {
+it('označava uređaj nedostupnim kada ručna provjera ne prođe', function (): void {
     Http::fake(['*/api/attention' => Http::response('', 503)]);
 
     unlocked()->post(route('settings.fiscal.test'))
@@ -188,7 +188,7 @@ it('označava uređaj nedostupnim kada ručna provjera ne prođe', function () {
     expect(app(FiscalDeviceHealth::class)->current()['state'])->toBe('unavailable');
 });
 
-it('označava uređaj nedostupnim kada attention prođe, a status ne prođe', function () {
+it('označava uređaj nedostupnim kada attention prođe, a status ne prođe', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response('', 503),
@@ -201,7 +201,7 @@ it('označava uređaj nedostupnim kada attention prođe, a status ne prođe', fu
     expect(app(FiscalDeviceHealth::class)->current()['state'])->toBe('unavailable');
 });
 
-it('prikaže zahtjev za PIN iz ručne provjere', function () {
+it('prikaže zahtjev za PIN iz ručne provjere', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response(['gsc' => ['1500']], 200),
@@ -214,14 +214,14 @@ it('prikaže zahtjev za PIN iz ručne provjere', function () {
     expect(app(FiscalDeviceHealth::class)->current()['state'])->toBe('pin_required');
 });
 
-it('označava uređaj kao nedostupan kada provjera ne uspije', function () {
+it('označava uređaj kao nedostupan kada provjera ne uspije', function (): void {
     Http::fake(['*/api/attention' => Http::response('', 503)]);
 
     expect(app(FiscalDeviceHealth::class)->refresh())
         ->toMatchArray(['state' => 'unavailable', 'label' => 'Uređaj nije dostupan']);
 });
 
-it('označava uređaj nedostupnim kada status endpoint ne uspije', function () {
+it('označava uređaj nedostupnim kada status endpoint ne uspije', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response('', 503),
@@ -231,14 +231,14 @@ it('označava uređaj nedostupnim kada status endpoint ne uspije', function () {
         ->toMatchArray(['state' => 'unavailable', 'label' => 'Uređaj nije dostupan']);
 });
 
-it('označava uređaj nedostupnim kada mrežni poziv baci izuzetak', function () {
+it('označava uređaj nedostupnim kada mrežni poziv baci izuzetak', function (): void {
     Http::fake(['*/api/attention' => Http::failedConnection('Nema mreže')]);
 
     expect(app(FiscalDeviceHealth::class)->refresh())
         ->toMatchArray(['state' => 'unavailable', 'label' => 'Uređaj nije dostupan']);
 });
 
-it('prikaže posljednji poznati fiskalni status bez čekanja na listi računa', function () {
+it('prikaže posljednji poznati fiskalni status bez čekanja na listi računa', function (): void {
     Http::fake([
         '*/api/attention' => Http::response('', 200),
         '*/api/status' => Http::response(['gsc' => []], 200),
@@ -254,7 +254,7 @@ it('prikaže posljednji poznati fiskalni status bez čekanja na listi računa', 
     Http::assertSentCount(2);
 });
 
-it('prikazuje status uz provjeru uređaja i fiskalizaciju računa', function () {
+it('prikazuje status uz provjeru uređaja i fiskalizaciju računa', function (): void {
     $settings = $this->get(route('settings.fiscal.edit'))
         ->assertSuccessful()
         ->getContent();
@@ -266,7 +266,7 @@ it('prikazuje status uz provjeru uređaja i fiskalizaciju računa', function () 
         ->and($invoice)->toContain('fiscalHealth(');
 });
 
-it('skenira ispravan opseg i javlja rezultat kao JSON', function () {
+it('skenira ispravan opseg i javlja rezultat kao JSON', function (): void {
     Http::fake([
         'http://10.0.0.1:3566/api/attention' => Http::response('', 200),
         'http://10.0.0.2:3566/api/attention' => Http::response('', 503),
@@ -280,13 +280,13 @@ it('skenira ispravan opseg i javlja rezultat kao JSON', function () {
         ]);
 });
 
-it('odbija neprepoznat opseg prije mrežnog skeniranja', function () {
+it('odbija neprepoznat opseg prije mrežnog skeniranja', function (): void {
     unlocked()->postJson(route('settings.fiscal.scan'), ['range' => '999.0.0.1-2'])
         ->assertUnprocessable()
         ->assertJson(['message' => 'Opseg nije prepoznat. Primjer: 192.168.31.100-105 ili 192.168.31.']);
 });
 
-it('traži ručni opseg kada uređaj nema lokalnu IP adresu', function () {
+it('traži ručni opseg kada uređaj nema lokalnu IP adresu', function (): void {
     $this->mock(NetworkScanner::class, function ($mock): void {
         $mock->shouldReceive('localIp')->once()->andReturnNull();
     });
@@ -296,7 +296,7 @@ it('traži ručni opseg kada uređaj nema lokalnu IP adresu', function () {
         ->assertJson(['message' => 'Nije moguće pročitati lokalnu adresu uređaja. Unesite opseg ručno.']);
 });
 
-it('vraća jasnu poruku kada skeniranje ne pronađe fiskalni uređaj', function () {
+it('vraća jasnu poruku kada skeniranje ne pronađe fiskalni uređaj', function (): void {
     Http::fake(['http://10.0.0.1:3566/api/attention' => Http::response('', 503)]);
 
     unlocked()->postJson(route('settings.fiscal.scan'), ['range' => '10.0.0.1-1'])
@@ -304,7 +304,7 @@ it('vraća jasnu poruku kada skeniranje ne pronađe fiskalni uređaj', function 
         ->assertJson(['devices' => [], 'message' => 'Nijedan uređaj nije pronađen na mreži.']);
 });
 
-it('pronađe prethodni fiskalni zahtjev po RequestId-u', function () {
+it('pronađe prethodni fiskalni zahtjev po RequestId-u', function (): void {
     Http::fake(['*/api/invoices/request/*' => Http::response([
         'invoiceNumber' => 'ABCD-1',
         'invoiceCounter' => '1/2ПП',
@@ -315,7 +315,7 @@ it('pronađe prethodni fiskalni zahtjev po RequestId-u', function () {
         ->assertSessionHas('status', 'Pronađen račun ABCD-1, brojač 1/2ПП.');
 });
 
-it('jasno prijavi kada fiskalni uređaj ne pronađe prethodni zahtjev', function () {
+it('jasno prijavi kada fiskalni uređaj ne pronađe prethodni zahtjev', function (): void {
     Http::fake(['*/api/invoices/request/*' => Http::response([])]);
 
     unlocked()->post(route('settings.fiscal.find-request'), ['request_id' => 'nepostojeci-zahtjev'])
@@ -323,7 +323,7 @@ it('jasno prijavi kada fiskalni uređaj ne pronađe prethodni zahtjev', function
         ->assertSessionHas('status', 'Zahtjev nije pronađen — fiskalizacija vjerovatno nije prošla.');
 });
 
-it('prijavi HTTP grešku pri potrazi za prethodnim fiskalnim zahtjevom', function () {
+it('prijavi HTTP grešku pri potrazi za prethodnim fiskalnim zahtjevom', function (): void {
     Http::fake(['*/api/invoices/request/*' => Http::response('', 503)]);
 
     unlocked()->post(route('settings.fiscal.find-request'), ['request_id' => 'nedostupni-uredjaj'])
@@ -331,7 +331,7 @@ it('prijavi HTTP grešku pri potrazi za prethodnim fiskalnim zahtjevom', functio
         ->assertSessionHas('error', 'Prethodni zahtjev nije moguće provjeriti. Provjerite vezu sa kasom, pa pokušajte ponovo.');
 });
 
-it('ne otkriva tehnički detalj pri neočekivanoj grešci potrage po RequestId-u', function () {
+it('ne otkriva tehnički detalj pri neočekivanoj grešci potrage po RequestId-u', function (): void {
     Http::fake(fn () => throw new LogicException('tajni detalj uređaja'));
 
     unlocked()->post(route('settings.fiscal.find-request'), ['request_id' => 'ponovljeni-zahtjev'])
@@ -339,7 +339,7 @@ it('ne otkriva tehnički detalj pri neočekivanoj grešci potrage po RequestId-u
         ->assertSessionHas('error', 'Fiskalni uređaj trenutno nije dostupan. Pokušajte ponovo.');
 });
 
-it('vrati korisnu poruku kada je veza prekinuta pri unosu fiskalnog PIN-a', function () {
+it('vrati korisnu poruku kada je veza prekinuta pri unosu fiskalnog PIN-a', function (): void {
     Http::fake(['*/api/pin' => Http::failedConnection('Nema mreže')]);
 
     unlocked()->post(route('settings.fiscal.pin'), ['security_pin' => '1234'])

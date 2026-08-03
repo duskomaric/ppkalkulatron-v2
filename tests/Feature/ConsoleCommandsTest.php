@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Http;
 
-it('dijagnostička OFS komanda prikaže status, PIN i poreske oznake uređaja', function () {
+it('dijagnostička OFS komanda prikaže status, PIN i poreske oznake uređaja', function (): void {
     Http::fake([
         'http://esir.test/api/attention' => Http::response('spreman', 200),
         'http://esir.test/api/status' => Http::response([
@@ -24,7 +24,7 @@ it('dijagnostička OFS komanda prikaže status, PIN i poreske oznake uređaja', 
         ->assertExitCode(0);
 });
 
-it('dijagnostička OFS komanda ne skriva nedostupan attention endpoint', function () {
+it('dijagnostička OFS komanda ne skriva nedostupan attention endpoint', function (): void {
     Http::fake(['http://esir.test/api/attention' => Http::response('nije dostupan', 503)]);
 
     $this->artisan('ofs:ping', ['--url' => 'http://esir.test'])
@@ -32,7 +32,7 @@ it('dijagnostička OFS komanda ne skriva nedostupan attention endpoint', functio
         ->assertExitCode(1);
 });
 
-it('dijagnostička OFS komanda prijavi prekid veze sa uređajem', function () {
+it('dijagnostička OFS komanda prijavi prekid veze sa uređajem', function (): void {
     Http::fake(['http://esir.test/api/attention' => Http::failedConnection('Nema veze')]);
 
     $this->artisan('ofs:ping', ['--url' => 'http://esir.test'])
@@ -40,7 +40,7 @@ it('dijagnostička OFS komanda prijavi prekid veze sa uređajem', function () {
         ->assertExitCode(1);
 });
 
-it('dijagnostička OFS komanda jasno pokaže kada status endpoint ne odgovara', function () {
+it('dijagnostička OFS komanda jasno pokaže kada status endpoint ne odgovara', function (): void {
     Http::fake([
         'http://esir.test/api/attention' => Http::response('', 200),
         'http://esir.test/api/status' => Http::response('', 503),
@@ -51,7 +51,7 @@ it('dijagnostička OFS komanda jasno pokaže kada status endpoint ne odgovara', 
         ->assertExitCode(0);
 });
 
-it('generator brend resursa stvara ispravne PNG ikonu i splash ekrane', function () {
+it('generator brend resursa stvara ispravne PNG ikonu i splash ekrane', function (): void {
     $this->artisan('app:brand-assets')
         ->expectsOutputToContain('public/icon.png')
         ->expectsOutputToContain('public/splash.png')

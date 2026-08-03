@@ -16,7 +16,7 @@ class NavigationServiceProvider extends ServiceProvider
     {
         View::composer(
             ['layouts.app', 'components.app-header', 'components.bottom-nav', 'components.module-drawer', 'components.settings-drawer'],
-            function ($view) {
+            function ($view): void {
                 $modules = MenuSettings::modules();
                 $settings = app(MenuSettings::class);
 

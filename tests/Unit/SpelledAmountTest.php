@@ -2,7 +2,7 @@
 
 use App\Support\SpelledAmount;
 
-it('ispisuje iznos slovima', function (int $number, string $expected) {
+it('ispisuje iznos slovima', function (int $number, string $expected): void {
     expect(SpelledAmount::of($number))->toBe($expected);
 })->with([
     [0, 'nula'],
@@ -27,6 +27,6 @@ it('ispisuje iznos slovima', function (int $number, string $expected) {
     [1000000000, '1.000.000.000'],
 ]);
 
-it('nosi znak minus', function () {
+it('nosi znak minus', function (): void {
     expect(SpelledAmount::of(-42))->toBe('minus četrdeset dva');
 });

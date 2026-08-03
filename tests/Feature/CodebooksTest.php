@@ -13,11 +13,11 @@ use App\Settings\DocumentSettings;
 use App\Settings\NumberingSettings;
 use App\Settings\UserSettings;
 
-it('prikazuje šifarnike', function (string $route) {
+it('prikazuje šifarnike', function (string $route): void {
     $this->get(route($route))->assertSuccessful();
 })->with(['bank-accounts.index', 'bank-accounts.create', 'currencies.index', 'currencies.create']);
 
-it('nudi sljedeći korak na praznim listama', function (string $route, string $label) {
+it('nudi sljedeći korak na praznim listama', function (string $route, string $label): void {
     $this->get(route($route))
         ->assertSuccessful()
         ->assertSee($label);
@@ -28,7 +28,7 @@ it('nudi sljedeći korak na praznim listama', function (string $route, string $l
     'računi' => ['invoices.index', 'Novi račun'],
 ]);
 
-it('drži glavne forme podešavanja u čitljivoj širini', function (string $route) {
+it('drži glavne forme podešavanja u čitljivoj širini', function (string $route): void {
     $html = $this->get(route($route))
         ->assertSuccessful()
         ->getContent();
@@ -42,7 +42,7 @@ it('drži glavne forme podešavanja u čitljivoj širini', function (string $rou
     'meni' => 'settings.menu.edit',
 ]);
 
-it('dodaje bankovni račun', function () {
+it('dodaje bankovni račun', function (): void {
     $this->post(route('bank-accounts.store'), [
         'bank_name' => 'UniCredit', 'account_number' => '5510010000000000', 'show_on_documents' => '1',
     ])->assertRedirect(route('bank-accounts.index'));
@@ -50,7 +50,7 @@ it('dodaje bankovni račun', function () {
     expect(BankAccount::sole())->bank_name->toBe('UniCredit')->show_on_documents->toBeTrue();
 });
 
-it('sortira, mijenja i briše bankovni račun kroz standardne rute', function () {
+it('sortira, mijenja i briše bankovni račun kroz standardne rute', function (): void {
     $zaba = BankAccount::create([
         'bank_name' => 'ZABA',
         'account_number' => '5510010000000001',
@@ -85,7 +85,7 @@ it('sortira, mijenja i briše bankovni račun kroz standardne rute', function ()
     $this->assertModelMissing($addiko);
 });
 
-it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', function () {
+it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', function (): void {
     $this->get(route('settings.general.edit'))
         ->assertSuccessful()
         ->assertViewHasAll(['numbering', 'document', 'company']);
@@ -155,7 +155,7 @@ it('čuva opšta, kompanijska i profilna podešavanja kroz njihove forme', funct
         ->and(app(UserSettings::class)->email)->toBe('ana@example.test');
 });
 
-it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', function () {
+it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', function (): void {
     BankAccount::query()->create([
         'bank_name' => 'Addiko Bank a.d. Banja Luka',
         'account_number' => '5510010000000003',
@@ -176,7 +176,7 @@ it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', fun
         ->assertSee('build '.config('nativephp.version_code'));
 });
 
-it('vraća pregled predloška bez okvira aplikacije', function () {
+it('vraća pregled predloška bez okvira aplikacije', function (): void {
     $response = $this->get(route('settings.templates.preview', DocumentTemplate::Terminal))
         ->assertSuccessful()
         ->assertSee('Primjer kupac d.o.o.');
@@ -184,7 +184,7 @@ it('vraća pregled predloška bez okvira aplikacije', function () {
     expect($response->getContent())->not->toContain('template-gallery');
 });
 
-it('grupiše predloške po stilu i temi za filtere', function () {
+it('grupiše predloške po stilu i temi za filtere', function (): void {
     expect(DocumentTemplate::Classic->family())->toBe(DocumentTemplate::FAMILY_BUSINESS)
         ->and(DocumentTemplate::PhpSource->family())->toBe(DocumentTemplate::FAMILY_EDITOR)
         ->and(DocumentTemplate::Shell->family())->toBe(DocumentTemplate::FAMILY_TERMINAL)
@@ -197,7 +197,7 @@ it('grupiše predloške po stilu i temi za filtere', function () {
     }
 });
 
-it('uzima katalog predložaka isključivo iz enum-a', function () {
+it('uzima katalog predložaka isključivo iz enum-a', function (): void {
     foreach (DocumentTemplate::cases() as $template) {
         expect($template->view())->toBe('pdf.invoice-'.$template->value)
             ->and(view()->exists($template->view()))->toBeTrue();
@@ -213,24 +213,24 @@ it('uzima katalog predložaka isključivo iz enum-a', function () {
     ])->assertSessionHasErrors('template');
 });
 
-it('traži naziv banke i broj računa', function () {
+it('traži naziv banke i broj računa', function (): void {
     $this->post(route('bank-accounts.store'), [])->assertSessionHasErrors(['bank_name', 'account_number']);
 });
 
-it('dodaje valutu velikim slovima', function () {
+it('dodaje valutu velikim slovima', function (): void {
     $this->post(route('currencies.store'), ['code' => 'usd', 'name' => 'Dolar', 'symbol' => '$'])
         ->assertRedirect(route('currencies.index'));
 
     expect(Currency::where('code', 'USD')->exists())->toBeTrue();
 });
 
-it('ne dozvoljava dvije valute sa istom oznakom', function () {
+it('ne dozvoljava dvije valute sa istom oznakom', function (): void {
     // EUR dolazi iz migracije šifarnika.
     $this->post(route('currencies.store'), ['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€'])
         ->assertSessionHasErrors('code');
 });
 
-it('drži tačno jednu podrazumijevanu valutu', function () {
+it('drži tačno jednu podrazumijevanu valutu', function (): void {
     $bam = Currency::where('code', 'BAM')->sole();
     $eur = Currency::where('code', 'EUR')->sole();
 
@@ -242,7 +242,7 @@ it('drži tačno jednu podrazumijevanu valutu', function () {
         ->and($bam->refresh()->is_default)->toBeFalse();
 });
 
-it('ne briše podrazumijevanu valutu', function () {
+it('ne briše podrazumijevanu valutu', function (): void {
     $bam = Currency::where('code', 'BAM')->sole();
 
     $this->delete(route('currencies.destroy', $bam))->assertSessionHas('error');
@@ -250,7 +250,7 @@ it('ne briše podrazumijevanu valutu', function () {
     expect($bam->fresh())->not->toBeNull();
 });
 
-it('čuva kurs valute prema KM', function () {
+it('čuva kurs valute prema KM', function (): void {
     $eur = Currency::where('code', 'EUR')->sole();
 
     $this->post(route('currencies.rates.store', $eur), [
@@ -260,7 +260,7 @@ it('čuva kurs valute prema KM', function () {
     expect((float) ExchangeRate::where('currency', 'EUR')->value('rate_to_bam'))->toBe(1.95583);
 });
 
-it('prepisuje kurs za isti dan umjesto da doda drugi', function () {
+it('prepisuje kurs za isti dan umjesto da doda drugi', function (): void {
     $eur = Currency::where('code', 'EUR')->sole();
 
     foreach (['1.90000', '1.95583'] as $rate) {
@@ -271,14 +271,14 @@ it('prepisuje kurs za isti dan umjesto da doda drugi', function () {
         ->and((float) ExchangeRate::where('currency', 'EUR')->value('rate_to_bam'))->toBe(1.95583);
 });
 
-it('nema kursa za podrazumijevanu valutu', function () {
+it('nema kursa za podrazumijevanu valutu', function (): void {
     $bam = Currency::where('code', 'BAM')->sole();
 
     $this->post(route('currencies.rates.store', $bam), ['rate_to_bam' => '1', 'rate_date' => '2026-07-31'])
         ->assertSessionHas('error');
 });
 
-it('otvara sve sekcije pomoći na koje podešavanja upućuju', function () {
+it('otvara sve sekcije pomoći na koje podešavanja upućuju', function (): void {
     $help = $this->get(route('help'))->assertSuccessful()->getContent();
 
     foreach (['pocetak', 'profil-kompanije', 'fiskalizacija', 'numeracija', 'meni', 'pin', 'mail', 'backup'] as $anchor) {
@@ -290,7 +290,7 @@ it('otvara sve sekcije pomoći na koje podešavanja upućuju', function () {
         ->and($help)->toContain(config('app.name').' služi za izdavanje računa');
 });
 
-it('povezuje svaki radni obrazac sa odgovarajućom pomoći', function (string $route, string $anchor) {
+it('povezuje svaki radni obrazac sa odgovarajućom pomoći', function (string $route, string $anchor): void {
     $html = $this->get(route($route))
         ->assertSuccessful()
         ->getContent();
@@ -311,7 +311,7 @@ it('povezuje svaki radni obrazac sa odgovarajućom pomoći', function (string $r
     'profil' => ['profile.edit', 'profil-kompanije'],
 ]);
 
-it('prikazuje kontekstualnu pomoć u zaglavlju svakog radnog ekrana', function (string $route, string $anchor) {
+it('prikazuje kontekstualnu pomoć u zaglavlju svakog radnog ekrana', function (string $route, string $anchor): void {
     $html = $this->get(route($route))
         ->assertSuccessful()
         ->getContent();
@@ -335,13 +335,13 @@ it('prikazuje kontekstualnu pomoć u zaglavlju svakog radnog ekrana', function (
 
 // Podešavanja menija stoje u MenuSettingsTest.
 
-it('servira pune forme šifarnika', function (string $route) {
+it('servira pune forme šifarnika', function (string $route): void {
     $this->get(route($route))
         ->assertSuccessful()
         ->assertSee('<!DOCTYPE html>', false);
 })->with(['clients.create', 'articles.create', 'bank-accounts.create', 'currencies.create']);
 
-it('ne ugnježdava formu za brisanje u formu za čuvanje', function () {
+it('ne ugnježdava formu za brisanje u formu za čuvanje', function (): void {
     $client = Client::create(['name' => 'Za brisanje']);
 
     $html = $this->get(route('clients.edit', $client))->getContent();
@@ -351,7 +351,7 @@ it('ne ugnježdava formu za brisanje u formu za čuvanje', function () {
         ->and(substr_count($html, '<form'))->toBeGreaterThanOrEqual(2);
 });
 
-it('koristi zajedničku potvrdu za svaku destruktivnu radnju', function () {
+it('koristi zajedničku potvrdu za svaku destruktivnu radnju', function (): void {
     $client = Client::create(['name' => 'Za brisanje']);
 
     $clientEdit = $this->get(route('clients.edit', $client))
@@ -370,7 +370,7 @@ it('koristi zajedničku potvrdu za svaku destruktivnu radnju', function () {
         ->and($pinSettings)->not->toContain('onsubmit="return confirm(');
 });
 
-it('ostavlja prostor za indikator na svakom tipu select polja', function () {
+it('ostavlja prostor za indikator na svakom tipu select polja', function (): void {
     $invoiceForm = $this->get(route('invoices.create'))
         ->assertSuccessful()
         ->getContent();
@@ -384,7 +384,7 @@ it('ostavlja prostor za indikator na svakom tipu select polja', function () {
         ->and($settingsForm)->toContain('pr-10');
 });
 
-it('koristi jedinstveni select za formu i filtere', function () {
+it('koristi jedinstveni select za formu i filtere', function (): void {
     $invoiceForm = $this->get(route('invoices.create'))
         ->assertSuccessful()
         ->getContent();
@@ -398,7 +398,7 @@ it('koristi jedinstveni select za formu i filtere', function () {
         ->and($invoiceList)->toContain('h-11');
 });
 
-it('koristi kanonske filtere bez praznih prikaza u pomoći', function () {
+it('koristi kanonske filtere bez praznih prikaza u pomoći', function (): void {
     $invoiceList = $this->get(route('invoices.index'))
         ->assertSuccessful()
         ->getContent();
@@ -412,7 +412,7 @@ it('koristi kanonske filtere bez praznih prikaza u pomoći', function () {
         ->and($help)->toContain('Format fiskalnog dokumenta');
 });
 
-it('koristi kanonski input i u kompaktnoj formi računa', function () {
+it('koristi kanonski input i u kompaktnoj formi računa', function (): void {
     $invoiceForm = $this->get(route('invoices.create'))
         ->assertSuccessful()
         ->getContent();
@@ -421,7 +421,7 @@ it('koristi kanonski input i u kompaktnoj formi računa', function () {
         ->and($invoiceForm)->toMatch('/<input[^>]*id="due_date"[^>]*class="[^"]*h-11[^"]*"/');
 });
 
-it('čuva izmjene klijenta standardnim zahtjevom', function () {
+it('čuva izmjene klijenta standardnim zahtjevom', function (): void {
     $client = Client::create(['name' => 'Stari naziv']);
 
     $this->put(route('clients.update', $client), ['name' => 'Novi naziv', 'is_active' => '1'])
@@ -430,21 +430,21 @@ it('čuva izmjene klijenta standardnim zahtjevom', function () {
     expect($client->fresh()->name)->toBe('Novi naziv');
 });
 
-it('dodaje klijenta sa nazivom preko standardnog zahtjeva', function () {
+it('dodaje klijenta sa nazivom preko standardnog zahtjeva', function (): void {
     $this->post(route('clients.store'), ['name' => 'Novi kupac', 'is_active' => '1'])
         ->assertRedirect(route('clients.index'));
 
     expect(Client::where('name', 'Novi kupac')->exists())->toBeTrue();
 });
 
-it('vraća greške validacije kroz standardni Laravel odgovor', function () {
+it('vraća greške validacije kroz standardni Laravel odgovor', function (): void {
     $this->from(route('clients.create'))
         ->post(route('clients.store'), ['name' => ''])
         ->assertRedirect(route('clients.create'))
         ->assertSessionHasErrors('name');
 });
 
-it('pretražuje klijente po imenu i održava abecedni redoslijed', function () {
+it('pretražuje klijente po imenu i održava abecedni redoslijed', function (): void {
     Client::create(['name' => 'Zidarstvo Doboj']);
     Client::create(['name' => 'Alfa trgovina']);
 
@@ -457,7 +457,7 @@ it('pretražuje klijente po imenu i održava abecedni redoslijed', function () {
         ->assertDontSee('Alfa trgovina');
 });
 
-it('ne briše klijenta koji već ima račun, ali briše nepovezanog', function () {
+it('ne briše klijenta koji već ima račun, ali briše nepovezanog', function (): void {
     $linked = makeInvoice()->client;
     $unlinked = Client::create(['name' => 'Bez računa']);
 
@@ -474,7 +474,7 @@ it('ne briše klijenta koji već ima račun, ali briše nepovezanog', function (
     $this->assertModelMissing($unlinked);
 });
 
-it('prikazuje prilagodljive kartice za telefon i desktop', function (string $route) {
+it('prikazuje prilagodljive kartice za telefon i desktop', function (string $route): void {
     Client::create(['name' => 'Kupac', 'city' => 'Doboj', 'is_active' => true]);
     Article::create(['name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F', 'is_active' => true]);
 
@@ -483,7 +483,7 @@ it('prikazuje prilagodljive kartice za telefon i desktop', function (string $rou
     expect($html)->toContain('md:hidden')->and($html)->toContain('hidden md:block');
 })->with(['clients.index', 'articles.index']);
 
-it('priprema porezne stope u kontroleru artikala', function () {
+it('priprema porezne stope u kontroleru artikala', function (): void {
     FiscalTaxRate::query()->where('label', 'F')->update(['rate' => 11]);
     $article = Article::create(['name' => 'Usluga s porezom', 'unit' => 'kom', 'tax_label' => 'F']);
 
@@ -499,7 +499,7 @@ it('priprema porezne stope u kontroleru artikala', function () {
         ->assertViewHas('taxRateOptions', fn (array $options): bool => $options['F'] === 'F — ECAL (11.00%)');
 });
 
-it('mijenja cijenu artikla u pfeninge i briše artikl', function () {
+it('mijenja cijenu artikla u pfeninge i briše artikl', function (): void {
     $article = Article::create([
         'name' => 'Stara usluga',
         'unit' => 'kom',
@@ -529,7 +529,7 @@ it('mijenja cijenu artikla u pfeninge i briše artikl', function () {
     $this->assertModelMissing($article);
 });
 
-it('prikazuje istoriju kursa i briše valutu koja nije podrazumijevana', function () {
+it('prikazuje istoriju kursa i briše valutu koja nije podrazumijevana', function (): void {
     $usd = Currency::create(['code' => 'USD', 'name' => 'Dolar', 'symbol' => '$']);
     ExchangeRate::create(['currency' => 'USD', 'rate_to_bam' => '1.80100', 'rate_date' => '2026-01-01']);
     ExchangeRate::create(['currency' => 'USD', 'rate_to_bam' => '1.80200', 'rate_date' => '2026-02-01']);
@@ -545,7 +545,7 @@ it('prikazuje istoriju kursa i briše valutu koja nije podrazumijevana', functio
     $this->assertModelMissing($usd);
 });
 
-it('daje layout komponentama podatke iz view composera', function () {
+it('daje layout komponentama podatke iz view composera', function (): void {
     $company = app(CompanySettings::class);
     $company->name = 'Kalkulatron d.o.o.';
     $company->save();
@@ -561,7 +561,7 @@ it('daje layout komponentama podatke iz view composera', function () {
         ->assertSee('Ana Anić');
 });
 
-it('otključava sa četiri polja za cifre', function () {
+it('otključava sa četiri polja za cifre', function (): void {
     app(PinLock::class)->set('1111');
 
     $html = $this->get(route('unlock'))->assertSuccessful()->getContent();
@@ -571,7 +571,7 @@ it('otključava sa četiri polja za cifre', function () {
         ->and($html)->toContain('maxlength="1"');
 });
 
-it('drži kurs po valuti i datumu, ne po valuti', function () {
+it('drži kurs po valuti i datumu, ne po valuti', function (): void {
     $eur = Currency::where('code', 'EUR')->sole();
 
     foreach (['2026-07-30' => '1.95000', '2026-07-31' => '1.95583'] as $date => $rate) {

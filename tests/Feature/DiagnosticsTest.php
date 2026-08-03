@@ -7,14 +7,14 @@ use App\Settings\DiagnosticsSettings;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-it('jasno objašnjava sigurnost dijagnostike', function () {
+it('jasno objašnjava sigurnost dijagnostike', function (): void {
     $this->get(route('settings.diagnostics.edit'))
         ->assertSuccessful()
         ->assertSee('Računi i privatni podaci se ne šalju.')
         ->assertSee('API ključ, PAK, PIN ni SMTP lozinku');
 });
 
-it('uključuje detaljnu dijagnostiku najviše 24 sata', function () {
+it('uključuje detaljnu dijagnostiku najviše 24 sata', function (): void {
     $this->put(route('settings.diagnostics.update'), [
         'email' => 'podrska@example.com',
         'detailed_logging' => '1',
@@ -27,7 +27,7 @@ it('uključuje detaljnu dijagnostiku najviše 24 sata', function () {
         ->and($settings->detailed_until)->toBeBetween(now()->addHours(23), now()->addHours(25));
 });
 
-it('sanitizuje tajne prije upisa u dijagnostički log', function () {
+it('sanitizuje tajne prije upisa u dijagnostički log', function (): void {
     $context = app(Diagnostics::class)->sanitize([
         'api_key' => 'ne-smije-izaći',
         'document_contents' => 'binarni-racun',
@@ -43,7 +43,7 @@ it('sanitizuje tajne prije upisa u dijagnostički log', function () {
     ]);
 });
 
-it('šalje samo tekstualni dijagnostički prilog na podešenu adresu', function () {
+it('šalje samo tekstualni dijagnostički prilog na podešenu adresu', function (): void {
     Mail::fake();
     $settings = app(DiagnosticsSettings::class);
     $settings->email = 'podrska@example.com';
@@ -62,13 +62,13 @@ it('šalje samo tekstualni dijagnostički prilog na podešenu adresu', function 
     expect(app(DiagnosticsSettings::class)->last_sent_at)->not->toBeNull();
 });
 
-it('ne šalje dijagnostiku bez odredišnog emaila', function () {
+it('ne šalje dijagnostiku bez odredišnog emaila', function (): void {
     $this->post(route('settings.diagnostics.send'))
         ->assertRedirect(route('settings.diagnostics.edit'))
         ->assertSessionHas('error', 'Prvo unesite email za dijagnostiku.');
 });
 
-it('prikaže jasnu grešku kada se dijagnostički prilog ne može pripremiti', function () {
+it('prikaže jasnu grešku kada se dijagnostički prilog ne može pripremiti', function (): void {
     $settings = app(DiagnosticsSettings::class);
     $settings->email = 'podrska@example.com';
     $settings->save();
@@ -82,7 +82,7 @@ it('prikaže jasnu grešku kada se dijagnostički prilog ne može pripremiti', f
         ->assertSessionHas('error', 'Dijagnostički izvještaj nije poslat. Provjerite e-mail podešavanja i pokušajte ponovo.');
 });
 
-it('ne otkriva tehnički detalj neočekivane greške pri slanju dijagnostike', function () {
+it('ne otkriva tehnički detalj neočekivane greške pri slanju dijagnostike', function (): void {
     $settings = app(DiagnosticsSettings::class);
     $settings->email = 'podrska@example.com';
     $settings->save();
@@ -96,7 +96,7 @@ it('ne otkriva tehnički detalj neočekivane greške pri slanju dijagnostike', f
         ->assertSessionHas('error', 'Slanje dijagnostike trenutno nije uspjelo. Pokušajte ponovo.');
 });
 
-it('renderuje dijagnostički email u zajedničkom okviru i dodaje tekstualni prilog', function () {
+it('renderuje dijagnostički email u zajedničkom okviru i dodaje tekstualni prilog', function (): void {
     $path = storage_path('app/private/dijagnostika-test-'.uniqid().'.log');
     file_put_contents($path, 'siguran test');
 
@@ -110,7 +110,7 @@ it('renderuje dijagnostički email u zajedničkom okviru i dodaje tekstualni pri
     @unlink($path);
 });
 
-it('gradi izvještaj samo iz sigurnog kanala, bez dokumenata i tajni', function () {
+it('gradi izvještaj samo iz sigurnog kanala, bez dokumenata i tajni', function (): void {
     $safeSecret = 'sigurna-tajna-'.uniqid();
     $rawSecret = 'interna-tajna-'.uniqid();
 
@@ -134,7 +134,7 @@ it('gradi izvještaj samo iz sigurnog kanala, bez dokumenata i tajni', function 
     @unlink($archive['path']);
 });
 
-it('bilježi samo sigurnu oznaku neprijavljene greške', function () {
+it('bilježi samo sigurnu oznaku neprijavljene greške', function (): void {
     $secretMessage = 'poruka-koja-ne-smije-biti-poslana-'.uniqid();
 
     report(new RuntimeException($secretMessage));
@@ -151,7 +151,7 @@ it('bilježi samo sigurnu oznaku neprijavljene greške', function () {
     @unlink($archive['path']);
 });
 
-it('bilježi tehnički ishod svake promjene bez sadržaja forme', function () {
+it('bilježi tehnički ishod svake promjene bez sadržaja forme', function (): void {
     $settings = app(DiagnosticsSettings::class);
     $settings->detailed_until = now()->addDay();
     $settings->save();
@@ -175,7 +175,7 @@ it('bilježi tehnički ishod svake promjene bez sadržaja forme', function () {
         ->not->toContain('drawer_modules');
 });
 
-it('bilježi izmjenu klijenta po ruti, bez podataka klijenta', function () {
+it('bilježi izmjenu klijenta po ruti, bez podataka klijenta', function (): void {
     $settings = app(DiagnosticsSettings::class);
     $settings->detailed_until = now()->addDay();
     $settings->save();
@@ -194,7 +194,7 @@ it('bilježi izmjenu klijenta po ruti, bez podataka klijenta', function () {
         ->not->toContain($clientName);
 });
 
-it('bilježi neuspjelo PIN otključavanje bez PIN-a', function () {
+it('bilježi neuspjelo PIN otključavanje bez PIN-a', function (): void {
     setPin('1111');
     $path = storage_path('logs/support-diagnostics-'.now()->format('Y-m-d').'.log');
     $before = is_file($path) ? (string) file_get_contents($path) : '';
@@ -208,7 +208,7 @@ it('bilježi neuspjelo PIN otključavanje bez PIN-a', function () {
         ->not->toContain('9999');
 });
 
-it('bilježi neuspjelu promjenu i kada detaljna dijagnostika nije uključena', function () {
+it('bilježi neuspjelu promjenu i kada detaljna dijagnostika nije uključena', function (): void {
     $path = storage_path('logs/support-diagnostics-'.now()->format('Y-m-d').'.log');
     $before = is_file($path) ? (string) file_get_contents($path) : '';
 

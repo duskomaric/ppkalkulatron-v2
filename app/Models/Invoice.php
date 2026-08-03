@@ -84,7 +84,7 @@ class Invoice extends Model
             return $query;
         }
 
-        return $query->where(function (Builder $q) use ($term) {
+        return $query->where(function (Builder $q) use ($term): void {
             $q->where('invoice_number', 'like', "%{$term}%")
                 ->orWhereHas('client', fn (Builder $c) => $c->where('name', 'like', "%{$term}%"));
         });

@@ -21,7 +21,7 @@ use Native\Mobile\Facades\System;
 
 // invoicePayload() i renderPdfView() stoje u tests/Pest.php.
 
-it('kreira račun i preračuna iznose iz količine i cijene', function () {
+it('kreira račun i preračuna iznose iz količine i cijene', function (): void {
     $this->post(route('invoices.store'), invoicePayload())->assertRedirect();
 
     $invoice = Invoice::with('items')->firstOrFail();
@@ -34,14 +34,14 @@ it('kreira račun i preračuna iznose iz količine i cijene', function () {
         ->and($invoice->items->first()->tax_rate)->toBe(1100);
 });
 
-it('ne vjeruje iznosima iz forme nego ih računa sam', function () {
+it('ne vjeruje iznosima iz forme nego ih računa sam', function (): void {
     // Klijent šalje i "total" — mora biti ignorisan.
     $this->post(route('invoices.store'), invoicePayload(['total' => 999999, 'subtotal' => 999999]));
 
     expect(Invoice::first()->total)->toBe(11100);
 });
 
-it('dodjeljuje brojeve redom', function () {
+it('dodjeljuje brojeve redom', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $this->post(route('invoices.store'), invoicePayload());
 
@@ -49,7 +49,7 @@ it('dodjeljuje brojeve redom', function () {
     expect(Invoice::pluck('invoice_number')->all())->toBe(["0001/{$year}", "0002/{$year}"]);
 });
 
-it('listu računa filtrira rasponom datuma izabrane godine', function () {
+it('listu računa filtrira rasponom datuma izabrane godine', function (): void {
     $this->post(route('invoices.store'), invoicePayload([
         'date' => '2024-06-01', 'due_date' => '2024-06-15',
     ]));
@@ -66,7 +66,7 @@ it('listu računa filtrira rasponom datuma izabrane godine', function () {
         ->assertDontSee($previousYearNumber);
 });
 
-it('povezuje oznake sa poljima forme računa', function () {
+it('povezuje oznake sa poljima forme računa', function (): void {
     $html = $this->get(route('invoices.create'))
         ->assertSuccessful()
         ->getContent();
@@ -77,7 +77,7 @@ it('povezuje oznake sa poljima forme računa', function () {
         ->and($html)->toMatch('/<select[^>]*id="payment_type"/');
 });
 
-it('koristi standardne radnje forme računa', function () {
+it('koristi standardne radnje forme računa', function (): void {
     $html = $this->get(route('invoices.create'))
         ->assertSuccessful()
         ->getContent();
@@ -87,7 +87,7 @@ it('koristi standardne radnje forme računa', function () {
         ->and($html)->toContain('Odustani');
 });
 
-it('oslobađa broj kad se račun obriše', function () {
+it('oslobađa broj kad se račun obriše', function (): void {
     $year = date('Y');
 
     $this->post(route('invoices.store'), invoicePayload());
@@ -99,14 +99,14 @@ it('oslobađa broj kad se račun obriše', function () {
     expect(app(InvoiceNumber::class)->next())->toBe("0002/{$year}");
 });
 
-it('vraća se na početni broj kad nema računa', function () {
+it('vraća se na početni broj kad nema računa', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $this->delete(route('invoices.destroy', Invoice::first()));
 
     expect(app(InvoiceNumber::class)->next())->toBe('0001/'.date('Y'));
 });
 
-it('pamti zadnju cijenu na artiklu', function () {
+it('pamti zadnju cijenu na artiklu', function (): void {
     $article = Article::create(['name' => 'Usluga', 'unit' => 'sat', 'tax_label' => 'F']);
 
     $this->post(route('invoices.store'), invoicePayload([
@@ -123,19 +123,19 @@ it('pamti zadnju cijenu na artiklu', function () {
     expect($article->fresh()->last_unit_price)->toBe(8000);
 });
 
-it('traži bar jednu stavku', function () {
+it('traži bar jednu stavku', function (): void {
     $this->post(route('invoices.store'), invoicePayload(['items' => []]))
         ->assertSessionHasErrors('items');
 });
 
-it('ne prima rok dospijeća prije datuma', function () {
+it('ne prima rok dospijeća prije datuma', function (): void {
     $this->post(route('invoices.store'), invoicePayload([
         'date' => now()->format('Y-m-d'),
         'due_date' => now()->subDay()->format('Y-m-d'),
     ]))->assertSessionHasErrors('due_date');
 });
 
-it('mijenja račun i preračuna iznose ponovo', function () {
+it('mijenja račun i preračuna iznose ponovo', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::first();
 
@@ -157,7 +157,7 @@ it('mijenja račun i preračuna iznose ponovo', function () {
         ->and($invoice->total)->toBe(1110);
 });
 
-it('otvara izmjenu kreiranog računa sa njegovim stavkama', function () {
+it('otvara izmjenu kreiranog računa sa njegovim stavkama', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
@@ -167,7 +167,7 @@ it('otvara izmjenu kreiranog računa sa njegovim stavkama', function () {
         ->assertSee('Usluga');
 });
 
-it('ne dozvoljava izmjenu ni brisanje fiskalizovanog računa', function () {
+it('ne dozvoljava izmjenu ni brisanje fiskalizovanog računa', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::first();
     $invoice->update(['status' => InvoiceStatus::Fiscalized]);
@@ -179,7 +179,7 @@ it('ne dozvoljava izmjenu ni brisanje fiskalizovanog računa', function () {
     expect(Invoice::count())->toBe(1);
 });
 
-it('pretražuje po broju i po klijentu', function () {
+it('pretražuje po broju i po klijentu', function (): void {
     $this->post(route('invoices.store'), invoicePayload([
         'client_id' => Client::create(['name' => 'Mermer Gradnja'])->id,
     ]));
@@ -197,7 +197,7 @@ it('pretražuje po broju i po klijentu', function () {
         ->assertSee('Kafe Bar');
 });
 
-it('prikazuje aktivne filtere i linkove koji brišu samo odgovarajući filter', function () {
+it('prikazuje aktivne filtere i linkove koji brišu samo odgovarajući filter', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
 
     $response = $this->get(route('invoices.index', [
@@ -220,7 +220,7 @@ it('prikazuje aktivne filtere i linkove koji brišu samo odgovarajući filter', 
     });
 });
 
-it('nudi godine računa zajedno sa izabranom i tekućom godinom', function () {
+it('nudi godine računa zajedno sa izabranom i tekućom godinom', function (): void {
     $this->post(route('invoices.store'), invoicePayload([
         'date' => '2024-06-01',
         'due_date' => '2024-06-15',
@@ -236,7 +236,7 @@ it('nudi godine računa zajedno sa izabranom i tekućom godinom', function () {
         });
 });
 
-it('prikazuje listu i detalj', function () {
+it('prikazuje listu i detalj', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::first();
 
@@ -244,7 +244,7 @@ it('prikazuje listu i detalj', function () {
     $this->get(route('invoices.show', $invoice))->assertSuccessful()->assertSee('Usluga');
 });
 
-it('servira punu stranicu detalja računa', function () {
+it('servira punu stranicu detalja računa', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
@@ -254,7 +254,7 @@ it('servira punu stranicu detalja računa', function () {
         ->assertSee('<!DOCTYPE html>', false);
 });
 
-it('povezuje fiskalnu sekciju računa sa pomoći', function () {
+it('povezuje fiskalnu sekciju računa sa pomoći', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
@@ -263,7 +263,7 @@ it('povezuje fiskalnu sekciju računa sa pomoći', function () {
         ->assertSee(route('help').'#fiskalizacija', false);
 });
 
-it('prikazuje Alpine prekidače za priloge maila', function () {
+it('prikazuje Alpine prekidače za priloge maila', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
@@ -273,7 +273,7 @@ it('prikazuje Alpine prekidače za priloge maila', function () {
         ->assertSee('x-model="emailForm.attach_fiscal_record_ids"', false);
 });
 
-it('učitava slike fiskalnih računa jednim upitom na detalju', function () {
+it('učitava slike fiskalnih računa jednim upitom na detalju', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
     $original = $invoice->fiscalRecords()->create(['type' => 'original', 'fiscal_invoice_number' => 'X-1']);
@@ -296,7 +296,7 @@ it('učitava slike fiskalnih računa jednim upitom na detalju', function () {
     expect($receiptQueries)->toBe(1);
 });
 
-it('generiše PDF na svim predlošcima', function (string $template) {
+it('generiše PDF na svim predlošcima', function (string $template): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
@@ -360,7 +360,7 @@ it('koristi podešeni simbol valute na računu i PDF-u', function (DocumentTempl
     expect(renderPdfView($invoice, view: $template->view()))->toContain('1,00 KM');
 })->with(DocumentTemplate::cases());
 
-it('blueprint predložak ima zaseban nacrtni izgled', function () {
+it('blueprint predložak ima zaseban nacrtni izgled', function (): void {
     $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-blueprint');
 
     expect($html)->toContain('NACRT')
@@ -368,7 +368,7 @@ it('blueprint predložak ima zaseban nacrtni izgled', function () {
         ->and($html)->toContain('Referenca');
 });
 
-it('programerski predložak ima samostalan profesionalni izgled', function () {
+it('programerski predložak ima samostalan profesionalni izgled', function (): void {
     $html = renderPdfView(makeInvoice(), view: 'pdf.invoice-programmer');
 
     expect($html)->toContain('NAPLATA / SOFTVERSKE USLUGE')
@@ -393,7 +393,7 @@ it('novi programerski predlošci imaju različite vizuelne identitete', function
     'workstation' => ['pdf.invoice-workstation', 'RADNA_STANICA', '#4f46e5'],
 ]);
 
-it('nudi PDF na preuzimanje', function () {
+it('nudi PDF na preuzimanje', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
     System::shouldReceive('isMobile')->once()->andReturnFalse();
@@ -403,14 +403,14 @@ it('nudi PDF na preuzimanje', function () {
         ->assertHeader('content-type', 'application/pdf');
 });
 
-it('koristi čitljivo ime za PDF datoteku', function () {
+it('koristi čitljivo ime za PDF datoteku', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
 
     expect(app(InvoicePdfService::class)->filename(Invoice::firstOrFail()))
         ->toBe('faktura-0001-'.date('Y').'.pdf');
 });
 
-it('šalje račun mailom sa PDF prilogom', function () {
+it('šalje račun mailom sa PDF prilogom', function (): void {
     Mail::fake();
 
     $this->post(route('invoices.store'), invoicePayload());
@@ -430,7 +430,7 @@ it('šalje račun mailom sa PDF prilogom', function () {
     });
 });
 
-it('prilaže PDF i fiskalni račun sa pravim sadržajem', function () {
+it('prilaže PDF i fiskalni račun sa pravim sadržajem', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail()->load('fiscalRecords');
 
@@ -453,7 +453,7 @@ it('prilaže PDF i fiskalni račun sa pravim sadržajem', function () {
     @unlink($path);
 });
 
-it('traži ispravnog primaoca', function () {
+it('traži ispravnog primaoca', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
 
     $this->postJson(route('invoices.email', Invoice::firstOrFail()), [
@@ -461,7 +461,7 @@ it('traži ispravnog primaoca', function () {
     ])->assertUnprocessable()->assertJsonValidationErrors(['to', 'subject', 'body']);
 });
 
-it('prilaže fiskalni račun i kaže kad ga nema', function () {
+it('prilaže fiskalni račun i kaže kad ga nema', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
@@ -485,7 +485,7 @@ it('prilaže fiskalni račun i kaže kad ga nema', function () {
     });
 });
 
-it('servira sliku fiskalnog računa iz baze', function () {
+it('servira sliku fiskalnog računa iz baze', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $record = Invoice::firstOrFail()->fiscalRecords()->create(['type' => 'original']);
     app(FiscalReceiptStore::class)->store($record, 'sadrzaj-slike', 'png');
@@ -496,7 +496,7 @@ it('servira sliku fiskalnog računa iz baze', function () {
         ->assertSee('sadrzaj-slike');
 });
 
-it('ne stavlja kosu crtu u ime priloga', function () {
+it('ne stavlja kosu crtu u ime priloga', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail()->load('fiscalRecords');
 
@@ -513,7 +513,7 @@ it('ne stavlja kosu crtu u ime priloga', function () {
     @unlink($path);
 });
 
-it('kopira podrazumijevanu napomenu dokumenta na novi račun', function () {
+it('kopira podrazumijevanu napomenu dokumenta na novi račun', function (): void {
     $documents = app(DocumentSettings::class);
     $documents->invoice_notes = 'Hvala na povjerenju.';
     $documents->save();
@@ -523,7 +523,7 @@ it('kopira podrazumijevanu napomenu dokumenta na novi račun', function () {
     expect(Invoice::firstOrFail()->notes)->toBe('Hvala na povjerenju.');
 });
 
-it('čuva izmijenjenu napomenu samo na kreiranom računu', function () {
+it('čuva izmijenjenu napomenu samo na kreiranom računu', function (): void {
     $documents = app(DocumentSettings::class);
     $documents->invoice_notes = 'Zadana napomena.';
     $documents->save();
@@ -535,7 +535,7 @@ it('čuva izmijenjenu napomenu samo na kreiranom računu', function () {
     expect(Invoice::firstOrFail()->notes)->toBe('Dogovorena napomena za ovaj račun.');
 });
 
-it('prikazuje izmjenjivu zadanu napomenu pri kreiranju računa', function () {
+it('prikazuje izmjenjivu zadanu napomenu pri kreiranju računa', function (): void {
     $documents = app(DocumentSettings::class);
     $documents->invoice_notes = 'Hvala na povjerenju.';
     $documents->save();
@@ -546,7 +546,7 @@ it('prikazuje izmjenjivu zadanu napomenu pri kreiranju računa', function () {
         ->assertSee('Hvala na povjerenju.');
 });
 
-it('smješta napomenu u sklopiva dodatna polja računa', function () {
+it('smješta napomenu u sklopiva dodatna polja računa', function (): void {
     $html = $this->get(route('invoices.create'))
         ->assertSuccessful()
         ->getContent();
@@ -555,7 +555,7 @@ it('smješta napomenu u sklopiva dodatna polja računa', function () {
         ->and(strpos($html, 'x-show="showMore"'))->toBeLessThan(strpos($html, 'id="notes"'));
 });
 
-it('prenosi napomenu sačuvanu kroz podešavanja u formu novog računa', function () {
+it('prenosi napomenu sačuvanu kroz podešavanja u formu novog računa', function (): void {
     $documents = app(DocumentSettings::class);
     $numbering = app(NumberingSettings::class);
 
@@ -577,7 +577,7 @@ it('prenosi napomenu sačuvanu kroz podešavanja u formu novog računa', functio
         ->assertSee('Zadana napomena iz Podešavanja je unesena iznad');
 });
 
-it('primjenjuje rok plaćanja i podrazumijevani način plaćanja iz podešavanja na novi račun', function () {
+it('primjenjuje rok plaćanja i podrazumijevani način plaćanja iz podešavanja na novi račun', function (): void {
     $documents = app(DocumentSettings::class);
     $numbering = app(NumberingSettings::class);
 
@@ -610,7 +610,7 @@ it('primjenjuje rok plaćanja i podrazumijevani način plaćanja iz podešavanja
         ->toContain('<option value="WireTransfer" selected>Bankovni transfer</option>');
 });
 
-it('u pregledniku vraća PDF na preuzimanje', function () {
+it('u pregledniku vraća PDF na preuzimanje', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     System::shouldReceive('isMobile')->once()->andReturnFalse();
 
@@ -619,7 +619,7 @@ it('u pregledniku vraća PDF na preuzimanje', function () {
         ->assertHeader('content-type', 'application/pdf');
 });
 
-it('u Jumpu priprema PDF datoteku iz detalja računa', function () {
+it('u Jumpu priprema PDF datoteku iz detalja računa', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
 
@@ -632,7 +632,7 @@ it('u Jumpu priprema PDF datoteku iz detalja računa', function () {
         ->toContain("getenv('JUMP_BRIDGE_PORT') !== false || isMobile()");
 });
 
-it('u Jumpu servira PDF koji preglednik dijeli kao datoteku', function () {
+it('u Jumpu servira PDF koji preglednik dijeli kao datoteku', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
     putenv('JUMP_BRIDGE_PORT=3002');
@@ -647,7 +647,7 @@ it('u Jumpu servira PDF koji preglednik dijeli kao datoteku', function () {
     }
 });
 
-it('šalje PDF kao JSON payload kroz Jump proxy', function () {
+it('šalje PDF kao JSON payload kroz Jump proxy', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
     putenv('JUMP_BRIDGE_PORT=3002');
@@ -663,7 +663,7 @@ it('šalje PDF kao JSON payload kroz Jump proxy', function () {
     }
 });
 
-it('na telefonu predaje PDF sistemskom dijalogu kao datoteku', function () {
+it('na telefonu predaje PDF sistemskom dijalogu kao datoteku', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::firstOrFail();
     $temporaryDirectory = storage_path('app/private/mobile-share-test');
@@ -690,7 +690,7 @@ it('na telefonu predaje PDF sistemskom dijalogu kao datoteku', function () {
     }
 });
 
-it('čuva opis stavke', function () {
+it('čuva opis stavke', function (): void {
     $payload = invoicePayload();
     $payload['items'][0]['description'] = 'Radovi po ugovoru 12/2026';
 
@@ -699,7 +699,7 @@ it('čuva opis stavke', function () {
     expect(Invoice::firstOrFail()->items->first()->description)->toBe('Radovi po ugovoru 12/2026');
 });
 
-it('poštuje početni broj i prefiks iz podešavanja', function () {
+it('poštuje početni broj i prefiks iz podešavanja', function (): void {
     $settings = app(NumberingSettings::class);
     $settings->invoice_starting_number = 100;
     $settings->invoice_prefix = 'INV';
@@ -711,7 +711,7 @@ it('poštuje početni broj i prefiks iz podešavanja', function () {
     expect(Invoice::firstOrFail()->invoice_number)->toBe('INV00100/'.date('Y'));
 });
 
-it('nastavlja numeraciju kroz godine kad je godišnji reset isključen', function () {
+it('nastavlja numeraciju kroz godine kad je godišnji reset isključen', function (): void {
     $settings = app(NumberingSettings::class);
     $settings->reset_yearly = false;
     $settings->save();
@@ -722,13 +722,13 @@ it('nastavlja numeraciju kroz godine kad je godišnji reset isključen', functio
     expect(Invoice::orderBy('id')->pluck('invoice_number')->all())->toBe(['0001/2025', '0002/2026']);
 });
 
-it('uzima godinu broja sa datuma računa, ne sa današnjeg', function () {
+it('uzima godinu broja sa datuma računa, ne sa današnjeg', function (): void {
     $this->post(route('invoices.store'), invoicePayload(['date' => '2025-12-20', 'due_date' => '2025-12-31']));
 
     expect(Invoice::firstOrFail()->invoice_number)->toEndWith('/2025');
 });
 
-it('ignoriše neispravne stare brojeve pri nastavku numeracije', function () {
+it('ignoriše neispravne stare brojeve pri nastavku numeracije', function (): void {
     Invoice::create([
         'invoice_number' => 'stari-neispravan-broj',
         'date' => now(),
@@ -746,11 +746,11 @@ it('ignoriše neispravne stare brojeve pri nastavku numeracije', function () {
         ->and($numbers->next())->toBe('0008/'.date('Y'));
 });
 
-it('ne ruši listu na neispravan filter', function () {
+it('ne ruši listu na neispravan filter', function (): void {
     $this->get(route('invoices.index', ['status' => 'bogus', 'payment_type' => 'bogus']))->assertSuccessful();
 });
 
-it('prikazuje PDV na PDF-u i kad kompanija nije obveznik', function () {
+it('prikazuje PDV na PDF-u i kad kompanija nije obveznik', function (): void {
     $company = app(CompanySettings::class);
     $company->is_vat_obligor = false;
     $company->save();

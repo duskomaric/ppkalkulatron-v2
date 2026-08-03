@@ -27,7 +27,7 @@ use App\Models\FiscalTaxRate;
  * jedino mjesto gdje se pravila potvrđuju.
  */
 
-it('traži obavezna polja šifarnika', function (string $route, array $errors) {
+it('traži obavezna polja šifarnika', function (string $route, array $errors): void {
     $this->post(route($route), [])->assertSessionHasErrors($errors);
 })->with([
     'artikal' => ['articles.store', ['name', 'unit', 'tax_label']],
@@ -36,7 +36,7 @@ it('traži obavezna polja šifarnika', function (string $route, array $errors) {
     'valuta' => ['currencies.store', ['code', 'name', 'symbol']],
 ]);
 
-it('eksplicitno odobrava interne forme aplikacije', function () {
+it('eksplicitno odobrava interne forme aplikacije', function (): void {
     $requests = [
         new InvoiceRequest,
         new SendInvoiceEmailRequest,
@@ -57,7 +57,7 @@ it('eksplicitno odobrava interne forme aplikacije', function () {
     expect(array_map(fn ($request) => $request->authorize(), $requests))->each->toBeTrue();
 });
 
-it('validira preostale konfiguracione zahtjeve prije rada kontrolera', function () {
+it('validira preostale konfiguracione zahtjeve prije rada kontrolera', function (): void {
     unlocked()->put(route('profile.update'), [])
         ->assertSessionHasErrors('first_name');
     unlocked()->post(route('settings.fiscal.pin'), [])
@@ -69,7 +69,7 @@ it('validira preostale konfiguracione zahtjeve prije rada kontrolera', function 
         ->assertJsonValidationErrors('range');
 });
 
-it('odbija neispravan artikal', function (array $payload, string $error) {
+it('odbija neispravan artikal', function (array $payload, string $error): void {
     $this->post(route('articles.store'), $payload + ['name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F'])
         ->assertSessionHasErrors($error);
 })->with([
@@ -83,14 +83,14 @@ it('odbija neispravan artikal', function (array $payload, string $error) {
     'cijena nije broj' => [['last_unit_price' => 'skupo'], 'last_unit_price'],
 ]);
 
-it('prima svaku jedinicu mjere iz šifarnika', function (Unit $unit) {
+it('prima svaku jedinicu mjere iz šifarnika', function (Unit $unit): void {
     $this->post(route('articles.store'), ['name' => 'Usluga', 'unit' => $unit->value, 'tax_label' => 'F'])
         ->assertSessionHasNoErrors();
 
     expect(Article::sole()->unit)->toBe($unit);
 })->with(fn () => Unit::cases());
 
-it('prima svaku poresku oznaku koju uređaj prijavljuje', function () {
+it('prima svaku poresku oznaku koju uređaj prijavljuje', function (): void {
     foreach (FiscalTaxRate::query()->pluck('label') as $label) {
         $this->post(route('articles.store'), ['name' => 'Usluga '.$label, 'unit' => 'kom', 'tax_label' => $label])
             ->assertSessionHasNoErrors();
@@ -99,7 +99,7 @@ it('prima svaku poresku oznaku koju uređaj prijavljuje', function () {
     expect(Article::count())->toBe(FiscalTaxRate::query()->count());
 });
 
-it('čuva cijenu artikla u pfeningima', function () {
+it('čuva cijenu artikla u pfeningima', function (): void {
     $this->post(route('articles.store'), [
         'name' => 'Usluga', 'unit' => 'sat', 'tax_label' => 'F', 'last_unit_price' => '80.55',
     ])->assertRedirect(route('articles.index'));
@@ -107,7 +107,7 @@ it('čuva cijenu artikla u pfeningima', function () {
     expect(Article::sole()->last_unit_price)->toBe(8055);
 });
 
-it('odbija neispravan bankovni račun', function (array $payload, string $error) {
+it('odbija neispravan bankovni račun', function (array $payload, string $error): void {
     $this->post(route('bank-accounts.store'), $payload + [
         'bank_name' => 'UniCredit', 'account_number' => '5510010000000000',
     ])->assertSessionHasErrors($error);
@@ -117,7 +117,7 @@ it('odbija neispravan bankovni račun', function (array $payload, string $error)
     'predug SWIFT' => [['swift' => str_repeat('a', 33)], 'swift'],
 ]);
 
-it('odbija neispravnog klijenta', function (array $payload, string $error) {
+it('odbija neispravnog klijenta', function (array $payload, string $error): void {
     $this->post(route('clients.store'), $payload + ['name' => 'Kupac'])
         ->assertSessionHasErrors($error);
 })->with([
@@ -131,7 +131,7 @@ it('odbija neispravnog klijenta', function (array $payload, string $error) {
     'predug PDV broj' => [['tax_id' => str_repeat('1', 33)], 'tax_id'],
 ]);
 
-it('odbija neispravnu valutu', function (array $payload, string $error) {
+it('odbija neispravnu valutu', function (array $payload, string $error): void {
     $this->post(route('currencies.store'), $payload + ['code' => 'USD', 'name' => 'Dolar', 'symbol' => '$'])
         ->assertSessionHasErrors($error);
 })->with([
@@ -141,7 +141,7 @@ it('odbija neispravnu valutu', function (array $payload, string $error) {
     'predug simbol' => [['symbol' => str_repeat('$', 9)], 'symbol'],
 ]);
 
-it('ne prijavljuje valuti sopstvenu oznaku kao zauzetu', function () {
+it('ne prijavljuje valuti sopstvenu oznaku kao zauzetu', function (): void {
     $eur = Currency::where('code', 'EUR')->sole();
 
     $this->put(route('currencies.update', $eur), ['code' => 'EUR', 'name' => 'Evro', 'symbol' => '€'])
@@ -150,14 +150,14 @@ it('ne prijavljuje valuti sopstvenu oznaku kao zauzetu', function () {
     expect($eur->fresh()->name)->toBe('Evro');
 });
 
-it('ne pušta valutu na oznaku koju druga već nosi', function () {
+it('ne pušta valutu na oznaku koju druga već nosi', function (): void {
     $eur = Currency::where('code', 'EUR')->sole();
 
     $this->put(route('currencies.update', $eur), ['code' => 'BAM', 'name' => 'Marka', 'symbol' => 'KM'])
         ->assertSessionHasErrors('code');
 });
 
-it('gasi prekidač koji forma nije poslala', function (string $route, string $field, string $model, array $payload) {
+it('gasi prekidač koji forma nije poslala', function (string $route, string $field, string $model, array $payload): void {
     // Neoznačen checkbox se u HTML-u ne šalje; bez prepareForValidation() bi
     // vrijednost ostala nedirnuta, pa bi „isključeno" bilo nemoguće sačuvati.
     $this->post(route($route), $payload)->assertSessionHasNoErrors();
@@ -172,7 +172,7 @@ it('gasi prekidač koji forma nije poslala', function (string $route, string $fi
     ],
 ]);
 
-it('normalizuje oznaku valute u velika slova', function (string $code) {
+it('normalizuje oznaku valute u velika slova', function (string $code): void {
     $this->post(route('currencies.store'), ['code' => $code, 'name' => 'Dolar', 'symbol' => '$'])
         ->assertRedirect(route('currencies.index'));
 

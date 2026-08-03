@@ -6,7 +6,7 @@ use App\Models\Article;
 use App\Models\FiscalTaxRate;
 use App\Services\FiscalReceiptStore;
 
-it('povezuje stavku sa računom i artiklom uz ispravne castove', function () {
+it('povezuje stavku sa računom i artiklom uz ispravne castove', function (): void {
     $article = Article::create(['name' => 'Konsultacije', 'unit' => 'sat']);
     $invoice = makeInvoice();
     $item = $invoice->items()->create([
@@ -28,7 +28,7 @@ it('povezuje stavku sa računom i artiklom uz ispravne castove', function () {
         ->and($item->total)->toBeInt();
 });
 
-it('povezuje fiskalni zapis, sadržaj računa i njegov izvorni račun', function () {
+it('povezuje fiskalni zapis, sadržaj računa i njegov izvorni račun', function (): void {
     $invoice = makeInvoice();
     $record = $invoice->fiscalRecords()->create([
         'type' => FiscalRecordType::Original,
@@ -45,7 +45,7 @@ it('povezuje fiskalni zapis, sadržaj računa i njegov izvorni račun', function
         ->and($receipt->extension)->toBe('html');
 });
 
-it('izvodi stope u baznim poenima za obračun računa', function () {
+it('izvodi stope u baznim poenima za obračun računa', function (): void {
     FiscalTaxRate::query()->delete();
     $rate = FiscalTaxRate::factory()->create(['label' => 'F', 'rate' => 11, 'category_name' => 'Standardna']);
     FiscalTaxRate::factory()->create(['label' => 'E', 'rate' => 0, 'category_name' => 'Oslobođeno']);
@@ -54,7 +54,7 @@ it('izvodi stope u baznim poenima za obračun računa', function () {
         ->and(FiscalTaxRate::basisPointsByLabel())->toBe(['F' => 1100, 'E' => 0]);
 });
 
-it('čuva obje strane veze originalnog računa i storna', function () {
+it('čuva obje strane veze originalnog računa i storna', function (): void {
     $original = fiscalizedInvoice();
     $refund = refundFor($original);
 
@@ -62,7 +62,7 @@ it('čuva obje strane veze originalnog računa i storna', function () {
         ->and($refund->fresh()->originalInvoice->is($original))->toBeTrue();
 });
 
-it('svaki status računa ima razumljivu oznaku, boju i pravilo brisanja', function (InvoiceStatus $status, string $label, string $color, bool $deletable) {
+it('svaki status računa ima razumljivu oznaku, boju i pravilo brisanja', function (InvoiceStatus $status, string $label, string $color, bool $deletable): void {
     expect($status->label())->toBe($label)
         ->and($status->badgeColor())->toBe($color)
         ->and($status->canBeDeleted())->toBe($deletable);

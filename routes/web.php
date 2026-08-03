@@ -28,7 +28,7 @@ Route::post('/otkljucaj', [UnlockController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('unlock.store');
 
-Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(function () {
+Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(function (): void {
     Route::redirect('/', '/racuni');
 
     Route::post('/zakljucaj', [UnlockController::class, 'destroy'])->name('unlock.destroy');

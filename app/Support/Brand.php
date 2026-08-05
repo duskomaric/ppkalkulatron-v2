@@ -17,6 +17,9 @@ class Brand
 {
     public const DEFAULT_COLOR = '#F59E0B';
 
+    /** Jedina boja iz palete koja nije u krugu boja na ikoni. */
+    private const NEUTRAL = '#64748B';
+
     /** Podloge aplikacije — prate `--color-bg` iz resources/css/app.css. */
     private const BACKGROUND = ['light' => '#F8FAFC', 'dark' => '#0B0B0F'];
 
@@ -38,6 +41,49 @@ class Brand
             '#14B8A6' => 'Tirkizna',
             '#10B981' => 'Zelena',
             '#64748B' => 'Grafitna',
+        ];
+    }
+
+    /**
+     * Boje palete bez neutralne, u krug — odatle se izvode boje na ikoni.
+     *
+     * @return list<string>
+     */
+    public static function wheel(): array
+    {
+        return array_values(array_filter(
+            array_keys(self::palette()),
+            fn (string $hex): bool => $hex !== self::NEUTRAL,
+        ));
+    }
+
+    /**
+     * Boje ikone izvedene iz izabrane: podloga u četiri boje, tipke u osam.
+     *
+     * Izabrana boja je uvijek prva, ostale se uzimaju u pravilnom razmaku po krugu,
+     * pa svaka boja iz palete daje svoj, ali uvijek usklađen raspored.
+     *
+     * @return array{mesh: list<string>, keys: list<string>, display: string}
+     */
+    public static function iconColours(?string $selected = null): array
+    {
+        $wheel = self::wheel();
+        $count = count($wheel);
+        $start = array_search($selected ?? self::hex(), $wheel, true);
+
+        if ($start === false) {
+            // Boja izvan palete (npr. zadata pri pripremi build-a) ostaje prva.
+            $wheel[0] = $selected ?? self::hex();
+            $start = 0;
+        }
+
+        $at = fn (int $step): string => $wheel[($start + $step) % $count];
+        $mesh = array_map($at, [0, 3, 6, 4]);
+
+        return [
+            'mesh' => $mesh,
+            'keys' => array_map($at, range(0, 7)),
+            'display' => $mesh[2],
         ];
     }
 

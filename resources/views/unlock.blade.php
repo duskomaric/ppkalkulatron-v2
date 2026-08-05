@@ -12,7 +12,7 @@
     <div class="min-h-screen flex items-center justify-center px-6">
         <div class="w-full max-w-sm text-center animate-fade-in">
             <span class="inline-flex h-14 w-14 bg-primary rounded-2xl items-center justify-center text-white shadow-glow-primary mb-5">
-                <x-icon name="calculator" class="h-7 w-7" />
+                <x-icon name="calculator" class="h-8 w-8" />
             </span>
 
             <h1 class="text-2xl font-black tracking-tight italic mb-1">{{ config('app.name') }}</h1>

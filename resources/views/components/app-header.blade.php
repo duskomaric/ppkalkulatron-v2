@@ -5,7 +5,7 @@
         <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <a href="{{ route('invoices.index') }}" aria-label="Početna"
                class="h-11 w-11 shrink-0 bg-primary rounded-xl flex items-center justify-center text-white shadow-glow-primary transition-all duration-500">
-                <x-icon name="calculator" class="h-4 w-4" />
+                <x-icon name="calculator" class="h-6 w-6" />
             </a>
 
             @if ($companyName)

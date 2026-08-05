@@ -21,6 +21,7 @@ class UpdateFiscalSettingsRequest extends FormRequest
             'api_key' => ['nullable', 'string', 'max:255'],
             'serial_number' => ['nullable', 'string', 'max:255', 'required_if:device_mode,cloud'],
             'pac' => ['nullable', 'string', 'max:32', 'required_if:device_mode,cloud'],
+            'security_pin' => ['nullable', 'digits:4'],
             'cashier' => ['required', 'string', 'max:64'],
             'device_mode' => ['required', Rule::in(['cloud', 'local'])],
             'receipt_layout' => ['required', Rule::in(['Slip', 'Invoice'])],

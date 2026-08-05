@@ -19,6 +19,9 @@ class MenuSettings extends Settings
     /** Najveći broj stavki u donjem meniju prije grupe „Više“. */
     public int $max_menu_items;
 
+    /** Glavna boja aplikacije, iz palete u App\Support\Brand. */
+    public string $primary_color;
+
     public static function group(): string
     {
         return 'menu';

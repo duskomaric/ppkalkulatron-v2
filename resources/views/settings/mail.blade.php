@@ -8,7 +8,7 @@
         @csrf
         @method('PUT')
 
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
+        <x-section-block variant="card">
             <x-section-header icon="mail" title="Pošiljalac" :help="route('help').'#mail'" />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -17,13 +17,13 @@
             </div>
         </x-section-block>
 
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
+        <x-section-block variant="card">
             <x-section-header icon="cog" title="SMTP" subtitle="Ostavite host prazan da se šalje podrazumijevanim mailerom" :help="route('help').'#mail'" />
 
             <x-form-input label="Host" name="host" :value="$settings->host" placeholder="npr. smtp.gmail.com" />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <x-form-input label="Port" name="port" type="number" :value="$settings->port" placeholder="587" />
+                <x-form-input label="Port" name="port" type="number" inputmode="numeric" :value="$settings->port" placeholder="587" />
                 <x-form-select label="Enkripcija" name="encryption" :value="$settings->encryption"
                                :options="['tls' => 'TLS', 'ssl' => 'SSL']" placeholder="Bez enkripcije" />
                 <x-form-input label="Korisničko ime" name="username" :value="$settings->username" />

@@ -100,8 +100,8 @@ it('storno preslikava stavke i iznose originala', function (): void {
         ->and($refund->currency)->toBe($invoice->currency)
         ->and($refund->items)->toHaveCount($invoice->items()->count())
         ->and($refund->items->first()->name)->toBe($invoice->items->first()->name)
-        // Original i storno zajedno ulaze u „Storniranje".
-        ->and($invoice->fresh()->status)->toBe(InvoiceStatus::RefundCreated)
+        // Original ostaje fiskalizovan; storniranje je stanje storno dokumenta.
+        ->and($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized)
         ->and($invoice->fresh()->refund_invoice_id)->toBe($refund->id);
 });
 

@@ -464,7 +464,7 @@ it('jasno pokaže da je slanje backupa pokrenuto i spriječi dupli klik', functi
         ->assertSuccessful()
         ->assertSee('x-on:submit="sending = true"', false)
         ->assertSee('x-bind:disabled="sending"', false)
-        ->assertSee('Pripremam backup...')
+        ->assertSee('Pripremam arhivu...')
         ->assertSee('x-bind:aria-busy="sending"', false)
         ->assertSee('Pripremam dokumente i šaljem ih na email. Ne zatvarajte aplikaciju.')
         ->assertSee('Pojedinačni fajlovi');

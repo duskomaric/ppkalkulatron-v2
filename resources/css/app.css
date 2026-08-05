@@ -8,7 +8,8 @@
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
-    /* Jedina boja koja se mijenja */
+    /* Jedina boja koja se mijenja. Pravu vrijednost bira korisnik u podešavanjima
+       i zaglavlje je ubaci u stranicu; ovo je zadana vrijednost. */
     --primary-base: 245, 158, 11; /* Amber 500 */
 
     --color-primary: rgb(var(--primary-base));

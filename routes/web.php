@@ -6,9 +6,11 @@ use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CurrencyController;
+use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\DiagnosticsController;
 use App\Http\Controllers\DocumentTemplatePreviewController;
 use App\Http\Controllers\FiscalController;
+use App\Http\Controllers\FiscalImportController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\GeneralSettingsController;
 use App\Http\Controllers\InvoiceController;
@@ -69,9 +71,13 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
     Route::get('/podesavanja/mail', [MailSettingsController::class, 'edit'])->name('settings.mail.edit');
     Route::put('/podesavanja/mail', [MailSettingsController::class, 'update'])->name('settings.mail.update');
 
-    Route::get('/podesavanja/backup', [BackupController::class, 'edit'])->name('settings.backup.edit');
-    Route::put('/podesavanja/backup', [BackupController::class, 'update'])->name('settings.backup.update');
-    Route::post('/podesavanja/backup/posalji', [BackupController::class, 'send'])->name('settings.backup.send');
+    Route::get('/podesavanja/arhiva', [BackupController::class, 'edit'])->name('settings.backup.edit');
+    Route::put('/podesavanja/arhiva', [BackupController::class, 'update'])->name('settings.backup.update');
+    Route::post('/podesavanja/arhiva/posalji', [BackupController::class, 'send'])->name('settings.backup.send');
+    Route::get('/podesavanja/backup-aplikacije', [DatabaseBackupController::class, 'edit'])->name('settings.database.edit');
+    Route::get('/podesavanja/backup-aplikacije/preuzmi', [DatabaseBackupController::class, 'download'])->name('settings.database.download');
+    Route::post('/podesavanja/backup-aplikacije/vrati', [DatabaseBackupController::class, 'restore'])->name('settings.database.restore');
+    Route::post('/podesavanja/backup-aplikacije/reset', [DatabaseBackupController::class, 'reset'])->name('settings.database.reset');
 
     Route::get('/podesavanja/dijagnostika', [DiagnosticsController::class, 'edit'])->name('settings.diagnostics.edit');
     Route::put('/podesavanja/dijagnostika', [DiagnosticsController::class, 'update'])->name('settings.diagnostics.update');
@@ -85,6 +91,8 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
     Route::post('/podesavanja/fiskalizacija/skeniraj', [FiscalSettingsController::class, 'scan'])->name('settings.fiscal.scan');
     Route::post('/podesavanja/fiskalizacija/pin', [FiscalSettingsController::class, 'pin'])->name('settings.fiscal.pin');
     Route::post('/podesavanja/fiskalizacija/zahtjev', [FiscalSettingsController::class, 'findRequest'])->name('settings.fiscal.find-request');
+    Route::post('/podesavanja/fiskalizacija/uvoz/pretraga', [FiscalImportController::class, 'search'])->name('settings.fiscal.import.search');
+    Route::post('/podesavanja/fiskalizacija/uvoz', [FiscalImportController::class, 'store'])->name('settings.fiscal.import.store');
 
     Route::get('/podesavanja/meni', [MenuSettingsController::class, 'edit'])->name('settings.menu.edit');
     Route::put('/podesavanja/meni', [MenuSettingsController::class, 'update'])->name('settings.menu.update');

@@ -19,7 +19,7 @@
     <x-section-block variant="card">
         <x-section-header icon="currency-euro" title="Cijena" />
 
-        <x-form-input :label="'Cijena ('.$currencySymbol.')'" name="last_unit_price" type="number" step="0.01"
+        <x-form-input :label="'Cijena ('.$currencySymbol.')'" name="last_unit_price" type="number" step="0.01" inputmode="decimal"
                       :value="$article?->last_unit_price ? number_format($article->last_unit_price / 100, 2, '.', '') : null"
                       hint="Sa porezom. Ponudi se sama pri dodavanju na račun." />
     </x-section-block>
@@ -41,7 +41,7 @@
                                hint="Preuzeta direktno sa trenutno dostupne fiskalne kase." />
             @endif
 
-            <x-form-input label="GTIN" name="gtin" :value="$article?->gtin"
+            <x-form-input label="GTIN" name="gtin" inputmode="numeric" :value="$article?->gtin"
                           hint="Barkod, 8 do 14 cifara." />
         </div>
     </x-section-block>

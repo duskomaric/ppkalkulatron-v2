@@ -332,7 +332,21 @@ Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, curr
     },
 }));
 
-Alpine.data('menuSettings', ({ modules, menuModules, maxMenuItems }) => ({
+Alpine.data('menuSettings', ({ modules, menuModules, maxMenuItems, primaryColor }) => ({
+    primaryColor,
+
+    // Boja se vidi odmah, prije čuvanja — ista promjenljiva koju zaglavlje ubaci u stranicu.
+    applyColor() {
+        const [, r, g, b] = /^#(\w{2})(\w{2})(\w{2})$/.exec(this.primaryColor) ?? [];
+
+        if (r) {
+            document.documentElement.style.setProperty(
+                '--primary-base',
+                [r, g, b].map((channel) => parseInt(channel, 16)).join(', '),
+            );
+        }
+    },
+
     modules: modules.map((module) => ({
         ...module,
         placement: menuModules.includes(module.key) ? 'menu' : 'drawer',
@@ -757,6 +771,283 @@ const invoiceActions = () => ({
     },
 });
 
+/**
+ * Uvoz računa sa fiskalne kase.
+ *
+ * Kasa vrati spisak, pa se sadržaj svakog računa preuzima posebno — zato uvoz ide
+ * u serijama: jedan zahtjev ne stoji minutu i korisnik vidi napredak.
+ */
+Alpine.data('invoiceImport', ({ searchUrl, importUrl, from, to }) => ({
+    from,
+    to,
+    numbering: 'own',
+    searching: false,
+    importing: false,
+    searched: false,
+    rows: [],
+    selected: [],
+    skipped: 0,
+    done: 0,
+    summary: null,
+    error: '',
+
+    get total() {
+        return this.rows.length;
+    },
+
+    get available() {
+        return this.rows.filter((row) => ! row.imported);
+    },
+
+    get allSelected() {
+        return this.available.length > 0 && this.selected.length === this.available.length;
+    },
+
+    get progress() {
+        return this.selected.length ? Math.round((this.done / this.selected.length) * 100) : 0;
+    },
+
+    toggleAll() {
+        this.selected = this.allSelected ? [] : this.available.map((row) => row.number);
+    },
+
+    async search() {
+        this.searching = true;
+        this.error = '';
+        this.summary = null;
+
+        const data = await this.post(this.searchUrl(), { from: this.from, to: this.to });
+
+        if (data) {
+            this.rows = data.invoices ?? [];
+            this.skipped = data.skipped ?? 0;
+            this.selected = this.available.map((row) => row.number);
+            this.searched = true;
+        }
+
+        this.searching = false;
+    },
+
+    async runImport() {
+        if (! this.selected.length) return;
+
+        this.importing = true;
+        this.error = '';
+        this.done = 0;
+
+        const result = { imported: 0, skipped: 0, failed: [] };
+        const batches = [];
+        for (let i = 0; i < this.selected.length; i += 10) {
+            batches.push(this.selected.slice(i, i + 10));
+        }
+
+        for (const batch of batches) {
+            const data = await this.post(this.importUrl(), {
+                numbers: batch,
+                use_fiscal_numbers: this.numbering === 'fiscal',
+            });
+
+            if (! data) break;
+
+            result.imported += data.imported ?? 0;
+            result.skipped += data.skipped ?? 0;
+            result.failed.push(...(data.failed ?? []));
+            this.done += batch.length;
+        }
+
+        this.summary = result;
+        this.importing = false;
+
+        if (result.imported > 0) {
+            this.rows.forEach((row) => {
+                if (this.selected.includes(row.number)) row.imported = true;
+            });
+            this.selected = [];
+        }
+    },
+
+    searchUrl() {
+        return searchUrl;
+    },
+
+    importUrl() {
+        return importUrl;
+    },
+
+    async post(url, body) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                },
+                body: JSON.stringify(body),
+            });
+
+            if (wentToUnlock(response)) return null;
+
+            const data = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                this.error = data.message || 'Radnja nije uspjela.';
+
+                return null;
+            }
+
+            return data;
+        } catch {
+            this.error = 'Kasa nije dostupna.';
+
+            return null;
+        }
+    },
+
+    money(value) {
+        return new Intl.NumberFormat('sr-Latn-BA', { minimumFractionDigits: 2 }).format(value ?? 0);
+    },
+
+    day(value) {
+        return value ? value.slice(8, 10) + '.' + value.slice(5, 7) + '.' + value.slice(0, 4) + '.' : '';
+    },
+}));
+
 Alpine.data('invoiceActions', invoiceActions);
+
+/**
+ * Dugme za preuzimanje backupa baze.
+ *
+ * Preuzimanje ne mijenja stranicu, pa se kraj ne vidi po navigaciji — server uz
+ * samu datoteku pošalje kolačić, a ovdje se on čeka pa se dugme vraća u normalu.
+ */
+Alpine.data('databaseBackup', () => ({
+    preparing: false,
+    timer: null,
+    fallback: null,
+
+    start() {
+        this.preparing = true;
+        this.timer = window.setInterval(() => {
+            if (document.cookie.includes('backup-preuzet')) {
+                this.finish();
+            }
+        }, 300);
+
+        // Ako preuzimanje ne uspije, kolačić nikad ne stigne — dugme se ipak oslobodi.
+        this.fallback = window.setTimeout(() => this.finish(), 120000);
+    },
+
+    finish() {
+        window.clearInterval(this.timer);
+        window.clearTimeout(this.fallback);
+        document.cookie = 'backup-preuzet=; Max-Age=0; path=/';
+        this.preparing = false;
+    },
+}));
+
+/**
+ * Vraćanje backupa. Uređaj u jednom zahtjevu prima svega par megabajta, pa se
+ * datoteka šalje isjeckana, a server je ponovo sastavlja i tek na kraju vraća podatke.
+ */
+Alpine.data('databaseRestore', ({ url, chunkBytes }) => ({
+    sending: false,
+    restoring: false,
+    sent: 0,
+    total: 0,
+    error: '',
+
+    get progress() {
+        return this.total ? Math.round((this.sent / this.total) * 100) : 0;
+    },
+
+    confirm() {
+        const file = this.$refs.archive.files[0];
+
+        if (! file) {
+            this.error = 'Odaberite backup datoteku.';
+
+            return;
+        }
+
+        Alpine.store('confirmation').ask(
+            'Vraćanje backupa briše sve što je sada u aplikaciji. Nastaviti?',
+            () => this.send(file),
+        );
+    },
+
+    async send(file) {
+        this.sending = true;
+        this.restoring = false;
+        this.error = '';
+        this.sent = 0;
+        this.total = file.size;
+
+        const chunks = Math.max(1, Math.ceil(file.size / chunkBytes));
+
+        for (let index = 0; index < chunks; index++) {
+            const slice = file.slice(index * chunkBytes, (index + 1) * chunkBytes);
+            const last = index === chunks - 1;
+
+            const body = new FormData();
+            body.append('chunk', slice, 'backup.part');
+            body.append('index', index);
+            body.append('last', last ? '1' : '0');
+
+            // Zamjena baze i migracije traju, pa posljednji dio nosi drugu poruku.
+            this.restoring = last;
+
+            const data = await this.post(body);
+
+            if (! data) {
+                this.sending = false;
+                this.restoring = false;
+
+                return;
+            }
+
+            this.sent += slice.size;
+
+            if (data.redirect) {
+                window.location = data.redirect;
+
+                return;
+            }
+        }
+
+        this.sending = false;
+    },
+
+    async post(body) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                },
+                body,
+            });
+
+            if (wentToUnlock(response)) return null;
+
+            const data = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                this.error = data.message || Object.values(data.errors ?? {}).flat()[0] || 'Backup nije vraćen.';
+
+                return null;
+            }
+
+            return data;
+        } catch {
+            this.error = 'Prenos backupa je prekinut. Pokušajte ponovo.';
+
+            return null;
+        }
+    },
+}));
 
 Alpine.start();

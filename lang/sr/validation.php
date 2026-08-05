@@ -49,6 +49,7 @@ return [
         'string' => 'Polje :attribute mora imati :size znakova.',
     ],
     'string' => 'Polje :attribute mora biti tekst.',
+    'uploaded' => 'Polje :attribute nije prenijeto do kraja — datoteka je veća od dozvoljene.',
     'unique' => 'Vrijednost polja :attribute je već zauzeta.',
     'url' => 'Polje :attribute mora biti ispravan URL.',
 

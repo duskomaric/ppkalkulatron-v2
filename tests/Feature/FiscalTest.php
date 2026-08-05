@@ -6,6 +6,7 @@ use App\Models\ExchangeRate;
 use App\Models\Invoice;
 use App\Services\Diagnostics;
 use App\Services\FiscalDeviceErrorMessage;
+use App\Services\FiscalDeviceHealth;
 use App\Services\FiscalReceiptStore;
 use App\Services\FiscalService;
 use App\Services\NetworkScanner;
@@ -191,13 +192,14 @@ it('traži fiskalizovan račun prije kopije', function (): void {
     app(FiscalService::class)->copy(makeInvoice());
 })->throws(RuntimeException::class, 'Račun mora biti fiskalizovan prije štampe kopije.');
 
-it('storno prebacuje original u storniran', function (): void {
+it('storno ne mijenja status originala', function (): void {
     $invoice = fiscalizedInvoice();
     $refund = refundFor($invoice);
 
     app(FiscalService::class)->refund($refund->fresh());
 
-    expect($invoice->fresh()->status)->toBe(InvoiceStatus::Refunded)
+    expect($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized)
+        ->and($invoice->fresh()->refund_invoice_id)->toBe($refund->id)
         ->and($refund->fresh()->status)->toBe(InvoiceStatus::Refunded);
 
     // Refund zahtjev mora zaista biti poslat, uz referencu na original.
@@ -558,4 +560,103 @@ it('čita dostupne IP adrese iz stvarnih mrežnih interfejsa uređaja', function
     };
 
     expect($scanner->availableInterfaceIps())->each->toBeString();
+});
+
+it('sačuvanim PIN-om sama otključava kasu kad je uređaj traži', function (): void {
+    $settings = app(FiscalSettings::class);
+    $settings->device_mode = 'local';
+    $settings->security_pin = '1234';
+    $settings->save();
+
+    $pinSent = false;
+
+    Http::fake([
+        '*/api/attention' => Http::response(''),
+        '*/api/pin' => function () use (&$pinSent) {
+            $pinSent = true;
+
+            return Http::response('0100');
+        },
+        '*/api/status' => Http::sequence()
+            ->push(['gsc' => ['1500']])
+            ->push(['gsc' => ['0100']]),
+    ]);
+
+    $health = app(FiscalDeviceHealth::class);
+    $health->forget();
+
+    expect($health->refresh()['state'])->toBe('ready')
+        ->and($pinSent)->toBeTrue();
+});
+
+it('bez sačuvanog PIN-a ostaje na traženju PIN-a', function (): void {
+    Http::fake([
+        '*/api/attention' => Http::response(''),
+        '*/api/status' => Http::response(['gsc' => ['1500']]),
+    ]);
+
+    app(FiscalDeviceHealth::class)->forget();
+
+    expect(app(FiscalDeviceHealth::class)->refresh()['state'])->toBe('pin_required');
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/pin'));
+});
+
+it('kad kasa odbije PIN status ostaje pin_required', function (): void {
+    $settings = app(FiscalSettings::class);
+    $settings->device_mode = 'local';
+    $settings->security_pin = '9999';
+    $settings->save();
+
+    Http::fake([
+        '*/api/attention' => Http::response(''),
+        '*/api/pin' => Http::response('2800'),
+        '*/api/status' => Http::response(['gsc' => ['1500']]),
+    ]);
+
+    app(FiscalDeviceHealth::class)->forget();
+
+    expect(app(FiscalDeviceHealth::class)->refresh()['state'])->toBe('pin_required');
+});
+
+it('fiskalizacija se ponavlja nakon automatskog otključavanja', function (): void {
+    $settings = app(FiscalSettings::class);
+    $settings->device_mode = 'local';
+    $settings->security_pin = '1234';
+    $settings->save();
+
+    Http::fake([
+        '*/api/pin' => Http::response('0100'),
+        '*/api/invoices' => Http::sequence()
+            ->push(['message' => 'Security element PIN required'], 400)
+            ->push([
+                'invoiceNumber' => 'ABC12345-ABC12345-1',
+                'invoiceCounter' => '1/1ПП',
+                'verificationUrl' => 'https://example.test/v/?vl=x',
+            ]),
+    ]);
+
+    $invoice = makeInvoice();
+    $record = app(FiscalService::class)->fiscalize($invoice);
+
+    expect($record->fiscal_invoice_number)->toBe('ABC12345-ABC12345-1')
+        ->and($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/api/pin'));
+});
+
+it('cloud kasa ne dobija PIN — sigurnosni element nije u uređaju', function (): void {
+    $settings = app(FiscalSettings::class);
+    $settings->device_mode = 'cloud';
+    $settings->security_pin = '1234';
+    $settings->save();
+
+    Http::fake([
+        '*/api/attention' => Http::response(''),
+        '*/api/status' => Http::response(['gsc' => ['1500']]),
+    ]);
+
+    app(FiscalDeviceHealth::class)->forget();
+
+    expect(app(FiscalDeviceHealth::class)->refresh()['state'])->toBe('pin_required');
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/pin'));
 });

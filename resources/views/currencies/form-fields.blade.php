@@ -39,7 +39,7 @@
                 @csrf
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <x-form-input label="Kurs" name="rate_to_bam" type="number" step="0.00001" required
+                    <x-form-input label="Kurs" name="rate_to_bam" type="number" step="0.00001" inputmode="decimal" required
                                   :hint="'Koliko KM vrijedi 1 '.$currency->code.'.'" />
                     <x-form-input label="Datum" name="rate_date" type="date" :value="now()->format('Y-m-d')" required />
                 </div>

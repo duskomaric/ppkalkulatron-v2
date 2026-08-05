@@ -5,7 +5,7 @@
     <x-back-link :href="route('invoices.index')" />
 
     <div class="space-y-8 animate-fade-in">
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
+        <x-section-block variant="card">
             <x-section-header icon="activity" title="Sigurna dijagnostika" subtitle="Pomoć pri rješavanju tehničkih problema." :help="route('help').'#dijagnostika'" />
 
             <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
@@ -40,7 +40,7 @@
             </form>
         </x-section-block>
 
-        <x-section-block variant="card" class="sm:p-8 space-y-5">
+        <x-section-block variant="card" class="space-y-5">
             <x-section-header icon="send" title="Pošalji dijagnostiku" subtitle="Jedan sigurni tekstualni prilog sa zadnjih najviše sedam dana." :help="route('help').'#dijagnostika'" />
 
             @if ($settings->last_sent_at)

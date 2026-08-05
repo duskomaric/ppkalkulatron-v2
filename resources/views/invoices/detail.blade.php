@@ -2,6 +2,12 @@
 <x-detail-body :entity-name="$invoice->invoice_number" entity-icon="file-text">
     <x-slot:badges>
         <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
+        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
+            <x-status-badge label="Poništen" color="red" />
+        @endif
+        @if ($invoice->imported_at)
+            <x-status-badge label="Uvezen" color="blue" />
+        @endif
     </x-slot:badges>
 
     <div class="space-y-3">
@@ -136,14 +142,19 @@
         @include('invoices.fiscal')
     </div>
 
-    @if ($invoice->isDeletable())
-        <x-slot:actions>
+    <x-slot:actions>
+        @if ($invoice->isDeletable())
             <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" class="flex-1"
                   data-confirm="Obrisati račun {{ $invoice->invoice_number }}?">
                 @csrf @method('DELETE')
                 <x-drawer-action-button tone="danger" icon="trash" label="Obriši" class="w-full" />
             </form>
-            <x-drawer-action-button icon="pencil" label="Uredi" :href="route('invoices.edit', $invoice)" />
-        </x-slot:actions>
-    @endif
+        @endif
+
+        {{-- Fiskalizovan račun se smije dopuniti, ali samo uz svjesnu potvrdu. --}}
+        <x-drawer-action-button icon="pencil" label="Uredi" :href="route('invoices.edit', $invoice, false)"
+                                :confirm="$invoice->fiscalRecords->isNotEmpty()
+                                    ? 'Račun '.$invoice->invoice_number.' je već fiskalizovan. Izmjena ne mijenja fiskalni račun kod Poreske uprave. Nastaviti?'
+                                    : null" />
+    </x-slot:actions>
 </x-detail-body>

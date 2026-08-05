@@ -33,7 +33,8 @@
                     'fiskalizacija' => 'Fiskalizacija',
                     'skeniranje' => 'Skeniranje mreže',
                     'mail' => 'Mail (SMTP)',
-                    'backup' => 'Email backup',
+                    'backup' => 'Arhiva na email',
+                    'backup-aplikacije' => 'Backup aplikacije',
                     'dijagnostika' => 'Dijagnostika',
                     'numeracija' => 'Numeracija dokumenata',
                     'stampa-racuna' => 'Štampa računa',
@@ -59,7 +60,7 @@
                 <li>Dodajte artikle i, po potrebi, klijente, bankovne račune i dodatne valute.</li>
                 <li>U <strong>Fiskalizacija</strong> povežite uređaj i provjerite njegov status.</li>
                 <li>Napravite račun, pregledajte ga, a zatim ga fiskalizujte na njegovom detalju.</li>
-                <li>PDF pošaljite kupcu, a periodično pošaljite ZIP backup na svoj email.</li>
+                <li>PDF pošaljite kupcu, a periodično napravite backup aplikacije i arhivu na email.</li>
             </ol>
             <p>
                 Fiskalni dokument nije zamjena za PDF računa: uređaj ga vraća kao vlastiti zapis, dok aplikacija
@@ -145,9 +146,14 @@
                 Fiskalizovan račun se više ne može mijenjati ni brisati — ispravlja se stornom.
             </p>
             <p>
-                Novi račun prvo ima status <strong>Kreiran</strong>. Na njegovom detalju možete preuzeti PDF,
-                poslati ga mailom ili fiskalizovati. Nakon uspješne fiskalizacije uz račun ostaju broj,
-                vrijeme, kontrolni podaci i originalni fiskalni dokument.
+                Novi račun prvo ima status <strong>Nacrt</strong>. Na njegovom detalju možete preuzeti PDF,
+                poslati ga mailom ili fiskalizovati; nakon fiskalizacije status je <strong>Fiskalizovan</strong>,
+                a uz račun ostaju broj, vrijeme, kontrolni podaci i originalni fiskalni dokument.
+            </p>
+            <p>
+                Storno je zaseban dokument: dok nije fiskalizovan stoji u statusu <strong>Storniranje</strong>,
+                a poslije je <strong>Storniran</strong>. Originalni račun i dalje ostaje fiskalizovan, samo se
+                uz njega prikazuje da je poništen stornom.
             </p>
 
         </x-help-section>
@@ -261,15 +267,37 @@
 
         </x-help-section>
 
-        <x-help-section id="backup" title="Email backup" icon="archive">
+        <x-help-section id="backup" title="Arhiva na email" icon="mail">
             <p>
-                U <strong>Podešavanja → Backup</strong> odredite adresu na koju se šalje sigurnosna kopija.
-                Prije slanja mora biti podešen mail server.
+                U <strong>Podešavanja → Arhiva na email</strong> odredite adresu na koju se šalje arhiva
+                dokumenata. Prije slanja mora biti podešen mail server.
             </p>
             <p>
-                Dugme <strong>Napravi i pošalji backup</strong> pripremi jedan ZIP sa PDF-om svakog računa,
+                Dugme <strong>Napravi i pošalji arhivu</strong> pripremi jedan ZIP sa PDF-om svakog računa,
                 originalnim fiskalnim dokumentima (PNG, PDF ili HTML) i <strong>manifest.csv</strong>.
                 Poslije uspješnog slanja aplikacija prikaže datum i broj uključenih dokumenata.
+            </p>
+            <p>
+                Arhiva je za knjigovođu i čuvanje dokumenata — iz nje se aplikacija ne vraća. Za to služi
+                <strong>Backup aplikacije</strong>.
+            </p>
+        </x-help-section>
+
+        <x-help-section id="backup-aplikacije" title="Backup aplikacije, vraćanje i reset" icon="archive">
+            <p>
+                <strong>Podešavanja → Backup aplikacije</strong> pravi punu kopiju: bazu sa računima,
+                klijentima, artiklima i podešavanjima, plus fiskalne dokumente. Preuzima se kao jedna datoteka
+                (na telefonu ide u dijeljenje). Ta datoteka sadrži i pristupne podatke — ključ i PIN fiskalne
+                kase te lozinku mail servera — pa je čuvajte kao i same te podatke.
+            </p>
+            <p>
+                <strong>Vraćanje iz backupa</strong> zamjenjuje sve što je trenutno u aplikaciji sadržajem
+                odabrane datoteke; zatečeno stanje se prije zamjene sačuva na uređaju. Poslije vraćanja se
+                prijavljujete PIN-om iz vraćenog backupa.
+            </p>
+            <p>
+                <strong>Reset aplikacije</strong> briše sve podatke, dokumente i podešavanja i vraća aplikaciju
+                u stanje svježe instalacije. Ne može se poništiti, pa prvo napravite backup.
             </p>
         </x-help-section>
 
@@ -324,6 +352,11 @@
                 U <strong>Podešavanja → Izgled i navigacija</strong> birate svijetlu, tamnu ili sistemsku temu,
                 kao i redoslijed modula u donjem meniju. Ostali se otvaraju iz grupe <strong>Više</strong> —
                 ništa se ne sakriva, samo se premješta.
+            </p>
+            <p>
+                Tu je i <strong>boja aplikacije</strong>: odabir iz palete odmah mijenja dugmad, oznake i
+                naglaske. Tema ostaje na uređaju, a boja se čuva sa ostalim podešavanjima. Ikona aplikacije
+                na početnom ekranu ostaje ona iz instalacije.
             </p>
 
         </x-help-section>

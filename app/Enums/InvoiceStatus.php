@@ -3,12 +3,13 @@
 namespace App\Enums;
 
 /**
- * Status prati život računa, uključujući njegov storno:
+ * Tok statusa:
  *
- *   Created → Fiscalized → RefundCreated → Refunded
+ *   prodajni račun:  Created → Fiscalized
+ *   storno dokument: RefundCreated → Refunded
  *
- * Original i njegov storno dijele posljednja dva stanja: kad se storno kreira oba
- * su u „Storniranje", a kad se storno fiskalizuje oba su „Storniran".
+ * Original ostaje fiskalizovan i kad mu se izda storno — kod Poreske uprave i dalje
+ * postoji; poništava ga zaseban dokument, koji jedini nosi statuse storniranja.
  */
 enum InvoiceStatus: string
 {

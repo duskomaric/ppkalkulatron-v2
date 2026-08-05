@@ -9,7 +9,7 @@
         @csrf
         @method('PUT')
 
-        <x-section-block id="fiscal-device-settings" variant="card" class="sm:p-8 space-y-6">
+        <x-section-block id="fiscal-device-settings" variant="card">
             <x-section-header icon="file-text" title="Fiskalna kasa" :help="route('help').'#fiskalizacija'" />
 
             <div class="space-y-2">
@@ -39,12 +39,17 @@
             <div x-cloak x-show="deviceMode === 'cloud'" x-transition.opacity class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <x-form-input label="Serijski broj" name="serial_number" :value="$settings->serial_number"
                               hint="Samo za cloud." />
-                <x-form-input label="PAK" name="pac" :value="$settings->pac" hint="Samo za cloud." />
+                <x-form-input label="PAK" name="pac" inputmode="numeric" :value="$settings->pac" hint="Samo za cloud." />
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <x-form-input label="Blagajnik" name="cashier" :value="$settings->cashier" required
                               hint="Ime koje se ispisuje na fiskalnom računu." />
+                <div x-cloak x-show="deviceMode === 'local'" x-transition.opacity>
+                    <x-form-input label="PIN sigurnosnog elementa" name="security_pin" :value="$settings->security_pin"
+                                  type="password" inputmode="numeric" maxlength="4" autocomplete="off" icon="lock"
+                                  hint="Samo za lokalnu kasu. Kad je upisan, aplikacija je sama otključava." />
+                </div>
             </div>
 
             <div class="pt-2 border-t border-[var(--color-border)]">
@@ -57,8 +62,9 @@
             </div>
         </x-section-block>
 
-        <x-section-block variant="accent" class="sm:p-6 space-y-4" x-data="{ fiscalState: @js($fiscalHealth['state']) }"
-                         @fiscal-health-updated="fiscalState = $event.detail.state">
+        <x-section-block variant="accent">
+            <div class="space-y-4" x-data="{ fiscalState: @js($fiscalHealth['state']) }"
+                 @fiscal-health-updated="fiscalState = $event.detail.state">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-start gap-3">
                     <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
@@ -87,9 +93,10 @@
                     @endforeach
                 </div>
             @endif
+            </div>
         </x-section-block>
 
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
+        <x-section-block variant="card">
             <x-section-header icon="file-text" title="Štampa računa" :help="route('help').'#stampa-racuna'" />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -118,7 +125,7 @@
             <x-toggle name="print_receipt" :checked="$settings->print_receipt" label="Štampaj račun pri fiskalizaciji" />
         </x-section-block>
 
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
+        <x-section-block variant="card">
             <x-section-header icon="hash" title="Veleprodaja" :help="route('help').'#fiskalizacija'" />
 
             <x-toggle name="wholesale" :checked="$settings->wholesale" label="Veleprodaja (VP)" />
@@ -171,13 +178,19 @@
             </template>
         </x-section-block>
 
-        <x-section-block variant="accent" x-cloak x-show="fiscalState === 'pin_required'"
-                         x-data="{ fiscalState: @js($fiscalHealth['state']) }"
-                         @fiscal-health-updated.window="fiscalState = $event.detail.state">
+        <div x-data="{ fiscalState: @js($fiscalHealth['state']) }"
+             @fiscal-health-updated.window="fiscalState = $event.detail.state">
+        <x-section-block variant="accent" x-cloak x-show="fiscalState === 'pin_required'">
             <x-section-header icon="lock" title="Kasa traži PIN" :help="route('help').'#fiskalizacija'" />
 
             <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
-                Unesite četverocifreni PIN sigurnosnog elementa da biste nastavili fiskalizaciju.
+                @if (filled($settings->security_pin) && $settings->device_mode === 'local')
+                    Sačuvani PIN je poslat, ali ga kasa nije prihvatila. Provjerite je li ispravan u podacima kase iznad,
+                    ili ga pošaljite ručno.
+                @else
+                    Unesite četverocifreni PIN sigurnosnog elementa da biste nastavili fiskalizaciju. Ako ga sačuvate
+                    u podacima kase iznad, aplikacija će ga ubuduće slati sama.
+                @endif
             </p>
 
             <form method="POST" action="{{ route('settings.fiscal.pin') }}" class="flex flex-col sm:flex-row gap-3 sm:items-end">
@@ -188,6 +201,123 @@
                 </div>
                 <x-button variant="ghost" class="!py-3.5 shrink-0">Pošalji PIN</x-button>
             </form>
+        </x-section-block>
+        </div>
+
+        <x-section-block variant="card">
+            <x-section-header icon="archive" title="Uvoz računa sa kase"
+                              subtitle="Za kasu koja je već radila prije aplikacije." :help="route('help').'#fiskalizacija'" />
+
+            {{-- x-data stoji na običnom divu: Blade direktive u atributu komponente se ne kompajliraju. --}}
+            <div class="space-y-4" x-data="invoiceImport({
+                     searchUrl: @js(route('settings.fiscal.import.search', [], false)),
+                     importUrl: @js(route('settings.fiscal.import.store', [], false)),
+                     from: @js(now()->startOfYear()->format('Y-m-d')),
+                     to: @js(now()->format('Y-m-d')),
+                 })">
+
+            <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
+                Kasa daje stavke, iznose, poreske oznake, način plaćanja i JIB kupca. Naziv kupca,
+                jedinicu mjere i vezu na artikal ne zna — klijenti i artikli se prvo traže lokalno,
+                a ako ih nema prave se od podataka sa kase, pa ih dopunite. Kopije i predračuni se preskaču.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 sm:items-end">
+                <x-form-input label="Od datuma" name="import_from" type="date" x-model="from" />
+                <x-form-input label="Do datuma" name="import_to" type="date" x-model="to" />
+                <x-button variant="ghost" type="button" class="!py-3.5 shrink-0"
+                          x-on:click="search()" x-bind:disabled="searching || importing">
+                    <span x-text="searching ? 'Tražim…' : 'Pronađi račune'">Pronađi račune</span>
+                </x-button>
+            </div>
+
+            <p x-show="error" x-cloak x-text="error"
+               class="rounded-xl border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-3 py-2 text-xs font-bold text-[var(--color-error)]"></p>
+
+            <template x-if="searched && ! total">
+                <p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">
+                    U tom periodu kasa nema računa za uvoz.
+                </p>
+            </template>
+
+            <template x-if="total">
+                <div class="space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs font-bold text-[var(--color-text-muted)]">
+                            <span x-text="total"></span> računa na kasi ·
+                            <span x-text="available.length"></span> za uvoz ·
+                            <span x-text="skipped"></span> preskočeno (kopije i predračuni)
+                        </p>
+                        <button type="button" class="text-xs font-black text-primary hover:underline" x-on:click="toggleAll()"
+                                x-text="allSelected ? 'Isključi sve' : 'Označi sve'"></button>
+                    </div>
+
+                    <div class="max-h-[320px] overflow-y-auto rounded-xl border border-[var(--color-border)] divide-y divide-[var(--color-border)]">
+                        <template x-for="row in rows" :key="row.number">
+                            <label class="flex items-center gap-3 px-3 py-2.5"
+                                   :class="row.imported ? 'opacity-50' : 'cursor-pointer hover:bg-[var(--color-surface-hover)]'">
+                                <input type="checkbox" :value="row.number" x-model="selected" :disabled="row.imported || importing"
+                                       class="h-4 w-4 shrink-0 accent-[var(--color-primary)]">
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-[11px] font-bold text-[var(--color-text-main)] truncate" x-text="row.number"></span>
+                                    <span class="block text-[10px] text-[var(--color-text-dim)]">
+                                        <span x-text="day(row.issued_at)"></span> ·
+                                        <span x-text="row.transaction_type === 'Refund' ? 'storno' : 'prodaja'"></span>
+                                        <span x-show="row.imported"> · već uvezen</span>
+                                    </span>
+                                </span>
+                                <span class="shrink-0 text-xs font-black text-primary" x-text="money(row.total) + ' KM'"></span>
+                            </label>
+                        </template>
+                    </div>
+
+                    <div class="rounded-xl border border-[var(--color-border)] p-3 space-y-2">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-dim)]">Broj računa</p>
+                        <label class="flex items-start gap-2 text-xs font-bold text-[var(--color-text-main)]">
+                            <input type="radio" value="own" x-model="numbering" class="mt-0.5 accent-[var(--color-primary)]">
+                            <span>Naša numeracija — nastavlja postojeću seriju.</span>
+                        </label>
+                        <label class="flex items-start gap-2 text-xs font-bold text-[var(--color-text-main)]">
+                            <input type="radio" value="fiscal" x-model="numbering" class="mt-0.5 accent-[var(--color-primary)]">
+                            <span>Broj sa kase — koristi fiskalni broj računa.</span>
+                        </label>
+                        <p x-show="numbering === 'fiscal'" x-cloak
+                           class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                            Pažljivo: ako lokalno već postoji račun sa istim brojem, biće prepisan podacima sa kase.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <x-button variant="primary" type="button" class="!py-3 grow sm:grow-0"
+                                  x-on:click="runImport()" x-bind:disabled="importing || ! selected.length">
+                            <span x-text="importing ? 'Uvozim… ' + progress + '%' : 'Uvezi označene (' + selected.length + ')'"></span>
+                        </x-button>
+                        <div x-show="importing" x-cloak class="grow h-2 rounded-full bg-[var(--color-border)] overflow-hidden">
+                            <div class="h-full bg-[var(--color-primary)] transition-all" :style="`width: ${progress}%`"></div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="summary">
+                <div class="rounded-xl border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 p-3 space-y-1">
+                    <p class="text-xs font-black text-[var(--color-success)]">
+                        Uvezeno <span x-text="summary.imported"></span> računa<span x-show="summary.skipped"> · preskočeno <span x-text="summary.skipped"></span></span>.
+                    </p>
+                    <template x-if="summary.failed.length">
+                        <div class="text-[11px] font-bold text-[var(--color-error)]">
+                            Nije uspjelo <span x-text="summary.failed.length"></span>:
+                            <template x-for="fail in summary.failed.slice(0, 5)" :key="fail.number">
+                                <span class="block" x-text="fail.number + ' — ' + fail.message"></span>
+                            </template>
+                        </div>
+                    </template>
+                    <a href="{{ route('invoices.index') }}" class="inline-flex text-[11px] font-black text-primary hover:underline">
+                        Otvori račune i dopuni podatke
+                    </a>
+                </div>
+            </template>
+            </div>
         </x-section-block>
 
         <x-section-block variant="card">

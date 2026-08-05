@@ -1,23 +1,7 @@
 <!DOCTYPE html>
 <html lang="sr-Latn">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0B0B0F">
-    <title>Otključaj — {{ config('app.name') }}</title>
-
-    <script>
-        (() => {
-            const choice = localStorage.getItem('theme') || 'dark';
-            const dark = choice === 'system'
-                ? window.matchMedia('(prefers-color-scheme: dark)').matches
-                : choice === 'dark';
-            document.documentElement.classList.toggle('dark', dark);
-            document.documentElement.classList.toggle('light', ! dark);
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <x-app-head :title="'Otključaj — '.config('app.name')" />
 </head>
 <body class="min-h-screen font-sans">
     <div class="fixed inset-0 overflow-hidden -z-10">

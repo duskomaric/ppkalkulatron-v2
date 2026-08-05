@@ -42,7 +42,7 @@ class FiscalDeviceErrorMessage
             return 'Poreska oznaka na računu nije važeća na fiskalnom uređaju. U Fiskalizaciji preuzmite aktuelne stope, zatim provjerite artikle na računu.';
         }
 
-        if ($this->containsAny($message, ['pin', 'gsc', 'security element', 'sigurnosni element'])) {
+        if ($this->needsPin($response)) {
             return 'Fiskalni uređaj traži PIN sigurnosnog elementa. Unesite ga u Fiskalizaciji, pa pokušajte ponovo.';
         }
 
@@ -51,6 +51,15 @@ class FiscalDeviceErrorMessage
         }
 
         return 'Fiskalni uređaj je odbio podatke računa. Provjerite stavke, količine, cijene i fiskalna podešavanja, pa pokušajte ponovo.';
+    }
+
+    /** Uređaj je odbio zahtjev jer sigurnosni element traži PIN. */
+    public function needsPin(Response $response): bool
+    {
+        return $this->containsAny(
+            mb_strtolower($this->responseMessage($response)),
+            ['pin', 'gsc', 'security element', 'sigurnosni element'],
+        );
     }
 
     private function hasInvoiceResponse(Response $response): bool

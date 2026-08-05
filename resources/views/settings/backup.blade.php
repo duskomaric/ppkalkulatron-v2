@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'Backup')
+@section('title', 'Arhiva na email')
 
 @section('content')
     <x-back-link :href="route('invoices.index')" />
 
     <div class="space-y-8 animate-fade-in">
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="archive" title="Email backup" subtitle="ZIP sadrži PDF račune, originalne fiskalne dokumente i manifest.csv." :help="route('help').'#backup'" />
+        <x-section-block variant="card">
+            <x-section-header icon="mail" title="Arhiva dokumenata na email" subtitle="PDF računi i fiskalni dokumenti za čuvanje i knjigovođu — nije backup aplikacije." :help="route('help').'#backup'" />
 
             <form method="POST" action="{{ route('settings.backup.update') }}" class="space-y-5">
                 @csrf
@@ -21,19 +21,19 @@
             </form>
         </x-section-block>
 
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
-            <x-section-header icon="archive" title="Pošalji backup" subtitle="Odaberite jedan ZIP ili pojedinačne dokumente u emailu." :help="route('help').'#backup'" />
+        <x-section-block variant="card">
+            <x-section-header icon="mail" title="Pošalji arhivu" subtitle="Odaberite jedan ZIP ili pojedinačne dokumente u emailu." :help="route('help').'#backup'" />
 
             @if ($settings->last_backup_at)
                 <div class="flex items-center gap-3 border-b border-[var(--color-border)] pb-5">
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><x-icon name="check" class="h-4 w-4" /></span>
                     <div class="min-w-0">
-                        <p class="text-sm font-bold text-[var(--color-text-main)]">Posljednji backup je uspješno poslat</p>
+                        <p class="text-sm font-bold text-[var(--color-text-main)]">Posljednja arhiva je uspješno poslata</p>
                         <p class="mt-0.5 text-xs text-[var(--color-text-dim)]">{{ $settings->last_backup_at->timezone(config('app.timezone'))->format('d.m.Y.') }} u {{ $settings->last_backup_at->timezone(config('app.timezone'))->format('H:i') }} · {{ $settings->last_backup_invoice_count }} računa · {{ $settings->last_backup_fiscal_document_count }} fiskalnih dokumenata</p>
                     </div>
                 </div>
             @else
-                <x-empty-state icon="archive" title="Backup još nije poslat" description="Nakon slanja ovdje ostaje datum posljednjeg uspješnog backupa." />
+                <x-empty-state icon="mail" title="Arhiva još nije poslata" description="Nakon slanja ovdje ostaje datum posljednje uspješno poslate arhive." />
             @endif
 
             <form method="POST" action="{{ route('settings.backup.send') }}" class="space-y-6" x-data="{ sending: false, format: @js($zipAvailable ? 'zip' : 'raw') }"
@@ -81,12 +81,18 @@
                           x-bind:aria-busy="sending">
                     <span x-show="sending" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                     <x-icon name="archive" class="h-4 w-4" x-show="! sending" />
-                    <span x-text="sending ? 'Pripremam backup...' : 'Napravi i pošalji backup'">Napravi i pošalji backup</span>
+                    <span x-text="sending ? 'Pripremam arhivu...' : 'Napravi i pošalji arhivu'">Napravi i pošalji arhivu</span>
                 </x-button>
                 <p x-cloak x-show="sending" role="status" class="mt-3 text-center text-xs text-[var(--color-text-dim)]">
                     Pripremam dokumente i šaljem ih na email. Ne zatvarajte aplikaciju.
                 </p>
             </form>
+
+            <p class="text-[11px] leading-relaxed text-[var(--color-text-dim)]">
+                Arhiva je za čuvanje dokumenata i knjigovođu. Za punu kopiju aplikacije, iz koje se podaci mogu
+                vratiti, koristite
+                <a href="{{ route('settings.database.edit') }}" class="font-bold text-primary hover:underline">Backup aplikacije</a>.
+            </p>
         </x-section-block>
     </div>
 @endsection

@@ -59,7 +59,8 @@ class FiscalRefundCreator
                 'total' => abs($item->total),
             ])->all());
 
-            $invoice->update(['refund_invoice_id' => $refund->id, 'status' => InvoiceStatus::RefundCreated]);
+            // Original ostaje fiskalizovan; storniranje je stanje samog storno dokumenta.
+            $invoice->update(['refund_invoice_id' => $refund->id]);
 
             return $refund;
         });

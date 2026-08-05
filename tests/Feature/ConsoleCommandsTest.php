@@ -51,14 +51,11 @@ it('dijagnostička OFS komanda jasno pokaže kada status endpoint ne odgovara', 
         ->assertExitCode(0);
 });
 
-it('generator brend resursa stvara ispravne PNG ikonu i splash ekrane', function (): void {
-    $this->artisan('app:brand-assets')
-        ->expectsOutputToContain('public/icon.png')
-        ->expectsOutputToContain('public/splash.png')
-        ->expectsOutputToContain('public/splash-dark.png')
-        ->assertExitCode(0);
-
+it('drži ikonu, favicon i splash ekrane u veličinama koje NativePHP i pregledač traže', function (): void {
+    // Same crtanje pokriva BrandTest; ovdje se čuvaju datoteke koje idu u build.
     expect(getimagesize(public_path('icon.png')))->toMatchArray([0 => 1024, 1 => 1024])
+        ->and(getimagesize(public_path('apple-touch-icon.png')))->toMatchArray([0 => 180, 1 => 180])
         ->and(getimagesize(public_path('splash.png')))->toMatchArray([0 => 1080, 1 => 1920])
-        ->and(getimagesize(public_path('splash-dark.png')))->toMatchArray([0 => 1080, 1 => 1920]);
+        ->and(getimagesize(public_path('splash-dark.png')))->toMatchArray([0 => 1080, 1 => 1920])
+        ->and(filesize(public_path('favicon.ico')))->toBeGreaterThan(0);
 });

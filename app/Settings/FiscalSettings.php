@@ -15,6 +15,9 @@ class FiscalSettings extends Settings
 
     public ?string $pac;
 
+    /** PIN sigurnosnog elementa; kad je upisan, aplikacija sama otključava kasu. */
+    public ?string $security_pin;
+
     /** cloud | local */
     public string $device_mode;
 

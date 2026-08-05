@@ -26,6 +26,7 @@ class FiscalService
         private OFSService $ofs,
         private Diagnostics $diagnostics,
         private FiscalDeviceErrorMessage $errorMessages,
+        private FiscalPinUnlocker $pin,
     ) {}
 
     public function fiscalize(Invoice $invoice): FiscalRecord
@@ -71,7 +72,6 @@ class FiscalService
         $record = $this->send($refundInvoice, 'Refund', 'Normal', FiscalRecordType::Refund, 'refund', $original);
 
         $refundInvoice->update(['status' => InvoiceStatus::Refunded]);
-        $originalInvoice->update(['status' => InvoiceStatus::Refunded]);
 
         return $record;
     }
@@ -129,6 +129,12 @@ class FiscalService
         $this->diagnostics->debug('Fiskalizacija računa', ['invoice_id' => $invoice->id, 'request_id' => $record->request_id, 'type' => $type->value]);
 
         $response = $this->ofs->createInvoice($payload, $record->request_id);
+
+        // Kasa traži PIN kad se kartica izvadi i vrati. Sa sačuvanim PIN-om se
+        // otključa i račun ide ponovo — isti RequestId, pa nema dvostruke fiskalizacije.
+        if (! $response->successful() && $this->errorMessages->needsPin($response) && $this->pin->unlock()) {
+            $response = $this->ofs->createInvoice($payload, $record->request_id);
+        }
 
         if (! $response->successful()) {
             $this->diagnostics->error('Fiskalizacija nije uspjela', [

@@ -10,7 +10,7 @@
             @csrf
             @method('PUT')
 
-            <x-section-block variant="card" class="sm:p-8 space-y-6">
+            <x-section-block variant="card">
                 <x-section-header icon="lock" :title="$enabled ? 'Promijeni PIN' : 'Postavi PIN'"
                                   :help="route('help').'#pin'" />
 
@@ -38,7 +38,7 @@
                 @csrf
                 @method('PUT')
 
-                <x-section-block variant="card" class="sm:p-8 space-y-6">
+                <x-section-block variant="card">
                     <x-section-header icon="clock" title="Automatsko zaključavanje" :help="route('help').'#pin'" />
 
                     <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
@@ -66,7 +66,7 @@
                 @csrf
                 @method('DELETE')
 
-                <x-section-block variant="card" class="sm:p-8 space-y-6">
+                <x-section-block variant="card">
                     <x-section-header icon="lock" title="Ukloni PIN" :help="route('help').'#pin'" />
 
                     <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">

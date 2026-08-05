@@ -33,6 +33,11 @@ class FiscalSettingsController extends Controller
     {
         $data = $request->validated();
 
+        // Stope pripadaju konkretnoj kasi. Kad se poveže druga, stare više ne važe —
+        // artikli bi inače nosili oznake kojih na novoj kasi nema.
+        $deviceChanged = collect(['base_url', 'serial_number', 'device_mode'])
+            ->contains(fn (string $key): bool => ($data[$key] ?? $settings->{$key}) !== $settings->{$key});
+
         $settings->fill(collect($data)->except([
             'receipt_header_text_lines',
             'wholesale',
@@ -44,6 +49,13 @@ class FiscalSettingsController extends Controller
         $settings->print_receipt = $request->boolean('print_receipt');
         $settings->save();
         $health->forget();
+
+        if ($deviceChanged && FiscalTaxRate::query()->exists()) {
+            FiscalTaxRate::query()->delete();
+
+            return redirect()->route('settings.fiscal.edit')
+                ->with('status', 'Fiskalna podešavanja su sačuvana. Stope prethodne kase su uklonjene — preuzmite stope nove kase.');
+        }
 
         return redirect()->route('settings.fiscal.edit')->with('status', 'Fiskalna podešavanja su sačuvana.');
     }

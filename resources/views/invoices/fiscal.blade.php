@@ -30,10 +30,18 @@
 
         <div class="h-px bg-[var(--color-border)]"></div>
 
-        @if ($invoice->refundInvoice && $invoice->status === \App\Enums\InvoiceStatus::RefundCreated)
-            <div class="rounded-xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 p-3">
-                <p class="text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                    Storno {{ $invoice->refundInvoice->invoice_number }} je kreiran, ali još nije fiskalizovan — račun važi dok se storno ne fiskalizuje.
+        @if ($invoice->refundInvoice)
+            {{-- Blok, ne @php(...): inline oblik bi ovdje otvorio raw blok do prvog @endphp niže u fajlu. --}}
+            @php
+                $refundFiscalized = $invoice->refundInvoice->status === \App\Enums\InvoiceStatus::Refunded;
+            @endphp
+            <div class="rounded-xl border-2 border-dashed p-3 {{ $refundFiscalized ? 'border-red-500/30 bg-red-500/5' : 'border-amber-500/30 bg-amber-500/5' }}">
+                <p class="text-[11px] font-bold {{ $refundFiscalized ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400' }}">
+                    @if ($refundFiscalized)
+                        Račun je poništen stornom {{ $invoice->refundInvoice->invoice_number }}.
+                    @else
+                        Storno {{ $invoice->refundInvoice->invoice_number }} je kreiran, ali još nije fiskalizovan — račun važi dok se storno ne fiskalizuje.
+                    @endif
                 </p>
                 <a href="{{ route('invoices.show', $invoice->refundInvoice) }}" class="mt-1 inline-flex text-[11px] font-black text-primary hover:underline">
                     Otvori storno

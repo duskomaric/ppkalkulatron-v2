@@ -8,8 +8,9 @@
 @section('content')
     <div>
         @if ($taxRates === [])
-            <x-section-block variant="accent" class="mb-4" x-data="{ fiscalState: @js($fiscalHealth['state']) }"
-                             @fiscal-health-updated="fiscalState = $event.detail.state">
+            <x-section-block variant="accent" class="mb-4">
+                <div x-data="{ fiscalState: @js($fiscalHealth['state']) }"
+                     @fiscal-health-updated="fiscalState = $event.detail.state">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-start gap-3">
                         <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
@@ -27,6 +28,7 @@
                             Preuzmi stope sa kase
                         </x-button>
                     </form>
+                </div>
                 </div>
             </x-section-block>
         @endif

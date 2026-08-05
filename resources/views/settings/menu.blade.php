@@ -5,11 +5,11 @@
     <x-back-link :href="route('invoices.index')" />
 
     <form method="POST" action="{{ route('settings.menu.update') }}" class="space-y-8 animate-fade-in"
-          x-data="menuSettings({ modules: @js($moduleOptions), menuModules: @js($settings->menu_modules), maxMenuItems: @js($settings->max_menu_items) })">
+          x-data="menuSettings({ modules: @js($moduleOptions), menuModules: @js($settings->menu_modules), maxMenuItems: @js($settings->max_menu_items), primaryColor: @js(old('primary_color', $settings->primary_color)) })">
         @csrf
         @method('PUT')
 
-        <x-section-block variant="card" class="sm:p-8 space-y-5">
+        <x-section-block variant="card" class="space-y-5">
             <x-section-header icon="monitor" title="Izgled aplikacije" :help="route('help').'#meni'" />
 
             <p class="text-[11px] leading-relaxed text-[var(--color-text-dim)]">
@@ -30,7 +30,33 @@
             </div>
         </x-section-block>
 
-        <x-section-block variant="card" class="sm:p-8 space-y-6">
+        <x-section-block variant="card" class="space-y-5">
+            <x-section-header icon="palette" title="Boja aplikacije" :help="route('help').'#meni'" />
+
+            <p class="text-[11px] leading-relaxed text-[var(--color-text-dim)]">
+                Boja dugmadi, oznaka i naglašenih dijelova u cijeloj aplikaciji. Odabir se vidi odmah,
+                a čuva se kad sačuvate izmjene. Ikona aplikacije na telefonu ostaje onakva kakva je
+                stigla sa instalacijom.
+            </p>
+
+            <div class="grid grid-cols-5 gap-2 sm:grid-cols-10">
+                @foreach (\App\Support\Brand::palette() as $hex => $colourName)
+                    <label class="group cursor-pointer" title="{{ $colourName }}">
+                        <input type="radio" name="primary_color" value="{{ $hex }}" class="peer sr-only"
+                               x-model="primaryColor" x-on:change="applyColor()"
+                               @checked(old('primary_color', $settings->primary_color) === $hex)>
+                        <span class="flex aspect-square w-full items-center justify-center rounded-xl border-2 border-transparent text-white transition-all peer-checked:border-[var(--color-text-main)] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--color-text-main)]"
+                              style="background-color: {{ $hex }}">
+                            <x-icon name="check" class="h-4 w-4 transition-opacity"
+                                    x-bind:class="primaryColor === @js($hex) ? 'opacity-100' : 'opacity-0'" />
+                        </span>
+                        <span class="mt-1 block truncate text-center text-[9px] font-bold text-[var(--color-text-dim)]">{{ $colourName }}</span>
+                    </label>
+                @endforeach
+            </div>
+        </x-section-block>
+
+        <x-section-block variant="card">
             <x-section-header icon="more-horizontal" title="Navigacija" :help="route('help').'#meni'" />
 
             <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">

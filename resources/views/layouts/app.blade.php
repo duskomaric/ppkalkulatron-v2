@@ -1,24 +1,7 @@
 <!DOCTYPE html>
 <html lang="sr-Latn">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0B0B0F">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', config('app.name'))</title>
-    {{-- Tema se primjenjuje prije iscrtavanja, inače tamna bljesne pri svijetloj temi. --}}
-    <script>
-        (() => {
-            const choice = localStorage.getItem('theme') || 'dark';
-            const dark = choice === 'system'
-                ? window.matchMedia('(prefers-color-scheme: dark)').matches
-                : choice === 'dark';
-            document.documentElement.classList.toggle('dark', dark);
-            document.documentElement.classList.toggle('light', ! dark);
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <x-app-head :title="View::yieldContent('title')" />
 </head>
 <body class="font-sans">
 <div class="min-h-screen flex flex-col pb-nav relative" x-data="{ userDrawer: false, settingsDrawer: false, moreDrawer: false }">
@@ -40,6 +23,7 @@
             request()->routeIs('settings.fiscal.*') => 'fiskalizacija',
             request()->routeIs('settings.mail.*') => 'mail',
             request()->routeIs('settings.backup.*') => 'backup',
+            request()->routeIs('settings.database.*') => 'backup-aplikacije',
             request()->routeIs('settings.diagnostics.*') => 'dijagnostika',
             request()->routeIs('settings.general.*') => 'numeracija',
             request()->routeIs('settings.menu.*') => 'meni',

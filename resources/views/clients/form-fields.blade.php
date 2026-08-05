@@ -19,7 +19,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <x-form-input label="Email" name="email" type="email" :value="$client?->email" placeholder="info@klijent.com" />
-            <x-form-input label="Telefon" name="phone" :value="$client?->phone" placeholder="+387 61 ..." />
+            <x-form-input label="Telefon" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+                          :value="$client?->phone" placeholder="+387 65 ..." />
         </div>
     </x-section-block>
 
@@ -29,8 +30,9 @@
         <x-form-input label="Adresa" name="address" :value="$client?->address" />
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <x-form-input label="ZIP" name="zip" :value="$client?->zip" placeholder="71000" />
-            <x-form-input label="Grad" name="city" :value="$client?->city" placeholder="Sarajevo" />
+            <x-form-input label="ZIP" name="zip" inputmode="numeric" autocomplete="postal-code"
+                          :value="$client?->zip" placeholder="78000" />
+            <x-form-input label="Grad" name="city" :value="$client?->city" placeholder="Banja Luka" />
             <x-form-input label="Država" name="country" :value="$client?->country ?? 'BA'" placeholder="Bosna i Hercegovina" />
         </div>
     </x-section-block>
@@ -39,9 +41,9 @@
         <x-section-header icon="hash" title="Poreski podaci" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <x-form-input label="JIB" name="vat_id" :value="$client?->vat_id" placeholder="Identifikacioni broj"
+            <x-form-input label="JIB" name="vat_id" inputmode="numeric" :value="$client?->vat_id" placeholder="Identifikacioni broj"
                           hint="Ide fiskalnom uređaju kao identifikacija kupca." />
-            <x-form-input label="PDV" name="tax_id" :value="$client?->tax_id" placeholder="Porezni broj" />
+            <x-form-input label="PDV" name="tax_id" inputmode="numeric" :value="$client?->tax_id" placeholder="Porezni broj" />
         </div>
     </x-section-block>
 

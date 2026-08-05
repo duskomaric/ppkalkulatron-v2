@@ -18,7 +18,7 @@ class Invoice extends Model
     use HasFactory;
 
     protected $fillable = [
-        'invoice_number', 'client_id', 'status', 'date', 'due_date', 'notes',
+        'invoice_number', 'client_id', 'status', 'date', 'due_date', 'notes', 'imported_at',
         'currency', 'language', 'payment_type', 'refund_invoice_id',
         'subtotal', 'tax_total', 'discount_total', 'total',
     ];
@@ -33,6 +33,7 @@ class Invoice extends Model
         'payment_type' => PaymentType::class,
         'language' => DocumentLanguage::class,
         'date' => 'date',
+        'imported_at' => 'datetime',
         'due_date' => 'date',
         'subtotal' => 'integer',
         'tax_total' => 'integer',

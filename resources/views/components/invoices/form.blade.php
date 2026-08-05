@@ -13,6 +13,7 @@
 
 @php
     $isEdit = $invoice !== null;
+    $isFiscalized = $isEdit && $invoice->fiscalRecords()->exists();
     $taxRates = \App\Models\FiscalTaxRate::basisPointsByLabel();
 
     $oldItems = old('items', $isEdit
@@ -72,6 +73,19 @@
     @if ($isEdit) @method('PUT') @endif
 
     <x-form-errors />
+
+    @if ($isFiscalized)
+        <div class="rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 p-4">
+            <p class="text-sm font-black text-amber-700 dark:text-amber-300">
+                {{ $invoice->imported_at ? 'Račun je uvezen sa fiskalne kase' : 'Račun je fiskalizovan' }}
+            </p>
+            <p class="mt-1 text-xs text-[var(--color-text-dim)] leading-relaxed">
+                Izmjene ostaju samo u aplikaciji — fiskalni račun kod Poreske uprave se ne mijenja.
+                Dopunite kupca, napomenu i podatke koje kasa ne zna, a stavke mijenjajte samo ako
+                znate da odstupanje od fiskalnog računa nije problem.
+            </p>
+        </div>
+    @endif
 
     <x-section-block variant="card">
         <x-section-header icon="contact" title="Osnovni podaci" />

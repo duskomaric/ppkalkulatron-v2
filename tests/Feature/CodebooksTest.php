@@ -177,7 +177,7 @@ it('prikazuje stvarni izgled odabranog PDF predloška sa oglednim podacima', fun
 });
 
 it('vraća pregled predloška bez okvira aplikacije', function (): void {
-    $response = $this->get(route('settings.templates.preview', DocumentTemplate::Terminal))
+    $response = $this->get(route('settings.templates.preview', DocumentTemplate::OpsConsole))
         ->assertSuccessful()
         ->assertSee('Primjer kupac d.o.o.');
 
@@ -281,11 +281,13 @@ it('nema kursa za podrazumijevanu valutu', function (): void {
 it('otvara sve sekcije pomoći na koje podešavanja upućuju', function (): void {
     $help = $this->get(route('help'))->assertSuccessful()->getContent();
 
-    foreach (['pocetak', 'profil-kompanije', 'fiskalizacija', 'numeracija', 'meni', 'pin', 'mail', 'backup'] as $anchor) {
+    foreach (['pocetak', 'profil-kompanije', 'fiskalizacija', 'numeracija', 'meni', 'pin', 'mail', 'backup', 'backup-aplikacije'] as $anchor) {
         expect($help)->toContain('id="'.$anchor.'"');
     }
 
-    expect($help)->toContain('Napravi i pošalji backup')
+    expect($help)->toContain('Napravi i pošalji arhivu')
+        ->and($help)->toContain('Backup aplikacije')
+        ->and($help)->toContain('Reset aplikacije')
         ->and($help)->toContain('Moj nalog')
         ->and($help)->toContain(config('app.name').' služi za izdavanje računa');
 });
@@ -328,6 +330,7 @@ it('prikazuje kontekstualnu pomoć u zaglavlju svakog radnog ekrana', function (
     'fiskalna podešavanja' => ['settings.fiscal.edit', 'fiskalizacija'],
     'mail podešavanja' => ['settings.mail.edit', 'mail'],
     'backup podešavanja' => ['settings.backup.edit', 'backup'],
+    'backup aplikacije' => ['settings.database.edit', 'backup-aplikacije'],
     'opšta podešavanja' => ['settings.general.edit', 'numeracija'],
     'meni podešavanja' => ['settings.menu.edit', 'meni'],
     'PIN podešavanja' => ['settings.pin.edit', 'pin'],
@@ -580,3 +583,28 @@ it('drži kurs po valuti i datumu, ne po valuti', function (): void {
 
     expect(ExchangeRate::where('currency', 'EUR')->count())->toBe(2);
 });
+
+it('nudi numeričku tastaturu na poljima u koja idu samo cifre', function (string $route, array $fields): void {
+    $html = $this->get(route($route))->assertSuccessful()->getContent();
+
+    foreach ($fields as $name => $mode) {
+        // Polje se traži po imenu, pa se provjeri da mu inputmode stoji u istom tagu.
+        $tag = str($html)->after('name="'.$name.'"')->before('>')->toString();
+
+        expect($tag)->toContain('inputmode="'.$mode.'"');
+    }
+})->with([
+    'klijent' => ['clients.create', [
+        'phone' => 'tel', 'zip' => 'numeric', 'vat_id' => 'numeric', 'tax_id' => 'numeric',
+    ]],
+    'profil kompanije' => ['settings.company.edit', [
+        'phone' => 'tel', 'zip' => 'numeric', 'identification_number' => 'numeric', 'vat_number' => 'numeric',
+    ]],
+    'artikal' => ['articles.create', ['last_unit_price' => 'decimal', 'gtin' => 'numeric']],
+    'mail' => ['settings.mail.edit', ['port' => 'numeric']],
+    'numeracija' => ['settings.general.edit', [
+        'invoice_starting_number' => 'numeric', 'pad_zeros' => 'numeric', 'invoice_due_days' => 'numeric',
+    ]],
+    'fiskalizacija' => ['settings.fiscal.edit', ['pac' => 'numeric', 'security_pin' => 'numeric']],
+    'PIN' => ['settings.pin.edit', ['pin' => 'numeric', 'pin_confirmation' => 'numeric']],
+]);

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\DocumentTemplate;
+use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
 use App\Mail\InvoiceMail;
 use App\Models\Article;
@@ -167,16 +168,51 @@ it('otvara izmjenu kreiranog računa sa njegovim stavkama', function (): void {
         ->assertSee('Usluga');
 });
 
-it('ne dozvoljava izmjenu ni brisanje fiskalizovanog računa', function (): void {
+it('ne dozvoljava brisanje fiskalizovanog računa', function (): void {
     $this->post(route('invoices.store'), invoicePayload());
     $invoice = Invoice::first();
     $invoice->update(['status' => InvoiceStatus::Fiscalized]);
 
-    $this->get(route('invoices.edit', $invoice))->assertRedirect(route('invoices.show', $invoice));
-    $this->put(route('invoices.update', $invoice), invoicePayload())->assertRedirect(route('invoices.show', $invoice));
     $this->delete(route('invoices.destroy', $invoice))->assertRedirect(route('invoices.show', $invoice));
 
     expect(Invoice::count())->toBe(1);
+});
+
+it('dopušta dopunu fiskalizovanog računa uz upozorenje u formi', function (): void {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::first();
+    $invoice->update(['status' => InvoiceStatus::Fiscalized]);
+    $invoice->fiscalRecords()->create([
+        'type' => FiscalRecordType::Original,
+        'fiscal_invoice_number' => 'ABC12345-ABC12345-1',
+        'fiscalized_at' => now(),
+    ]);
+
+    $this->get(route('invoices.edit', $invoice))
+        ->assertSuccessful()
+        ->assertSee('Račun je fiskalizovan')
+        ->assertSee('fiskalni račun kod Poreske uprave se ne mijenja');
+
+    $client = Client::create(['name' => 'Dopunjeni kupac']);
+
+    $this->put(route('invoices.update', $invoice), invoicePayload(['client_id' => $client->id]))
+        ->assertRedirect(route('invoices.show', $invoice));
+
+    expect($invoice->fresh()->client_id)->toBe($client->id);
+});
+
+it('traži potvrdu prije izmjene fiskalizovanog računa', function (): void {
+    $invoice = makeInvoice();
+    $invoice->fiscalRecords()->create([
+        'type' => FiscalRecordType::Original,
+        'fiscal_invoice_number' => 'ABC12345-ABC12345-2',
+        'fiscalized_at' => now(),
+    ]);
+
+    $this->get(route('invoices.show', $invoice))
+        ->assertSuccessful()
+        ->assertSee('je već fiskalizovan', false)
+        ->assertSee('$store.confirmation.ask', false);
 });
 
 it('pretražuje po broju i po klijentu', function (): void {
@@ -319,7 +355,7 @@ it('dodaje potpis ovlaštenog lica na svaki PDF predložak', function (string $t
 })->with(DocumentTemplate::values());
 
 it('prikazuje potpis i u pregledu predloška', function (): void {
-    $this->get(route('settings.templates.preview', DocumentTemplate::Terminal))
+    $this->get(route('settings.templates.preview', DocumentTemplate::OpsConsole))
         ->assertSuccessful()
         ->assertSee('Izdao')
         ->assertSee('Primio')
@@ -333,14 +369,14 @@ it('prikazuje naziv aplikacije iz konfiguracije na PDF-u', function (): void {
     config()->set('nativephp.version', '1.2.3');
     config()->set('nativephp.version_code', 123);
 
-    expect(app(InvoicePdfService::class)->html(makeInvoice(), DocumentTemplate::Terminal))
+    expect(app(InvoicePdfService::class)->html(makeInvoice(), DocumentTemplate::OpsConsole))
         ->toContain('Računi Pro · v1.2.3 · build 123');
 });
 
 it('koristi lokalizovane oznake u programerskim predlošcima', function (): void {
     $invoice = makeInvoice();
 
-    expect(app(InvoicePdfService::class)->html($invoice, DocumentTemplate::Terminal))
+    expect(app(InvoicePdfService::class)->html($invoice, DocumentTemplate::OpsConsole))
         ->not->toContain('INVOICE.SESSION')
         ->not->toContain('RESOURCE')
         ->not->toContain('PAYMENT_ENDPOINTS')
@@ -387,8 +423,8 @@ it('novi programerski predlošci imaju različite vizuelne identitete', function
     'kernel' => ['pdf.invoice-kernel', '▣ // IZDAVALAC', '#f97316'],
     'terminal-light' => ['pdf.invoice-terminal-light', 'račun --izdaj', '#0f766e'],
     'editor' => ['pdf.invoice-editor', 'račun.faktura', '#c084fc'],
-    'signal' => ['pdf.invoice-signal', 'SIGNAL_01', '#ec4899'],
-    'ops-console' => ['pdf.invoice-ops-console', 'OPS::RAČUN', '#22d3ee'],
+    'signal' => ['pdf.invoice-signal', 'TOK PLAĆANJA', '#ec4899'],
+    'ops-console' => ['pdf.invoice-ops-console', 'IDENTIFIKATOR', '#22d3ee'],
     'shell' => ['pdf.invoice-shell', 'račun@lokalno', '#d97706'],
     'workstation' => ['pdf.invoice-workstation', 'RADNA_STANICA', '#4f46e5'],
 ]);

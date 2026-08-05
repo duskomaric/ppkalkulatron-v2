@@ -37,7 +37,7 @@ class InvoiceController extends Controller
             'year' => (int) ($request->integer('year') ?: date('Y')),
         ];
 
-        $invoices = Invoice::with('client', 'currencyDefinition', 'originalInvoice')
+        $invoices = Invoice::with('client', 'currencyDefinition', 'originalInvoice', 'refundInvoice')
             ->search($filters['q'])
             ->whereBetween('date', ["{$filters['year']}-01-01", "{$filters['year']}-12-31"])
             ->when($filters['status'], fn ($q, $status) => $q->where('status', $status))
@@ -46,7 +46,7 @@ class InvoiceController extends Controller
             ->when($filters['created_to'], fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
             ->latest('date')
             ->latest('id')
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         return view('invoices.index', [
@@ -132,7 +132,7 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice, FiscalDeviceHealth $health)
     {
-        $invoice->load(['client', 'currencyDefinition', 'items', 'originalInvoice', 'fiscalRecords.receipt']);
+        $invoice->load(['client', 'currencyDefinition', 'items', 'originalInvoice', 'refundInvoice', 'fiscalRecords.receipt']);
 
         return view('invoices.show', [
             'invoice' => $invoice,
@@ -140,25 +140,18 @@ class InvoiceController extends Controller
         ]);
     }
 
+    /**
+     * Izmjena je dozvoljena i nakon fiskalizacije: uvezeni računi bez kupca inače
+     * ostaju nedovršeni. Korisniku se prije toga traži potvrda, jer izmjena ne
+     * mijenja ono što je već predato Poreskoj upravi.
+     */
     public function edit(Invoice $invoice)
     {
-        if (! $invoice->isDeletable()) {
-            return redirect()
-                ->route('invoices.show', $invoice)
-                ->with('error', 'Fiskalizovan račun se ne može mijenjati.');
-        }
-
         return view('invoices.edit', $this->formData->for($invoice->load('items')));
     }
 
     public function update(InvoiceRequest $request, Invoice $invoice)
     {
-        if (! $invoice->isDeletable()) {
-            return redirect()
-                ->route('invoices.show', $invoice)
-                ->with('error', 'Fiskalizovan račun se ne može mijenjati.');
-        }
-
         $this->writer->update($invoice, $request->validated());
 
         return redirect()->route('invoices.show', $invoice)->with('status', 'Izmjene su sačuvane.');
@@ -174,14 +167,9 @@ class InvoiceController extends Controller
 
         $number = $invoice->invoice_number;
 
-        // Storno se briše dok nije fiskalizovan; original se tada vraća u
-        // fiskalizovano stanje, inače ostane zaglavljen u „storniranju"
-        // i novi storno se ne bi mogao napraviti.
-        $original = $invoice->originalInvoice;
-
+        // Storno se briše dok nije fiskalizovan; original mu je samo pokazivao na
+        // `refund_invoice_id`, a strani ključ ga sam čisti — novi storno može odmah.
         $invoice->delete();
-
-        $original?->update(['status' => InvoiceStatus::Fiscalized]);
 
         return redirect()
             ->route('invoices.index')

@@ -25,6 +25,9 @@ class OFSService
 
     private const TIMEOUT = 15;
 
+    /** Pretraga prolazi kroz bazu izdatih računa, pa traje duže od pojedinačnog poziva. */
+    private const SEARCH_TIMEOUT = 60;
+
     protected string $baseUrl;
 
     private bool $usesCloud;
@@ -114,13 +117,17 @@ class OFSService
         }
     }
 
-    protected function request(string $method, string $path, array $payload = [], ?string $requestId = null, int $timeout = self::TIMEOUT): Response
+    protected function request(string $method, string $path, array $payload = [], ?string $requestId = null, int $timeout = self::TIMEOUT, ?string $accept = null): Response
     {
         $endpoint = $this->baseUrl.$path;
 
         $headers = $this->headers();
         if ($requestId !== null) {
             $headers['RequestId'] = $requestId;
+        }
+
+        if ($accept !== null) {
+            $headers['Accept'] = $accept;
         }
 
         $this->diagnostics->debug('OFS request', ['method' => $method, 'url' => $endpoint, 'request_id' => $requestId]);
@@ -178,5 +185,33 @@ class OFSService
     public function getInvoiceByRequestId(string $requestId): Response
     {
         return $this->request('GET', '/api/invoices/request/'.$requestId, [], $requestId);
+    }
+
+    /**
+     * POST /api/invoices/search — odgovor je CSV (broj, tip, tip transakcije,
+     * vrijeme, iznos), a uređaj na `Accept: application/json` vrati 406/500.
+     *
+     * @param  array<string, mixed>  $filters  fromDate, toDate, invoiceTypes, transactionTypes…
+     */
+    public function searchInvoices(array $filters): Response
+    {
+        return $this->request('POST', '/api/invoices/search', $filters, timeout: self::SEARCH_TIMEOUT, accept: '*/*');
+    }
+
+    /**
+     * GET /api/invoices/{broj} — puni sadržaj računa: poslati zahtjev sa stavkama i
+     * kupcem, odgovor uređaja i, po traženom formatu, slika računa.
+     *
+     * @param  array<string, string|bool>  $query  receiptLayout, imageFormat, includeHeaderAndFooter
+     */
+    public function getInvoice(string $invoiceNumber, array $query = []): Response
+    {
+        $path = '/api/invoices/'.rawurlencode($invoiceNumber);
+
+        if ($query !== []) {
+            $path .= '?'.http_build_query($query);
+        }
+
+        return $this->request('GET', $path, accept: '*/*');
     }
 }

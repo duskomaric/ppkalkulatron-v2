@@ -15,7 +15,7 @@
                             {{ $invoice->invoice_number }}
                         </span>
                     </div>
-                    <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
+                    <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />@if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)<x-status-badge label="Poništen" color="red" class="ml-1" />@endif @if ($invoice->imported_at)<x-status-badge label="Uvezen" color="blue" class="ml-1" />@endif
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -93,7 +93,7 @@
                         </div>
                     </div>
 
-                    <div><x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" /></div>
+                    <div><x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />@if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)<x-status-badge label="Poništen" color="red" class="ml-1" />@endif @if ($invoice->imported_at)<x-status-badge label="Uvezen" color="blue" class="ml-1" />@endif</div>
 
                     <div class="flex items-center gap-1 text-xs font-bold text-[var(--color-text-muted)]">
                         <x-icon name="calendar" class="w-3 h-3 text-[var(--color-text-dim)]" />

@@ -67,8 +67,8 @@ it('svaki status računa ima razumljivu oznaku, boju i pravilo brisanja', functi
         ->and($status->badgeColor())->toBe($color)
         ->and($status->canBeDeleted())->toBe($deletable);
 })->with([
-    [InvoiceStatus::Created, 'Kreiran', 'gray', true],
+    [InvoiceStatus::Created, 'Nacrt', 'gray', true],
     [InvoiceStatus::Fiscalized, 'Fiskalizovan', 'green', false],
-    [InvoiceStatus::RefundCreated, 'Storno kreiran', 'amber', true],
+    [InvoiceStatus::RefundCreated, 'Storniranje', 'amber', true],
     [InvoiceStatus::Refunded, 'Storniran', 'red', false],
 ]);

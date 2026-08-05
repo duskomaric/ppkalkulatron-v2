@@ -28,11 +28,11 @@ enum DocumentTemplate: string
 
     case Standard = 'standard';
 
-    case Programmer = 'programmer';
+    //    case Programmer = 'programmer';
 
     case Blueprint = 'blueprint';
 
-    case Terminal = 'terminal';
+    //    case Terminal = 'terminal';
 
     case Protocol = 'protocol';
 
@@ -136,9 +136,9 @@ enum DocumentTemplate: string
             self::Modern => ['label' => 'Moderan', 'family' => self::FAMILY_BUSINESS, 'is_dark' => false],
             self::Minimal => ['label' => 'Minimalan', 'family' => self::FAMILY_BUSINESS, 'is_dark' => false],
             self::Standard => ['label' => 'Standardni', 'family' => self::FAMILY_BUSINESS, 'is_dark' => false],
-            self::Programmer => ['label' => 'Programerski', 'family' => self::FAMILY_EDITOR, 'is_dark' => false],
+            //            self::Programmer => ['label' => 'Programerski', 'family' => self::FAMILY_EDITOR, 'is_dark' => false],
             self::Blueprint => ['label' => 'Blueprint', 'family' => self::FAMILY_EDITOR, 'is_dark' => false],
-            self::Terminal => ['label' => 'Terminal', 'family' => self::FAMILY_TERMINAL, 'is_dark' => true],
+            //            self::Terminal => ['label' => 'Terminal', 'family' => self::FAMILY_TERMINAL, 'is_dark' => true],
             self::Protocol => ['label' => 'Protocol', 'family' => self::FAMILY_SIGNAL, 'is_dark' => false],
             self::Kernel => ['label' => 'Kernel', 'family' => self::FAMILY_TERMINAL, 'is_dark' => false],
             self::TerminalLight => ['label' => 'Svijetli terminal', 'family' => self::FAMILY_TERMINAL, 'is_dark' => false],

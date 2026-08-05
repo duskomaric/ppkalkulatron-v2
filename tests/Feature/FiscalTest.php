@@ -198,7 +198,7 @@ it('storno prebacuje original u storniran', function (): void {
     app(FiscalService::class)->refund($refund->fresh());
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Refunded)
-        ->and($refund->fresh()->status)->toBe(InvoiceStatus::Fiscalized);
+        ->and($refund->fresh()->status)->toBe(InvoiceStatus::Refunded);
 
     // Refund zahtjev mora zaista biti poslat, uz referencu na original.
     Http::assertSent(function ($request) {
@@ -397,7 +397,7 @@ it('ne dozvoljava izmjenu fiskalizovanog računa ni kad mu je storno kreiran', f
     expect(Invoice::find($invoice->id))->not->toBeNull();
 });
 
-it('brisanje storna vraća original u fiskalizovano stanje', function (): void {
+it('brisanje storna oslobađa original za novi storno', function (): void {
     $invoice = fiscalizedInvoice();
     $refund = refundFor($invoice);
 
@@ -405,6 +405,9 @@ it('brisanje storna vraća original u fiskalizovano stanje', function (): void {
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Fiscalized)
         ->and($invoice->fresh()->refund_invoice_id)->toBeNull();
+
+    // Original nije ostao zaključan: novi storno prolazi.
+    $this->postJson(route('invoices.create-refund', $invoice->fresh()))->assertSuccessful();
 });
 
 it('traži serijski broj i PAK za cloud uređaj', function (): void {

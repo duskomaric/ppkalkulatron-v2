@@ -23,7 +23,6 @@ class UpdateCompanySettingsRequest extends FormRequest
             'country' => ['nullable', 'string', 'max:120'],
             'identification_number' => ['nullable', 'string', 'max:32'],
             'vat_number' => ['nullable', 'string', 'max:32'],
-            'small_entrepreneur_note' => ['nullable', 'string', 'max:255'],
             'is_small_entrepreneur' => ['boolean'],
             'is_vat_obligor' => ['boolean'],
         ];
@@ -41,7 +40,6 @@ class UpdateCompanySettingsRequest extends FormRequest
             'country' => 'država',
             'identification_number' => 'JIB',
             'vat_number' => 'PIB',
-            'small_entrepreneur_note' => 'napomena',
         ];
     }
 }

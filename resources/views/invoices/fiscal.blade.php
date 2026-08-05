@@ -30,6 +30,17 @@
 
         <div class="h-px bg-[var(--color-border)]"></div>
 
+        @if ($invoice->refundInvoice && $invoice->status === \App\Enums\InvoiceStatus::RefundCreated)
+            <div class="rounded-xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 p-3">
+                <p class="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                    Storno {{ $invoice->refundInvoice->invoice_number }} je kreiran, ali još nije fiskalizovan — račun važi dok se storno ne fiskalizuje.
+                </p>
+                <a href="{{ route('invoices.show', $invoice->refundInvoice) }}" class="mt-1 inline-flex text-[11px] font-black text-primary hover:underline">
+                    Otvori storno
+                </a>
+            </div>
+        @endif
+
         @forelse ($invoice->fiscalRecords as $record)
             @php
                 [$box, $text, $accent] = match ($record->type->value) {

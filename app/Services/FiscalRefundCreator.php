@@ -18,6 +18,10 @@ class FiscalRefundCreator
             throw new RuntimeException('Storno za ovaj račun već postoji.');
         }
 
+        if ($invoice->originalInvoice()->exists()) {
+            throw new RuntimeException('Storno računa se ne može stornirati.');
+        }
+
         if ($invoice->status !== InvoiceStatus::Fiscalized) {
             throw new RuntimeException('Storno se pravi samo od fiskalizovanog računa.');
         }

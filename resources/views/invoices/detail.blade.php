@@ -19,6 +19,10 @@
                     <x-details-item icon="repeat" label="Storno od" :value="$invoice->originalInvoice->invoice_number"
                                     color="bg-red-500/10 text-red-500" />
                 @endif
+                @if ($invoice->refundInvoice)
+                    <x-details-item icon="repeat" label="Storno račun" :value="$invoice->refundInvoice->invoice_number"
+                                    color="bg-red-500/10 text-red-500" />
+                @endif
                 <x-details-item icon="clock" label="Dospijeće" :value="$invoice->due_date->format('d.m.Y.')"
                                 color="bg-green-500/10 text-green-500" />
                 <x-details-item icon="credit-card" label="Valuta" :value="$invoice->currencySymbol()"

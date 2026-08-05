@@ -30,7 +30,11 @@ class FiscalService
 
     public function fiscalize(Invoice $invoice): FiscalRecord
     {
-        if (in_array($invoice->status, [InvoiceStatus::Fiscalized, InvoiceStatus::Refunded, InvoiceStatus::RefundCreated], true)) {
+        if ($invoice->originalInvoice()->exists()) {
+            throw new RuntimeException('Storno se fiskalizuje kao storno, ne kao prodaja.');
+        }
+
+        if ($invoice->status !== InvoiceStatus::Created) {
             throw new RuntimeException('Račun nije moguće fiskalizovati.');
         }
 
@@ -66,7 +70,7 @@ class FiscalService
 
         $record = $this->send($refundInvoice, 'Refund', 'Normal', FiscalRecordType::Refund, 'refund', $original);
 
-        $refundInvoice->update(['status' => InvoiceStatus::Fiscalized]);
+        $refundInvoice->update(['status' => InvoiceStatus::Refunded]);
         $originalInvoice->update(['status' => InvoiceStatus::Refunded]);
 
         return $record;

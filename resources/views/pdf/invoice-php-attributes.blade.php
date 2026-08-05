@@ -3,7 +3,6 @@
     $q = fn ($v): string => rtrim(rtrim(number_format((float) $v, 3, ',', '.'), '0'), ',');
     $c = $invoice->currencySymbol();
     $showVat = ($company->is_vat_obligor ?? true) || $invoice->tax_total > 0;
-    $smallNote = ($company->is_small_entrepreneur ?? false) ? trim((string) $company->small_entrepreneur_note) : '';
     $fiscal = $invoice->originalFiscalRecord();
     $spelled = \App\Support\SpelledAmount::of(intdiv($invoice->total, 100));
     $class = 'Racun'.preg_replace('/[^0-9]/', '', (string) $invoice->invoice_number);

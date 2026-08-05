@@ -47,7 +47,6 @@ class TemporaryDemoBuildSettings
             'vat_number' => null,
             'is_vat_obligor' => false,
             'is_small_entrepreneur' => true,
-            'small_entrepreneur_note' => 'Mali preduzetnik — nije u sistemu PDV-a.',
         ])->save();
 
         $this->documentSettings->fill([

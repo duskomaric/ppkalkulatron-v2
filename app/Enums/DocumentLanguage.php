@@ -15,10 +15,10 @@ enum DocumentLanguage: string
     case Croatian = 'hr';
     case SerbianLatin = 'sr_Latn';
     case SerbianCyrillic = 'sr_Cyrl';
-    case French = 'fr';
-    case German = 'de';
-    case Italian = 'it';
-    case Russian = 'ru';
+    //    case French = 'fr';
+    //    case German = 'de';
+    //    case Italian = 'it';
+    //    case Russian = 'ru';
 
     public function label(): string
     {
@@ -28,10 +28,10 @@ enum DocumentLanguage: string
             self::Croatian => 'Hrvatski',
             self::SerbianLatin => 'Srpski',
             self::SerbianCyrillic => 'Српски',
-            self::French => 'French',
-            self::German => 'German',
-            self::Italian => 'Italian',
-            self::Russian => 'Russian',
+            //            self::French => 'French',
+            //            self::German => 'German',
+            //            self::Italian => 'Italian',
+            //            self::Russian => 'Russian',
         };
     }
 

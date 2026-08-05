@@ -23,6 +23,11 @@ class Invoice extends Model
         'subtotal', 'tax_total', 'discount_total', 'total',
     ];
 
+    /** Bez ovoga svježe kreiran model nema status dok se ne pročita iz baze. */
+    protected $attributes = [
+        'status' => InvoiceStatus::Created->value,
+    ];
+
     protected $casts = [
         'status' => InvoiceStatus::class,
         'payment_type' => PaymentType::class,

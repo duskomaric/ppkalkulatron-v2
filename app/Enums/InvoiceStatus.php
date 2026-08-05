@@ -2,6 +2,14 @@
 
 namespace App\Enums;
 
+/**
+ * Status prati život računa, uključujući njegov storno:
+ *
+ *   Created → Fiscalized → RefundCreated → Refunded
+ *
+ * Original i njegov storno dijele posljednja dva stanja: kad se storno kreira oba
+ * su u „Storniranje", a kad se storno fiskalizuje oba su „Storniran".
+ */
 enum InvoiceStatus: string
 {
     case Created = 'created';
@@ -12,14 +20,14 @@ enum InvoiceStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Created => 'Kreiran',
+            self::Created => 'Nacrt',
             self::Fiscalized => 'Fiskalizovan',
-            self::RefundCreated => 'Storno kreiran',
+            self::RefundCreated => 'Storniranje',
             self::Refunded => 'Storniran',
         };
     }
 
-    /** Boja statusnog bedža. */
+    /** Boja statusnog bedža: siva = nacrt, zelena = važi, žuta = čeka radnju, crvena = poništeno. */
     public function badgeColor(): string
     {
         return match ($this) {

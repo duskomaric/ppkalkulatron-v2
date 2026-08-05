@@ -5,7 +5,6 @@
     // Porez se prikazuje i kad kompanija nije obveznik, ako ga na računu ima —
     // inače osnovica i ukupno ne bi bili u vezi.
     $showVat = ($company->is_vat_obligor ?? true) || $invoice->tax_total > 0;
-    $smallNote = ($company->is_small_entrepreneur ?? false) ? trim((string) $company->small_entrepreneur_note) : '';
 
     // Boje iz dizajna
     $color_primary = $programmer ? '#4f46e5' : '#2f80ed';

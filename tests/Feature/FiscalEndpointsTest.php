@@ -100,7 +100,7 @@ it('storno preslikava stavke i iznose originala', function (): void {
         ->and($refund->currency)->toBe($invoice->currency)
         ->and($refund->items)->toHaveCount($invoice->items()->count())
         ->and($refund->items->first()->name)->toBe($invoice->items->first()->name)
-        // Original se zaključava u „storno kreiran" i pokazuje na svoj storno.
+        // Original i storno zajedno ulaze u „Storniranje".
         ->and($invoice->fresh()->status)->toBe(InvoiceStatus::RefundCreated)
         ->and($invoice->fresh()->refund_invoice_id)->toBe($refund->id);
 });
@@ -119,6 +119,24 @@ it('fiskalizuje storno preko rute', function (): void {
         ->assertJson(['message' => 'Storno je fiskalizovan.']);
 
     expect($refund->fresh()->fiscalRecords()->pluck('type')->all())->toBe([FiscalRecordType::Refund]);
+});
+
+it('ne pravi storno od storno računa', function (): void {
+    $refund = refundFor(fiscalizedInvoice());
+
+    app(FiscalService::class)->refund($refund->fresh());
+
+    $this->postJson(route('invoices.create-refund', $refund->fresh()))
+        ->assertUnprocessable()
+        ->assertJson(['message' => 'Storno računa se ne može stornirati.']);
+});
+
+it('ne fiskalizuje storno kao prodaju', function (): void {
+    $refund = refundFor(fiscalizedInvoice());
+
+    $this->postJson(route('invoices.fiscalize', $refund))
+        ->assertUnprocessable()
+        ->assertJson(['message' => 'Storno se fiskalizuje kao storno, ne kao prodaja.']);
 });
 
 it('ne fiskalizuje kao storno račun koji ničiji storno nije', function (): void {

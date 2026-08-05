@@ -122,7 +122,7 @@ function fiscalizedInvoice(array $client = []): Invoice
     return $invoice->fresh();
 }
 
-/** Storno kreiran onako kako ga pravi ekran računa — preko rute. */
+/** Storno napravljen onako kako ga pravi ekran računa — preko rute. */
 function refundFor(Invoice $invoice): Invoice
 {
     // test() vraća tekući TestCase; pestphp/pest-plugin-laravel nije instaliran,

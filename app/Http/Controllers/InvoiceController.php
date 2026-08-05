@@ -169,13 +169,13 @@ class InvoiceController extends Controller
         if (! $invoice->isDeletable()) {
             return redirect()
                 ->route('invoices.show', $invoice)
-                ->with('error', 'Moguće je obrisati samo račune sa statusom Kreiran ili Storno kreiran.');
+                ->with('error', 'Moguće je obrisati samo račune u statusu Nacrt ili Storniranje.');
         }
 
         $number = $invoice->invoice_number;
 
         // Storno se briše dok nije fiskalizovan; original se tada vraća u
-        // fiskalizovano stanje, inače ostane zaglavljen u „storno kreiran"
+        // fiskalizovano stanje, inače ostane zaglavljen u „storniranju"
         // i novi storno se ne bi mogao napraviti.
         $original = $invoice->originalInvoice;
 

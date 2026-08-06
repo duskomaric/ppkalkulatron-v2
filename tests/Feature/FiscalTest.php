@@ -360,11 +360,18 @@ it('otvorene portove nalazi jednim pregledom cijele podmreže', function (): voi
         {
             return $this->openPorts($addresses, $port, 1.0);
         }
+
+        public function aliveCount(): int
+        {
+            return $this->alive;
+        }
     };
 
     expect($scanner->probe(['127.0.0.1'], $port))->toBe(['127.0.0.1'])
-        // Zatvoren port se ne prijavljuje kao kandidat.
-        ->and($scanner->probe(['127.0.0.1'], $port + 1))->toBe([]);
+        // Zatvoren port se ne prijavljuje kao kandidat, ali uređaj jeste na mreži —
+        // po tome se razlikuje „nema nikoga" od „niko ne sluša na portu".
+        ->and($scanner->probe(['127.0.0.1'], $port + 1))->toBe([])
+        ->and($scanner->aliveCount())->toBe(1);
 
     fclose($server);
 });

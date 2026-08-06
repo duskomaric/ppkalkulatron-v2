@@ -17,14 +17,15 @@
                     </div>
 
                     {{-- Više značaka na uskom ekranu ide u novi red, uvijek uz desnu ivicu. --}}
+                    {{-- Status računa je uvijek posljednji, uz samu ivicu; dopune stoje ispred njega. --}}
                     <div class="flex shrink-0 flex-wrap justify-end gap-1">
-                        <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
-                        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
-                            <x-status-badge label="Poništen" color="red" />
-                        @endif
                         @if ($invoice->imported_at)
                             <x-status-badge label="Uvezen" color="blue" />
                         @endif
+                        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
+                            <x-status-badge label="Poništen" color="red" />
+                        @endif
+                        <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
                     </div>
                 </div>
 
@@ -104,13 +105,13 @@
                     </div>
 
                     <div class="flex flex-wrap gap-1">
-                        <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
-                        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
-                            <x-status-badge label="Poništen" color="red" />
-                        @endif
                         @if ($invoice->imported_at)
                             <x-status-badge label="Uvezen" color="blue" />
                         @endif
+                        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
+                            <x-status-badge label="Poništen" color="red" />
+                        @endif
+                        <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
                     </div>
 
                     <div class="flex items-center gap-1 text-xs font-bold text-[var(--color-text-muted)]">

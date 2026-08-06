@@ -29,8 +29,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             @if ($taxRateOptions === [])
-                <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 sm:col-span-2">
-                    <p class="text-sm font-black text-amber-700 dark:text-amber-300">Poreske stope nisu preuzete</p>
+                <div class="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 sm:col-span-2">
+                    <p class="text-sm font-black text-primary">Poreske stope nisu preuzete</p>
                     <p class="mt-1 text-xs text-[var(--color-text-dim)]">Prvo ih ručno preuzmite sa fiskalne kase, zatim možete odabrati oznaku za artikal.</p>
                     <a href="{{ route('settings.fiscal.edit') }}" class="mt-3 inline-flex text-xs font-black text-primary hover:underline">Otvori fiskalizaciju</a>
                 </div>

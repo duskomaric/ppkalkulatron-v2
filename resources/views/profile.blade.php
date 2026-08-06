@@ -41,6 +41,7 @@
                     <x-icon name="chevron-right" class="h-4 w-4 text-[var(--color-text-dim)]" />
                 </button>
 
+                @if ($pinEnabled)
                 <div class="h-[1px] w-full bg-[var(--color-border)]"></div>
 
                 <form method="POST" action="{{ route('unlock.destroy') }}">
@@ -56,6 +57,7 @@
                         <x-icon name="chevron-right" class="h-4 w-4 text-[var(--color-text-dim)]" />
                     </button>
                 </form>
+                @endif
             </div>
         </div>
 

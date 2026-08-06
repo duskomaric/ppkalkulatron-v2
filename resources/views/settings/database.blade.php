@@ -10,10 +10,10 @@
                               subtitle="Puna kopija: računi, klijenti, artikli, podešavanja i fiskalni dokumenti."
                               :help="route('help').'#backup-aplikacije'" />
 
-            <p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">
+            <x-note>
                 Backup sadrži i pristupne podatke: ključ i PIN fiskalne kase te lozinku mail servera.
                 Čuvajte ga kao što biste čuvali te podatke.
-            </p>
+            </x-note>
 
             <form method="GET" action="{{ route('settings.database.download') }}" x-data="databaseBackup" x-on:submit="start()">
                 <x-button variant="primary" class="w-full !py-3.5 !text-[11px] !uppercase !tracking-[0.2em] !font-black"
@@ -63,9 +63,9 @@
                     </x-button>
                 </div>
             @else
-                <p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">
+                <x-note>
                     Ovaj uređaj ne podržava raspakivanje backupa, pa se vraćanje ovdje ne može uraditi.
-                </p>
+                </x-note>
             @endif
         </x-section-block>
 

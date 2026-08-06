@@ -43,9 +43,12 @@ class NetworkScanner
     /**
      * Šta je posljednje skeniranje radilo — za prikaz korisniku.
      *
-     * @var array{addresses: int, port: int, open_ports: int, pass: int, seconds: float}|null
+     * @var array{addresses: int, port: int, alive: int, open_ports: int, pass: int, seconds: float}|null
      */
     private ?array $report = null;
+
+    /** Adrese koje su uopšte odgovorile u posljednjem pregledu porta. */
+    protected int $alive = 0;
 
     public function __construct(private Diagnostics $diagnostics) {}
 
@@ -62,7 +65,7 @@ class NetworkScanner
     /**
      * Izvještaj o posljednjem skeniranju.
      *
-     * @return array{addresses: int, port: int, open_ports: int, pass: int, seconds: float}|null
+     * @return array{addresses: int, port: int, alive: int, open_ports: int, pass: int, seconds: float}|null
      */
     public function report(): ?array
     {
@@ -81,7 +84,14 @@ class NetworkScanner
 
         $started = microtime(true);
         $socketsUsable = true;
-        $this->report = ['addresses' => count($addresses), 'port' => $port, 'open_ports' => 0, 'pass' => 0, 'seconds' => 0.0];
+        $this->report = [
+            'addresses' => count($addresses),
+            'port' => $port,
+            'alive' => 0,
+            'open_ports' => 0,
+            'pass' => 0,
+            'seconds' => 0.0,
+        ];
 
         // Cijela podmreža se prvo pregleda odjednom, samim otvaranjem konekcija: to je
         // jedan rok za sve adrese umjesto niza HTTP zahtjeva po grupama.
@@ -95,6 +105,7 @@ class NetworkScanner
             }
 
             $found = $candidates === [] ? [] : $this->verify($candidates, $port, $apiKey);
+            $this->report['alive'] = $this->alive;
             $this->report['open_ports'] = count($candidates);
             $this->report['pass'] = $index + 1;
             $this->report['seconds'] = round(microtime(true) - $started, 2);
@@ -150,6 +161,7 @@ class NetworkScanner
     protected function openPorts(array $addresses, int $port, float $deadline): ?array
     {
         $open = [];
+        $this->alive = 0;
 
         foreach (array_chunk($addresses, $this->socketBudget()) as $group) {
             $sockets = [];
@@ -185,7 +197,10 @@ class NetworkScanner
                     unset($sockets[$ip]);
 
                     // Spremno za pisanje znači da je konekcija završila; ime udaljene
-                    // strane postoji samo ako je i uspjela.
+                    // strane postoji samo ako je i uspjela. Uređaj koji odbije vezu
+                    // ipak je tu — to razdvaja „nema nikoga" od „niko ne sluša na portu".
+                    $this->alive++;
+
                     if (@stream_socket_get_name($socket, true) !== false) {
                         $open[] = $ip;
                     }

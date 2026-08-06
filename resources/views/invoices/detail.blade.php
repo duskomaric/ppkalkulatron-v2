@@ -1,13 +1,13 @@
 {{-- Detalji računa koriste se na punoj stranici i u standardnom Laravel toku. --}}
 <x-detail-body :entity-name="$invoice->invoice_number" entity-icon="file-text">
     <x-slot:badges>
-        <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
-        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
-            <x-status-badge label="Poništen" color="red" />
-        @endif
         @if ($invoice->imported_at)
             <x-status-badge label="Uvezen" color="blue" />
         @endif
+        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
+            <x-status-badge label="Poništen" color="red" />
+        @endif
+        <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
     </x-slot:badges>
 
     <div class="space-y-3">
@@ -96,7 +96,7 @@
             </div>
         </x-section-block>
 
-        <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-1.5">
+        <div class="p-3 bg-primary/5 border border-primary/20 rounded-2xl space-y-1.5">
             <div class="flex justify-between text-sm">
                 <span class="text-[var(--color-text-dim)]">Osnovica:</span>
                 <span class="font-bold text-[var(--color-text-main)]">{{ $invoice->formatted($invoice->subtotal) }} {{ $invoice->currencySymbol() }}</span>
@@ -105,7 +105,7 @@
                 <span class="text-[var(--color-text-dim)]">PDV:</span>
                 <span class="font-bold text-[var(--color-text-main)]">{{ $invoice->formatted($invoice->tax_total) }} {{ $invoice->currencySymbol() }}</span>
             </div>
-            <div class="h-[1px] bg-amber-500/20"></div>
+            <div class="h-[1px] bg-primary/20"></div>
             <div class="flex justify-between">
                 <span class="text-sm font-bold text-[var(--color-text-main)]">Ukupno:</span>
                 <span class="text-xl font-black text-primary tracking-tighter italic">{{ $invoice->formatted($invoice->total) }} {{ $invoice->currencySymbol() }}</span>
@@ -113,7 +113,7 @@
 
             {{-- Kasi iznosi idu u KM, pa se uz stranu valutu pokazuje i preračun. --}}
             @if ($bam = $invoice->bamEquivalent())
-                <p class="text-right text-[11px] font-bold {{ $bam['total'] === null ? 'text-amber-500' : 'text-[var(--color-text-dim)]' }}">
+                <p class="text-right text-[11px] font-bold {{ $bam['total'] === null ? 'text-amber-500' : 'text-primary' }}">
                     @if ($bam['total'] === null)
                         Kurs za {{ $invoice->currency }} nije preuzet — račun se ne može fiskalizovati
                     @else

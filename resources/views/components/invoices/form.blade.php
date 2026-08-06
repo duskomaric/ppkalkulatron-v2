@@ -77,8 +77,8 @@
     <x-form-errors />
 
     @if ($isFiscalized)
-        <div class="rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 p-4">
-            <p class="text-sm font-black text-amber-700 dark:text-amber-300">
+        <div class="rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-4">
+            <p class="text-sm font-black text-primary">
                 {{ $invoice->imported_at ? 'Račun je uvezen sa fiskalne kase' : 'Račun je fiskalizovan' }}
             </p>
             <p class="mt-1 text-xs text-[var(--color-text-dim)] leading-relaxed">
@@ -389,7 +389,7 @@
 
             {{-- Kasi iznosi idu u KM, pa se uz stranu valutu pokazuje i preračun. --}}
             <p x-cloak x-show="currency !== 'BAM'" class="text-right text-[11px] font-bold"
-               :class="exchangeRates[currency] ? 'text-[var(--color-text-dim)]' : 'text-amber-500'"
+               :class="exchangeRates[currency] ? 'text-primary' : 'text-amber-500'"
                x-text="bamNote()"></p>
         </div>
     </div>

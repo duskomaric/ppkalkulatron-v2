@@ -391,3 +391,10 @@ it('prikazuje tok skeniranja sa podmrežom i rokovima', function (): void {
         ->and($html)->toContain(json_encode(NetworkScanner::deadlines()))
         ->and($html)->toContain('Otvaram veze prema svim adresama odjednom');
 });
+
+it('kad ništa ne sluša na portu, kaže šta dalje', function (): void {
+    $html = unlocked()->get(route('settings.fiscal.edit'))->assertSuccessful()->getContent();
+
+    expect($html)->toContain('ali nijedan ne sluša na portu')
+        ->and($html)->toContain('nije javio nijedan uređaj');
+});

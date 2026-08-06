@@ -37,13 +37,18 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('components.user-drawer', function (ViewInstance $view): void {
-            $view->with('user', $this->app->make(UserSettings::class));
+            $view->with([
+                'user' => $this->app->make(UserSettings::class),
+                // Bez PIN-a nema šta da se zaključa, pa se radnja i ne nudi.
+                'pinEnabled' => $this->app->make(PinLock::class)->isEnabled(),
+            ]);
         });
 
         View::composer(['profile', 'unlock'], function (ViewInstance $view): void {
             $assetBuildHash = $this->app->make(Vite::class)->manifestHash();
 
             $view->with([
+                'pinEnabled' => $this->app->make(PinLock::class)->isEnabled(),
                 'appReleaseVersion' => config('nativephp.version'),
                 'appBuildCode' => config('nativephp.version_code'),
                 'assetBuildHash' => $assetBuildHash === null ? null : strtoupper(substr($assetBuildHash, 0, 8)),

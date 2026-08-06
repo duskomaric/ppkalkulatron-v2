@@ -81,11 +81,11 @@
                 </x-button>
             </div>
 
-            <p x-show="fiscalState !== 'ready'" x-cloak class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300"
-               x-text="fiscalState === 'pin_required' ? 'Kasa traži PIN sigurnosnog elementa. Unesite ga prije preuzimanja stopa.' : fiscalState === 'unavailable' ? 'Kasa nije dostupna. Provjerite adresu, mrežu i podatke za pristup.' : 'Provjeravam vezu sa kasom. Preuzimanje stopa će biti dostupno kada je potvrđena.'"></p>
+            <x-note variant="warning" x-show="fiscalState !== 'ready'" x-cloak
+               x-text="fiscalState === 'pin_required' ? 'Kasa traži PIN sigurnosnog elementa. Unesite ga prije preuzimanja stopa.' : fiscalState === 'unavailable' ? 'Kasa nije dostupna. Provjerite adresu, mrežu i podatke za pristup.' : 'Provjeravam vezu sa kasom. Preuzimanje stopa će biti dostupno kada je potvrđena.'"></x-note>
 
             @if ($taxRates->isEmpty())
-                <p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">Stope još nisu preuzete. Bez njih nije moguće dodati artikal ni napraviti račun.</p>
+                <x-note>Stope još nisu preuzete. Bez njih nije moguće dodati artikal ni napraviti račun.</x-note>
             @else
                 <div class="flex flex-wrap gap-2">
                     @foreach ($taxRates as $taxRate)
@@ -250,9 +250,9 @@
                class="rounded-xl border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-3 py-2 text-xs font-bold text-[var(--color-error)]"></p>
 
             <template x-if="searched && ! total">
-                <p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300">
+                <x-note>
                     U tom periodu kasa nema računa za uvoz.
-                </p>
+                </x-note>
             </template>
 
             <template x-if="total">
@@ -296,10 +296,9 @@
                             <input type="radio" value="fiscal" x-model="numbering" class="mt-0.5 accent-[var(--color-primary)]">
                             <span>Broj sa kase — koristi fiskalni broj računa.</span>
                         </label>
-                        <p x-show="numbering === 'fiscal'" x-cloak
-                           class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                        <x-note variant="warning" x-show="numbering === 'fiscal'" x-cloak class="!text-[11px]">
                             Pažljivo: ako lokalno već postoji račun sa istim brojem, biće prepisan podacima sa kase.
-                        </p>
+                        </x-note>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-3">
@@ -442,9 +441,16 @@
 
                     this.steps.push(
                         `Pregledano ${report.addresses} adresa za ${report.seconds} s`
-                        + ` · odazvalo se na portu ${report.port}: ${report.open_ports}`
+                        + ` · odazvalo se uređaja: ${report.alive}`
+                        + ` · sluša na portu ${report.port}: ${report.open_ports}`
                         + ` · kasa: ${this.devices.length}`,
                     );
+
+                    if (! this.devices.length) {
+                        this.steps.push(report.alive
+                            ? `Uređaji na mreži postoje, ali nijedan ne sluša na portu ${report.port} — provjerite je li kasa uključena i na istoj mreži.`
+                            : 'Na ovoj mreži se nije javio nijedan uređaj — provjerite Wi-Fi vezu ili unesite opseg ručno.');
+                    }
                 },
 
                 stop() {

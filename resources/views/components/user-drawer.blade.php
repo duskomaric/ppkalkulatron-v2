@@ -32,6 +32,7 @@
             Pomoć
         </a>
 
+        @if ($pinEnabled)
         <form method="POST" action="{{ route('unlock.destroy') }}">
             @csrf
             <button type="submit"
@@ -42,5 +43,6 @@
                 Zaključaj
             </button>
         </form>
+        @endif
     </div>
 </x-drawer>

@@ -19,6 +19,9 @@ class FiscalService
     /** JIB za veleprodajnog kupca koji svoj nema (strano lice). */
     public const FOREIGN_BUYER_ID = '9999999999999';
 
+    /** api.ofs.ba prima najviše 20 ASCII znakova u `buyerId`; duže vraća „Bad Request". */
+    public const BUYER_ID_LIMIT = 20;
+
     public function __construct(
         private FiscalSettings $settings,
         private FiscalReceiptStore $receipts,
@@ -98,7 +101,7 @@ class FiscalService
     ): FiscalRecord {
         $invoice->loadMissing(['items.article', 'client']);
 
-        if ($missing = $this->wholesaleBuyerMissing($invoice)) {
+        if ($missing = $this->buyerProblem($invoice)) {
             throw new RuntimeException($missing);
         }
 
@@ -223,6 +226,25 @@ class FiscalService
         }
 
         return $this->buyerIsForeign($invoice) ? 'VP:'.self::FOREIGN_BUYER_ID : null;
+    }
+
+    /**
+     * Šta nije u redu sa identifikacijom kupca — reci to umjesto da uređaj odbije račun.
+     *
+     * Po dokumentaciji api.ofs.ba `buyerId` je opciono polje od najviše 20 ASCII znakova;
+     * duže uređaj odbija golim „Bad Request", a format ne provjerava uopšte. Veleprodajni
+     * promet mora imati kupca, uz prefiks „VP:".
+     */
+    public function buyerProblem(Invoice $invoice): ?string
+    {
+        $buyerId = $this->resolveBuyerId($invoice);
+
+        if ($buyerId !== null && strlen($buyerId) > self::BUYER_ID_LIMIT) {
+            return 'Identifikacija kupca ima najviše '.self::BUYER_ID_LIMIT.' znakova, a sa oznakom za veleprodaju ih je '
+                .strlen($buyerId).'. Skratite JIB u podacima klijenta.';
+        }
+
+        return $this->wholesaleBuyerMissing($invoice);
     }
 
     /** Veleprodajni promet mora imati kupca — reci šta nedostaje umjesto da uređaj odbije račun. */

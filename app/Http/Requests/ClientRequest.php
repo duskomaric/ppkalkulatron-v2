@@ -21,7 +21,8 @@ class ClientRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:120'],
             'zip' => ['nullable', 'string', 'max:16'],
             'country' => ['nullable', 'string', 'max:120'],
-            'vat_id' => ['nullable', 'string', 'max:32'],
+            // Kasa prima najviše 20 znakova u identifikaciji kupca, a veleprodaja doda i „VP:".
+            'vat_id' => ['nullable', 'string', 'max:17'],
             'tax_id' => ['nullable', 'string', 'max:32'],
             'is_active' => ['boolean'],
         ];

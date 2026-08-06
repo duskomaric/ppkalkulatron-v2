@@ -722,3 +722,24 @@ it('cloud kasa ne dobija PIN — sigurnosni element nije u uređaju', function (
     expect(app(FiscalDeviceHealth::class)->refresh()['state'])->toBe('pin_required');
     Http::assertNotSent(fn ($request) => str_contains($request->url(), '/api/pin'));
 });
+
+it('odbija predugu identifikaciju kupca prije nego što je kasa odbije', function (): void {
+    // api.ofs.ba prima najviše 20 znakova u buyerId i vraća golo „Bad Request".
+    $invoice = makeInvoice();
+    $invoice->client->update(['vat_id' => str_repeat('9', 21)]);
+
+    expect(fn () => app(FiscalService::class)->fiscalize($invoice->fresh()))
+        ->toThrow(RuntimeException::class, 'Identifikacija kupca ima najviše 20 znakova');
+});
+
+it('ne traži JIB za maloprodajni račun', function (): void {
+    fakeDevice();
+
+    $invoice = makeInvoice();
+    $invoice->client->update(['vat_id' => null]);
+
+    app(FiscalService::class)->fiscalize($invoice->fresh());
+
+    // Po dokumentaciji je buyerId opciono; bez JIB-a se polje jednostavno ne šalje.
+    Http::assertSent(fn ($request) => ! array_key_exists('buyerId', $request['invoiceRequest']));
+});

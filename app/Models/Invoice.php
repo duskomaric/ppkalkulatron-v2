@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Enums\DocumentLanguage;
 use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
@@ -32,9 +33,9 @@ class Invoice extends Model
         'status' => InvoiceStatus::class,
         'payment_type' => PaymentType::class,
         'language' => DocumentLanguage::class,
-        'date' => 'date',
+        'date' => DateOnly::class,
         'imported_at' => 'datetime',
-        'due_date' => 'date',
+        'due_date' => DateOnly::class,
         'subtotal' => 'integer',
         'tax_total' => 'integer',
         'discount_total' => 'integer',

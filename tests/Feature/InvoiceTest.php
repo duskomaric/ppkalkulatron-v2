@@ -796,3 +796,27 @@ it('prikazuje PDV na PDF-u i kad kompanija nije obveznik', function (): void {
     // Osnovica + PDV mora davati ukupno; inače dokument sam sebi ne odgovara.
     expect(renderPdfView(Invoice::firstOrFail(), $company))->toContain('PDV');
 });
+
+it('datum računa upisuje bez vremena, pa lista ostaje po redu', function (): void {
+    $this->post(route('invoices.store'), invoicePayload());
+    $older = Invoice::firstOrFail();
+
+    // Vrijeme u koloni datuma bi na SQLite-u (poređenje kao tekst) ovaj račun
+    // gurnulo iznad kasnijih istog dana i izbacilo ga iz filtera po godini.
+    $newer = Invoice::create([
+        'invoice_number' => '0002/'.date('Y'),
+        'client_id' => $older->client_id,
+        'date' => now(),
+        'due_date' => now()->addDays(15),
+        'currency' => 'BAM',
+        'language' => 'sr_Latn',
+        'payment_type' => 'Cash',
+        'subtotal' => 100,
+        'tax_total' => 0,
+        'total' => 100,
+    ]);
+
+    expect($newer->getRawOriginal('date'))->toBe(now()->toDateString())
+        ->and($this->get(route('invoices.index'))->viewData('invoices')->pluck('id')->all())
+        ->toBe([$newer->id, $older->id]);
+});

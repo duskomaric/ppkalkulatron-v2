@@ -166,7 +166,7 @@ class FiscalSettingsController extends Controller
         return response()->json([
             'devices' => $found,
             'message' => $found === []
-                ? 'Nijedan uređaj nije pronađen na mreži.'
+                ? 'Nijedan uređaj nije pronađen. Provjerite da su ovaj uređaj i kasa na istoj mreži, ili unesite opseg ručno.'
                 : 'Pronađeno uređaja: '.count($found).'.',
         ]);
     }

@@ -148,9 +148,10 @@
             <x-section-header icon="search" title="Skeniranje mreže" :help="route('help').'#skeniranje'" />
 
             <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
-                Traži ESIR na portu {{ \App\Services\NetworkScanner::PORT }}. Opseg se čita sa mrežnog
+                Traži kasu na portu {{ \App\Services\NetworkScanner::PORT }}. Opseg se čita sa mrežnog
                 interfejsa uređaja, pa ga ne morate unositi — polje ispod je za slučaj da je kasa
-                na drugoj podmreži.
+                na drugoj podmreži. Ako se kasa ne javi iz prve, traženje se samo ponavlja sa dužim
+                čekanjem, pa može potrajati desetak sekundi.
             </p>
 
             <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
@@ -161,7 +162,7 @@
                 <x-button variant="ghost" type="button" class="!py-3.5 shrink-0" x-on:click="run()"
                           ::disabled="scanning">
                     <span x-show="scanning" x-cloak class="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></span>
-                    <span x-text="scanning ? 'Skeniram...' : 'Skeniraj mrežu'"></span>
+                    <span x-text="scanning ? 'Tražim kasu...' : 'Skeniraj mrežu'"></span>
                 </x-button>
             </div>
 

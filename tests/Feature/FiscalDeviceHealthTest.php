@@ -301,7 +301,7 @@ it('vraća jasnu poruku kada skeniranje ne pronađe fiskalni uređaj', function 
 
     unlocked()->postJson(route('settings.fiscal.scan'), ['range' => '10.0.0.1-1'])
         ->assertSuccessful()
-        ->assertJson(['devices' => [], 'message' => 'Nijedan uređaj nije pronađen na mreži.']);
+        ->assertJson(['devices' => [], 'message' => 'Nijedan uređaj nije pronađen. Provjerite da su ovaj uređaj i kasa na istoj mreži, ili unesite opseg ručno.']);
 });
 
 it('pronađe prethodni fiskalni zahtjev po RequestId-u', function (): void {

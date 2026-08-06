@@ -19,7 +19,21 @@ class NetworkScanner
 
     private const BATCH = 64;
 
-    private const CONNECT_TIMEOUT = 0.3;
+    /**
+     * Dva prolaza, jer prvi često promaši uređaj koji jeste tu.
+     *
+     * Kad se adresa prvi put dodirne, uređaj tek treba da odgovori na ARP upit, a na
+     * Wi-Fi-ju radio zna biti u štednji — prvih nekoliko stotina milisekundi zna se
+     * izgubiti. Zato prvi prolaz ide kratko i usput „budi" mrežu, a drugi, samo ako
+     * ništa nije nađeno, čeka znatno duže. Ranije je postojao samo brzi prolaz, pa je
+     * korisnik morao da klikne po nekoliko puta da bi kasa bila pronađena.
+     *
+     * @var list<array{connect: float, timeout: float}>
+     */
+    private const PASSES = [
+        ['connect' => 0.5, 'timeout' => 1.0],
+        ['connect' => 2.0, 'timeout' => 3.0],
+    ];
 
     public function __construct(private Diagnostics $diagnostics) {}
 
@@ -33,13 +47,47 @@ class NetworkScanner
             return [];
         }
 
+        $started = microtime(true);
+
+        foreach (self::PASSES as $index => $pass) {
+            $found = $this->sweep($addresses, $port, $apiKey, $pass['connect'], $pass['timeout']);
+
+            if ($found !== []) {
+                $this->diagnostics->debug('Skeniranje mreže: uređaj pronađen', [
+                    'pass' => $index + 1,
+                    'addresses' => count($addresses),
+                    'found' => count($found),
+                    'seconds' => round(microtime(true) - $started, 2),
+                ]);
+
+                return $found;
+            }
+        }
+
+        $this->diagnostics->error('Skeniranje mreže: nijedan uređaj nije odgovorio', [
+            'addresses' => count($addresses),
+            'port' => $port,
+            'seconds' => round(microtime(true) - $started, 2),
+        ]);
+
+        return [];
+    }
+
+    /**
+     * Jedan prolaz kroz sve adrese, po grupama koje idu uporedo.
+     *
+     * @param  list<string>  $addresses
+     * @return string[]
+     */
+    private function sweep(array $addresses, int $port, ?string $apiKey, float $connect, float $timeout): array
+    {
         $found = [];
 
         foreach (array_chunk($addresses, self::BATCH) as $batch) {
             $responses = Http::pool(fn (Pool $pool) => array_map(
                 fn (string $ip) => $pool->as($ip)
-                    ->connectTimeout(self::CONNECT_TIMEOUT)
-                    ->timeout(self::CONNECT_TIMEOUT * 2)
+                    ->connectTimeout($connect)
+                    ->timeout($timeout)
                     ->withHeaders(array_filter(['Authorization' => $apiKey ? 'Bearer '.$apiKey : null]))
                     ->get("http://{$ip}:{$port}/api/attention"),
                 $batch,

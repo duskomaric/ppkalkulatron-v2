@@ -12,6 +12,7 @@ use App\Services\FiscalService;
 use App\Services\NetworkScanner;
 use App\Services\OFSService;
 use App\Settings\FiscalSettings;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -334,6 +335,28 @@ it('prijavljuje uređaj koji odgovori na attention', function (): void {
     $found = app(NetworkScanner::class)->scan('10.0.0.1-10');
 
     expect($found)->toBe(['http://10.0.0.5:3566', 'http://10.0.0.6:3566']);
+});
+
+it('ponavlja skeniranje kad se uređaj ne javi iz prve', function (): void {
+    $attempts = 0;
+
+    // Prvi dodir adrese često propadne dok mreža „ne probudi" uređaj.
+    Http::fake(function ($request) use (&$attempts) {
+        if (! str_contains($request->url(), '10.0.0.5')) {
+            return Http::response('', 500);
+        }
+
+        $attempts++;
+
+        if ($attempts === 1) {
+            throw new ConnectionException('Operation timed out');
+        }
+
+        return Http::response('', 200);
+    });
+
+    expect(app(NetworkScanner::class)->scan('10.0.0.1-10'))->toBe(['http://10.0.0.5:3566'])
+        ->and($attempts)->toBe(2);
 });
 
 it('šalje PIN sigurnosnog elementa kao goli tekst', function (): void {

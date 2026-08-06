@@ -312,6 +312,18 @@ it('objašnjava zašto se stope ne mogu preuzeti dok kasa nije spremna', functio
         ->and($html)->toContain('Kasa nije dostupna. Provjerite adresu, mrežu i podatke za pristup.');
 });
 
+/** Skener kojem su svi portovi „otvoreni", pa se provjerava samo HTTP dio. */
+function scannerWithOpenPorts(): NetworkScanner
+{
+    return new class(app(Diagnostics::class)) extends NetworkScanner
+    {
+        protected function openPorts(array $addresses, int $port, float $deadline): ?array
+        {
+            return $addresses;
+        }
+    };
+}
+
 it('čita opseg adresa iz teksta', function (): void {
     $scanner = app(NetworkScanner::class);
 
@@ -332,9 +344,29 @@ it('prijavljuje uređaj koji odgovori na attention', function (): void {
         '*' => Http::response('', 500),
     ]);
 
-    $found = app(NetworkScanner::class)->scan('10.0.0.1-10');
+    $found = scannerWithOpenPorts()->scan('10.0.0.1-10');
 
     expect($found)->toBe(['http://10.0.0.5:3566', 'http://10.0.0.6:3566']);
+});
+
+it('otvorene portove nalazi jednim pregledom cijele podmreže', function (): void {
+    $server = stream_socket_server('tcp://127.0.0.1:0', $code, $message);
+    $port = (int) explode(':', (string) stream_socket_get_name($server, false))[1];
+
+    $scanner = new class(app(Diagnostics::class)) extends NetworkScanner
+    {
+        /** @return list<string>|null */
+        public function probe(array $addresses, int $port): ?array
+        {
+            return $this->openPorts($addresses, $port, 1.0);
+        }
+    };
+
+    expect($scanner->probe(['127.0.0.1'], $port))->toBe(['127.0.0.1'])
+        // Zatvoren port se ne prijavljuje kao kandidat.
+        ->and($scanner->probe(['127.0.0.1'], $port + 1))->toBe([]);
+
+    fclose($server);
 });
 
 it('ponavlja skeniranje kad se uređaj ne javi iz prve', function (): void {
@@ -355,7 +387,7 @@ it('ponavlja skeniranje kad se uređaj ne javi iz prve', function (): void {
         return Http::response('', 200);
     });
 
-    expect(app(NetworkScanner::class)->scan('10.0.0.1-10'))->toBe(['http://10.0.0.5:3566'])
+    expect(scannerWithOpenPorts()->scan('10.0.0.1-10'))->toBe(['http://10.0.0.5:3566'])
         ->and($attempts)->toBe(2);
 });
 

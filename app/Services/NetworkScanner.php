@@ -20,13 +20,18 @@ class NetworkScanner
     private const BATCH = 64;
 
     /**
-     * Dva prolaza, jer prvi često promaši uređaj koji jeste tu.
+     * Rokovi za pregled porta: prvi kratak, drugi samo ako se ništa nije javilo.
      *
      * Kad se adresa prvi put dodirne, uređaj tek treba da odgovori na ARP upit, a na
      * Wi-Fi-ju radio zna biti u štednji — prvih nekoliko stotina milisekundi zna se
-     * izgubiti. Zato prvi prolaz ide kratko i usput „budi" mrežu, a drugi, samo ako
-     * ništa nije nađeno, čeka znatno duže. Ranije je postojao samo brzi prolaz, pa je
-     * korisnik morao da klikne po nekoliko puta da bi kasa bila pronađena.
+     * izgubiti. Prvi pregled usput „budi" mrežu, pa drugi rijetko i zatreba.
+     *
+     * @var list<float> sekunde
+     */
+    private const PORT_DEADLINES = [1.5, 2.5];
+
+    /**
+     * Rezervni put preko HTTP-a, ako uređaj ne dozvoljava otvaranje sirovih konekcija.
      *
      * @var list<array{connect: float, timeout: float}>
      */
@@ -48,12 +53,39 @@ class NetworkScanner
         }
 
         $started = microtime(true);
+        $socketsUsable = true;
 
-        foreach (self::PASSES as $index => $pass) {
-            $found = $this->sweep($addresses, $port, $apiKey, $pass['connect'], $pass['timeout']);
+        // Cijela podmreža se prvo pregleda odjednom, samim otvaranjem konekcija: to je
+        // jedan rok za sve adrese umjesto niza HTTP zahtjeva po grupama.
+        foreach (self::PORT_DEADLINES as $index => $deadline) {
+            $candidates = $this->openPorts($addresses, $port, $deadline);
+
+            if ($candidates === null) {
+                $socketsUsable = false;
+
+                break;
+            }
+
+            $found = $candidates === [] ? [] : $this->verify($candidates, $port, $apiKey);
 
             if ($found !== []) {
                 $this->diagnostics->debug('Skeniranje mreže: uređaj pronađen', [
+                    'pass' => $index + 1,
+                    'addresses' => count($addresses),
+                    'open_ports' => count($candidates),
+                    'found' => count($found),
+                    'seconds' => round(microtime(true) - $started, 2),
+                ]);
+
+                return $found;
+            }
+        }
+
+        foreach ($socketsUsable ? [] : self::PASSES as $index => $pass) {
+            $found = $this->sweep($addresses, $port, $apiKey, $pass['connect'], $pass['timeout']);
+
+            if ($found !== []) {
+                $this->diagnostics->debug('Skeniranje mreže: uređaj pronađen preko HTTP-a', [
                     'pass' => $index + 1,
                     'addresses' => count($addresses),
                     'found' => count($found),
@@ -71,6 +103,92 @@ class NetworkScanner
         ]);
 
         return [];
+    }
+
+    /**
+     * Adrese na kojima je port otvoren.
+     *
+     * Konekcije se otvaraju sve odjednom i bez čekanja, pa se jednim `stream_select`
+     * čeka koja se javi — cijela podmreža stane u jedan rok. Provjera je samo „ima li
+     * nekoga na portu", a je li to zaista kasa utvrđuje HTTP provjera nad kandidatima.
+     *
+     * @param  list<string>  $addresses
+     * @return list<string>|null `null` kad uređaj ne dozvoljava otvaranje konekcija
+     */
+    protected function openPorts(array $addresses, int $port, float $deadline): ?array
+    {
+        $open = [];
+
+        foreach (array_chunk($addresses, $this->socketBudget()) as $group) {
+            $sockets = [];
+
+            foreach ($group as $ip) {
+                $socket = @stream_socket_client(
+                    "tcp://{$ip}:{$port}", $code, $message, 0,
+                    STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT,
+                );
+
+                if ($socket !== false) {
+                    $sockets[$ip] = $socket;
+                }
+            }
+
+            if ($sockets === []) {
+                return null;
+            }
+
+            $stop = microtime(true) + $deadline;
+
+            while ($sockets !== [] && microtime(true) < $stop) {
+                $write = array_values($sockets);
+                $read = $except = [];
+                $left = max(0.0, $stop - microtime(true));
+
+                if (@stream_select($read, $write, $except, (int) $left, (int) (fmod($left, 1) * 1_000_000)) === false) {
+                    break;
+                }
+
+                foreach ($write as $socket) {
+                    $ip = (string) array_search($socket, $sockets, true);
+                    unset($sockets[$ip]);
+
+                    // Spremno za pisanje znači da je konekcija završila; ime udaljene
+                    // strane postoji samo ako je i uspjela.
+                    if (@stream_socket_get_name($socket, true) !== false) {
+                        $open[] = $ip;
+                    }
+
+                    fclose($socket);
+                }
+            }
+
+            foreach ($sockets as $socket) {
+                fclose($socket);
+            }
+        }
+
+        return $open;
+    }
+
+    /**
+     * Na portu može biti bilo šta; ESIR se prepoznaje po odgovoru na `/api/attention`.
+     *
+     * @param  list<string>  $candidates
+     * @return string[]
+     */
+    private function verify(array $candidates, int $port, ?string $apiKey): array
+    {
+        return $this->sweep($candidates, $port, $apiKey, 2.0, 3.0);
+    }
+
+    /** Koliko konekcija smije biti otvoreno odjednom, prema ograničenju uređaja. */
+    private function socketBudget(): int
+    {
+        $limit = function_exists('posix_getrlimit')
+            ? (int) (posix_getrlimit()['soft openfiles'] ?? 256)
+            : 256;
+
+        return max(64, min(254, $limit - 64));
     }
 
     /**

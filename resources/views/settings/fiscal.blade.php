@@ -150,8 +150,8 @@
             <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
                 Traži kasu na portu {{ \App\Services\NetworkScanner::PORT }}. Opseg se čita sa mrežnog
                 interfejsa uređaja, pa ga ne morate unositi — polje ispod je za slučaj da je kasa
-                na drugoj podmreži. Ako se kasa ne javi iz prve, traženje se samo ponavlja sa dužim
-                čekanjem, pa može potrajati desetak sekundi.
+                na drugoj podmreži. Cijela mreža se pregleda odjednom, obično za sekundu-dvije; ako se
+                kasa ne javi iz prve, traženje se samo ponavlja sa dužim čekanjem.
             </p>
 
             <div class="flex flex-col sm:flex-row gap-3 sm:items-end">

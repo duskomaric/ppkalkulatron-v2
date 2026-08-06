@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\FiscalTaxRate;
+use App\Services\Diagnostics;
 use App\Services\FiscalDeviceHealth;
 use App\Services\NetworkScanner;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -266,7 +267,26 @@ it('prikazuje status uz provjeru uređaja i fiskalizaciju računa', function ():
         ->and($invoice)->toContain('fiscalHealth(');
 });
 
+/**
+ * Skener kojem su svi portovi „otvoreni".
+ *
+ * Pregled porta ide preko stvarnih konekcija, pa se u testu preskače — provjerava
+ * se dio koji prepoznaje kasu po odgovoru na `/api/attention`.
+ */
+function fakeOpenPorts(): void
+{
+    app()->instance(NetworkScanner::class, new class(app(Diagnostics::class)) extends NetworkScanner
+    {
+        protected function openPorts(array $addresses, int $port, float $deadline): ?array
+        {
+            return $addresses;
+        }
+    });
+}
+
 it('skenira ispravan opseg i javlja rezultat kao JSON', function (): void {
+    fakeOpenPorts();
+
     Http::fake([
         'http://10.0.0.1:3566/api/attention' => Http::response('', 200),
         'http://10.0.0.2:3566/api/attention' => Http::response('', 503),
@@ -297,6 +317,8 @@ it('traži ručni opseg kada uređaj nema lokalnu IP adresu', function (): void 
 });
 
 it('vraća jasnu poruku kada skeniranje ne pronađe fiskalni uređaj', function (): void {
+    fakeOpenPorts();
+
     Http::fake(['http://10.0.0.1:3566/api/attention' => Http::response('', 503)]);
 
     unlocked()->postJson(route('settings.fiscal.scan'), ['range' => '10.0.0.1-1'])

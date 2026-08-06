@@ -116,7 +116,7 @@
 
         <div class="flex flex-wrap gap-2 pt-1">
             @if ($invoice->status === \App\Enums\InvoiceStatus::Created)
-                <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
+                <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('checks', [], false)" />
                 <button type="button"
                         x-on:click="{{ \App\Support\Js::call('$data.fiscalAction', route('invoices.fiscalize', $invoice, false), 'Fiskalizovati račun '.$invoice->invoice_number.'?') }}"
                         class="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-black text-[11px] uppercase tracking-[0.15em] hover:bg-emerald-500 hover:text-white transition-all cursor-pointer">

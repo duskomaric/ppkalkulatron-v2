@@ -57,7 +57,7 @@
                     <x-button variant="ghost" type="submit" form="test-device" class="w-full sm:w-auto !py-3.5">
                         Provjeri uređaj
                     </x-button>
-                    <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
+                    <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('checks', [], false)" />
                 </div>
             </div>
         </x-section-block>
@@ -67,7 +67,7 @@
                  @fiscal-health-updated="fiscalState = $event.detail.state">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-start gap-3">
-                    <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('settings.fiscal.status', [], false)" />
+                    <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('checks', [], false)" />
                     <div>
                         <p class="text-sm font-black text-[var(--color-text-main)]">Poreske stope sa kase</p>
                         <p class="mt-1 text-xs text-[var(--color-text-dim)]">Nakon što sačuvate i provjerite kasu, preuzmite njene stope. Oznake i procenti se prikazuju tačno onako kako ih kasa vrati.</p>

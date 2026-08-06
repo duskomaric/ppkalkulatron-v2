@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\BackgroundChecksController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\ClientController;
@@ -54,6 +55,7 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
 
     Route::resource('bankovni-racuni', BankAccountController::class)->parameters(['bankovni-racuni' => 'bankAccount'])->names('bank-accounts')->except('show');
     Route::post('/valute/{currency}/kurs', [CurrencyController::class, 'storeRate'])->name('currencies.rates.store');
+    Route::post('/valute/kursna-lista', [CurrencyController::class, 'fetchRates'])->name('currencies.rates.fetch');
     Route::resource('valute', CurrencyController::class)->parameters(['valute' => 'currency'])->names('currencies')->except('show');
 
     Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -84,7 +86,7 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
     Route::post('/podesavanja/dijagnostika/posalji', [DiagnosticsController::class, 'send'])->name('settings.diagnostics.send');
 
     Route::get('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'edit'])->name('settings.fiscal.edit');
-    Route::get('/podesavanja/fiskalizacija/status', [FiscalSettingsController::class, 'status'])->name('settings.fiscal.status');
+    Route::get('/provjere', BackgroundChecksController::class)->name('checks');
     Route::put('/podesavanja/fiskalizacija', [FiscalSettingsController::class, 'update'])->name('settings.fiscal.update');
     Route::post('/podesavanja/fiskalizacija/provjera', [FiscalSettingsController::class, 'test'])->name('settings.fiscal.test');
     Route::post('/podesavanja/fiskalizacija/stope', [FiscalSettingsController::class, 'syncTaxRates'])->name('settings.fiscal.tax-rates.sync');

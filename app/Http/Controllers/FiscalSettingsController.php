@@ -12,7 +12,6 @@ use App\Services\FiscalTaxRateSynchronizer;
 use App\Services\NetworkScanner;
 use App\Services\OFSService;
 use App\Settings\FiscalSettings;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -63,17 +62,6 @@ class FiscalSettingsController extends Controller
         }
 
         return redirect()->route('settings.fiscal.edit')->with('status', 'Fiskalna podešavanja su sačuvana.');
-    }
-
-    public function status(Request $request, FiscalDeviceHealth $health): JsonResponse|RedirectResponse
-    {
-        $status = $health->refreshIfStale();
-
-        if ($request->expectsJson()) {
-            return response()->json($status);
-        }
-
-        return redirect()->route('settings.fiscal.edit');
     }
 
     /** Provjera dostupnosti uređaja bez izmjene lokalnog kataloga poreskih stopa. */

@@ -1,6 +1,6 @@
 @props(['health', 'url'])
 
-<span x-data="fiscalHealth({ url: @js($url), initial: @js($health) })" class="inline-flex shrink-0 items-center self-center">
+<span x-data="backgroundChecks({ url: @js($url), initial: @js($health) })" class="inline-flex shrink-0 items-center self-center">
     <a href="{{ route('settings.fiscal.edit') }}" :title="health.label" :aria-label="health.label"
        class="relative inline-flex h-7 w-7 items-center justify-center transition-colors"
        :class="{

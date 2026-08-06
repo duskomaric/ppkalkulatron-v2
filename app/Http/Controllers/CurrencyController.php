@@ -6,18 +6,35 @@ use App\Http\Requests\CurrencyRequest;
 use App\Http\Requests\ExchangeRateRequest;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
+use App\Services\ExchangeRateUpdater;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CurrencyController extends Controller
 {
-    public function index(): View
+    public function index(ExchangeRateUpdater $updater): View
     {
         return view('currencies.index', [
             'currencies' => Currency::orderByDesc('is_default')->orderBy('code')->get(),
-            'rates' => ExchangeRate::orderBy('currency')->get()->keyBy('currency'),
+            'rates' => ExchangeRate::query()->orderBy('rate_date')->get()->keyBy('currency'),
+            'rateCheck' => $updater->current(),
         ]);
+    }
+
+    /** Ručno preuzimanje kursne liste; inače se preuzima sama, jednom dnevno. */
+    public function fetchRates(ExchangeRateUpdater $updater): RedirectResponse
+    {
+        $result = $updater->refresh();
+
+        return redirect()->route('currencies.index')->with(
+            $result['state'] === 'ok' ? 'status' : 'error',
+            match ($result['state']) {
+                'ok' => 'Preuzeta je kursna lista sa danom '.now()->parse($result['rate_date'])->format('d.m.Y.')." — sačuvano kurseva: {$result['updated']}.",
+                'off' => 'Nema stranih valuta za koje bi se preuzimao kurs.',
+                default => 'Kursna lista Centralne banke trenutno nije dostupna. Pokušajte kasnije ili unesite kurs ručno.',
+            },
+        );
     }
 
     public function create(): View

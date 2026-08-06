@@ -7,6 +7,35 @@
 
 @section('content')
     <div>
+        {{-- Kursna lista se preuzima sama jednom dnevno; ovdje se vidi šta je zadnje stiglo. --}}
+        @if ($rateCheck['state'] !== 'off')
+            <div class="mb-4 flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0">
+                    <p class="text-[13px] font-black text-[var(--color-text-main)]">
+                        @if ($rateCheck['rate_date'])
+                            Kursna lista Centralne banke BiH sa danom {{ now()->parse($rateCheck['rate_date'])->format('d.m.Y.') }}
+                        @else
+                            Kursna lista još nije preuzeta
+                        @endif
+                    </p>
+                    <p class="mt-0.5 text-[11px] text-[var(--color-text-dim)]">
+                        @if ($rateCheck['state'] === 'unavailable')
+                            Posljednji pokušaj preuzimanja nije uspio; računa se sa posljednjim poznatim kursom.
+                        @else
+                            Preuzima se sama, jednom dnevno, kad se otvore računi.
+                        @endif
+                    </p>
+                </div>
+
+                <form method="POST" action="{{ route('currencies.rates.fetch') }}" class="shrink-0">
+                    @csrf
+                    <x-button variant="ghost" class="w-full sm:w-auto !py-2.5 !text-[11px] !uppercase !tracking-[0.2em] !font-black">
+                        <x-icon name="repeat" class="h-4 w-4" /> Preuzmi kurseve
+                    </x-button>
+                </form>
+            </div>
+        @endif
+
         <div>
             @if ($currencies->isEmpty())
                 <x-empty-state icon="hash" title="Nema valuta"
@@ -39,7 +68,8 @@
                             <p class="text-xs font-bold mt-3 pt-3 border-t border-[var(--color-border)] pl-1
                                       {{ isset($rates[$currency->code]) ? 'text-[var(--color-text-muted)]' : 'text-amber-500' }}">
                                 @isset($rates[$currency->code])
-                                    Kurs: {{ number_format($rates[$currency->code]->rate_to_bam, 5, ',', '.') }} KM
+                                    Kurs: {{ rtrim(rtrim(number_format($rates[$currency->code]->rate_to_bam, 6, ',', '.'), '0'), ',') }} KM
+                                    <span class="font-medium text-[var(--color-text-dim)]">· {{ $rates[$currency->code]->rate_date->format('d.m.Y.') }}</span>
                                 @else
                                     Bez kursa — ne može se fiskalizovati
                                 @endisset

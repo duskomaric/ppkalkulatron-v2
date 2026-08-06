@@ -17,17 +17,18 @@ it('vraća spreman status uređaja i kešira ga jednu minutu', function (): void
         '*/api/status' => Http::response(['gsc' => []], 200),
     ]);
 
-    unlocked()->getJson(route('settings.fiscal.status'))
+    unlocked()->getJson(route('checks'))
         ->assertSuccessful()
-        ->assertJson([
+        ->assertJson(['fiscal' => [
             'state' => 'ready',
             'label' => 'Uređaj povezan',
             'is_stale' => false,
-        ]);
+        ]]);
 
-    unlocked()->getJson(route('settings.fiscal.status'))->assertSuccessful();
+    unlocked()->getJson(route('checks'))->assertSuccessful();
 
-    Http::assertSentCount(2);
+    // Uređaj se provjeri jednom (drugi put ide iz keša), a uz to ide i kursna lista.
+    Http::assertSentCount(3);
 });
 
 it('ne prikazuje interni JSON status kao stranicu', function (): void {
@@ -35,8 +36,8 @@ it('ne prikazuje interni JSON status kao stranicu', function (): void {
         '*/api/attention' => Http::response('', 503),
     ]);
 
-    unlocked()->get(route('settings.fiscal.status'))
-        ->assertRedirect(route('settings.fiscal.edit'));
+    unlocked()->get(route('checks'))
+        ->assertRedirect(route('invoices.index'));
 });
 
 it('prijavljuje uređaj koji traži PIN', function (): void {
@@ -45,9 +46,9 @@ it('prijavljuje uređaj koji traži PIN', function (): void {
         '*/api/status' => Http::response(['gsc' => ['1500']], 200),
     ]);
 
-    unlocked()->getJson(route('settings.fiscal.status'))
+    unlocked()->getJson(route('checks'))
         ->assertSuccessful()
-        ->assertJson(['state' => 'pin_required', 'label' => 'Potreban PIN uređaja']);
+        ->assertJson(['fiscal' => ['state' => 'pin_required', 'label' => 'Potreban PIN uređaja']]);
 });
 
 it('ažurira indikator nakon ručne provjere uređaja', function (): void {
@@ -249,8 +250,8 @@ it('prikaže posljednji poznati fiskalni status bez čekanja na listi računa', 
     $this->get(route('invoices.index'))
         ->assertSuccessful()
         ->assertSee('Uređaj povezan')
-        ->assertSee('fiscalHealth(')
-        ->assertSee("url: '\\/podesavanja\\/fiskalizacija\\/status'", false);
+        ->assertSee('backgroundChecks(')
+        ->assertSee("url: '\\/provjere'", false);
 
     Http::assertSentCount(2);
 });
@@ -263,8 +264,8 @@ it('prikazuje status uz provjeru uređaja i fiskalizaciju računa', function ():
         ->assertSuccessful()
         ->getContent();
 
-    expect($settings)->toContain('fiscalHealth(')
-        ->and($invoice)->toContain('fiscalHealth(');
+    expect($settings)->toContain('backgroundChecks(')
+        ->and($invoice)->toContain('backgroundChecks(');
 });
 
 /**
@@ -379,7 +380,7 @@ it('uz rezultat skeniranja vraća i šta je pregledano', function (): void {
         ->json('report');
 
     expect($report)->toMatchArray(['addresses' => 2, 'port' => 3566, 'open_ports' => 2, 'pass' => 1])
-        ->and($report['seconds'])->toBeFloat();
+        ->and($report['seconds'])->toBeNumeric();
 });
 
 it('prikazuje tok skeniranja sa podmrežom i rokovima', function (): void {

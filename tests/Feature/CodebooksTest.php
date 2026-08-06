@@ -539,7 +539,8 @@ it('prikazuje istoriju kursa i briše valutu koja nije podrazumijevana', functio
 
     $this->get(route('currencies.edit', $usd))
         ->assertSuccessful()
-        ->assertViewHas('rates', fn ($rates): bool => $rates->pluck('rate_to_bam')->all() === ['1.80200', '1.80100']);
+        // Kurs se čuva na osam decimala zbog valuta koje se kotiraju na 100 jedinica.
+        ->assertViewHas('rates', fn ($rates): bool => $rates->pluck('rate_to_bam')->all() === ['1.80200000', '1.80100000']);
 
     $this->delete(route('currencies.destroy', $usd))
         ->assertRedirect(route('currencies.index'))

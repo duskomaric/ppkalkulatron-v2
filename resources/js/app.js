@@ -109,8 +109,13 @@ Alpine.store('confirmation', {
     },
 });
 
-/** Zadnji poznati status fiskalnog uređaja; osvježava se tiho samo dok je ekran aktivan. */
-Alpine.data('fiscalHealth', ({ url, initial }) => ({
+/**
+ * Pozadinske provjere: status fiskalne kase i dnevna kursna lista.
+ *
+ * Sve ide kroz jedan zahtjev, tiho i samo dok je ekran aktivan. Server odlučuje
+ * šta je zaista zastarjelo, pa ovdje nema računanja rokova.
+ */
+Alpine.data('backgroundChecks', ({ url, initial }) => ({
     health: initial,
     checking: false,
     timer: null,
@@ -150,8 +155,11 @@ Alpine.data('fiscalHealth', ({ url, initial }) => ({
             });
 
             if (response.ok) {
-                this.health = await response.json();
-                this.$dispatch('fiscal-health-updated', this.health);
+                const checks = await response.json();
+
+                this.health = checks.fiscal;
+                this.$dispatch('fiscal-health-updated', checks.fiscal);
+                this.$dispatch('exchange-rates-updated', checks.rates);
             }
         } catch {
             // Existing status stays visible when the network is temporarily unavailable.

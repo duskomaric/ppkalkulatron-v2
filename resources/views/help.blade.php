@@ -101,7 +101,9 @@
         <x-help-section id="valute" title="Valute i kursevi" icon="hash">
             <p>
                 Jedna valuta je <strong>osnovna</strong> i ona se ne briše. Za svaku drugu valutu
-                unosite <strong>kurs prema KM</strong> sa datumom.
+                aplikacija sama preuzima <strong>kurs prema KM</strong> sa kursne liste Centralne
+                banke BiH — jednom dnevno, kad otvorite račune. Kurs možete i unijeti ručno, a
+                dugmetom <strong>Preuzmi kurseve</strong> preuzimanje pokrećete odmah.
             </p>
             <p>
                 Fiskalnom uređaju iznosi uvijek idu u KM. Za račun u stranoj valuti uzima se kurs

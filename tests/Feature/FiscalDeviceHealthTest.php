@@ -368,3 +368,25 @@ it('vrati korisnu poruku kada je veza prekinuta pri unosu fiskalnog PIN-a', func
         ->assertRedirect(route('settings.fiscal.edit'))
         ->assertSessionHas('error', 'Fiskalna kasa nije dostupna. Provjerite da je uključena i na istoj mreži, pa pokušajte ponovo.');
 });
+
+it('uz rezultat skeniranja vraća i šta je pregledano', function (): void {
+    fakeOpenPorts();
+
+    Http::fake(['http://10.0.0.1:3566/api/attention' => Http::response('', 200)]);
+
+    $report = unlocked()->postJson(route('settings.fiscal.scan'), ['range' => '10.0.0.1-2'])
+        ->assertSuccessful()
+        ->json('report');
+
+    expect($report)->toMatchArray(['addresses' => 2, 'port' => 3566, 'open_ports' => 2, 'pass' => 1])
+        ->and($report['seconds'])->toBeFloat();
+});
+
+it('prikazuje tok skeniranja sa podmrežom i rokovima', function (): void {
+    $html = unlocked()->get(route('settings.fiscal.edit'))->assertSuccessful()->getContent();
+
+    // Prikaz toka prati stvarne rokove skenera, pa se dovlače iz njega.
+    expect($html)->toContain('networkScan({ subnet:')
+        ->and($html)->toContain(json_encode(NetworkScanner::deadlines()))
+        ->and($html)->toContain('Otvaram veze prema svim adresama odjednom');
+});

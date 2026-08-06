@@ -20,12 +20,17 @@ use Throwable;
 
 class FiscalSettingsController extends Controller
 {
-    public function edit(FiscalSettings $settings, FiscalDeviceHealth $health)
+    public function edit(FiscalSettings $settings, FiscalDeviceHealth $health, NetworkScanner $scanner)
     {
+        $localIp = $scanner->localIp();
+
         return view('settings.fiscal', [
             'settings' => $settings,
             'fiscalHealth' => $health->current(),
             'taxRates' => FiscalTaxRate::query()->orderBy('category_name')->orderBy('label')->get(),
+            // Prikaz toka skeniranja: koja mreža se pregleda i kojim rokovima.
+            'scanSubnet' => $localIp ? implode('.', array_slice(explode('.', $localIp), 0, 3)).'.1–254' : null,
+            'scanDeadlines' => NetworkScanner::deadlines(),
         ]);
     }
 
@@ -165,6 +170,8 @@ class FiscalSettingsController extends Controller
 
         return response()->json([
             'devices' => $found,
+            // Izvještaj se prikazuje ispod dugmeta: šta je pregledano i koliko je trajalo.
+            'report' => $scanner->report(),
             'message' => $found === []
                 ? 'Nijedan uređaj nije pronađen. Provjerite da su ovaj uređaj i kasa na istoj mreži, ili unesite opseg ručno.'
                 : 'Pronađeno uređaja: '.count($found).'.',

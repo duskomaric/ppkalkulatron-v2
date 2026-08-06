@@ -144,7 +144,9 @@
 
     {{-- Servisne radnje prema uređaju, van forme sa podešavanjima. --}}
     <div class="mt-8 space-y-8">
-        <x-section-block variant="card" x-data="networkScan()">
+        {{-- x-data stoji na običnom elementu: Blade direktive u atributima komponente se ne prevode. --}}
+        <div x-data="networkScan({ subnet: @js($scanSubnet), port: @js(\App\Services\NetworkScanner::PORT), deadlines: @js($scanDeadlines) })">
+        <x-section-block variant="card">
             <x-section-header icon="search" title="Skeniranje mreže" :help="route('help').'#skeniranje'" />
 
             <p class="text-[11px] text-[var(--color-text-dim)] pl-1 leading-relaxed">
@@ -166,6 +168,17 @@
                 </x-button>
             </div>
 
+            {{-- Tok skeniranja: šta se radi u kom trenutku, da čekanje ne bude nijemo. --}}
+            <div x-cloak x-show="steps.length" class="space-y-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5">
+                <template x-for="(step, index) in steps" :key="index">
+                    <p class="flex items-start gap-2 text-[11px] leading-relaxed text-[var(--color-text-dim)]">
+                        <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary"></span>
+                        <span x-text="step"></span>
+                    </p>
+                </template>
+                <p x-show="scanning" class="pl-3 text-[11px] font-bold text-primary" x-text="`${elapsed.toFixed(1)} s...`"></p>
+            </div>
+
             <template x-if="devices.length">
                 <div class="space-y-1.5 pt-2">
                     <template x-for="device in devices" :key="device">
@@ -178,6 +191,7 @@
                 </div>
             </template>
         </x-section-block>
+        </div>
 
         <div x-data="{ fiscalState: @js($fiscalHealth['state']) }"
              @fiscal-health-updated.window="fiscalState = $event.detail.state">
@@ -349,17 +363,28 @@
 
 @push('scripts')
     <script>
-        function networkScan() {
+        function networkScan({ subnet, port, deadlines }) {
             return {
                 range: '',
                 scanning: false,
                 devices: [],
+                steps: [],
+                elapsed: 0,
+                timers: [],
+
+                /** Šta se pregleda: uneseni opseg ili podmreža ovog uređaja. */
+                target() {
+                    return this.range.trim() || subnet || 'lokalnu mrežu';
+                },
 
                 async run() {
                     if (this.scanning) return;
 
                     this.scanning = true;
                     this.devices = [];
+                    this.steps = [`Tražim kasu: ${this.target()}, port ${port}`];
+                    this.elapsed = 0;
+                    this.track();
 
                     try {
                         const response = await fetch(@js(route('settings.fiscal.scan', [], false)), {
@@ -374,17 +399,58 @@
 
                         const data = await response.json().catch(() => ({}));
                         this.devices = data.devices || [];
+                        this.summarize(data.report);
 
                         window.dispatchEvent(new CustomEvent('app-flash', {
                             detail: { message: data.message || 'Skeniranje nije uspjelo.', type: response.ok ? 'success' : 'error' },
                         }));
                     } catch {
+                        this.steps.push('Zahtjev nije prošao — aplikacija nije dobila odgovor.');
+
                         window.dispatchEvent(new CustomEvent('app-flash', {
                             detail: { message: 'Skeniranje nije uspjelo.', type: 'error' },
                         }));
                     } finally {
-                        this.scanning = false;
+                        this.stop();
                     }
+                },
+
+                /**
+                 * Prati tok: prvo se otvaraju veze prema svim adresama odjednom, a ako
+                 * se niko ne javi u roku, isto se ponavlja sa dužim čekanjem.
+                 */
+                track() {
+                    const started = performance.now();
+                    this.timers.push(setInterval(() => {
+                        this.elapsed = (performance.now() - started) / 1000;
+                    }, 100));
+
+                    this.steps.push(`Otvaram veze prema svim adresama odjednom, čekam do ${deadlines[0]} s`);
+
+                    let after = 0;
+                    deadlines.slice(1).forEach((deadline, index) => {
+                        after += deadlines[index];
+                        this.timers.push(setTimeout(() => {
+                            this.steps.push(`Niko se nije javio — ponavljam sa dužim čekanjem, do ${deadline} s`);
+                        }, after * 1000 + 200));
+                    });
+                },
+
+                /** Završna linija sa onim što je server stvarno uradio. */
+                summarize(report) {
+                    if (! report) return;
+
+                    this.steps.push(
+                        `Pregledano ${report.addresses} adresa za ${report.seconds} s`
+                        + ` · odazvalo se na portu ${report.port}: ${report.open_ports}`
+                        + ` · kasa: ${this.devices.length}`,
+                    );
+                },
+
+                stop() {
+                    this.timers.forEach((timer) => { clearTimeout(timer); clearInterval(timer); });
+                    this.timers = [];
+                    this.scanning = false;
                 },
 
                 /** Upiši adresu u Base URL i vrati korisnika na to polje. */

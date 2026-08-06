@@ -40,7 +40,34 @@ class NetworkScanner
         ['connect' => 2.0, 'timeout' => 3.0],
     ];
 
+    /**
+     * Šta je posljednje skeniranje radilo — za prikaz korisniku.
+     *
+     * @var array{addresses: int, port: int, open_ports: int, pass: int, seconds: float}|null
+     */
+    private ?array $report = null;
+
     public function __construct(private Diagnostics $diagnostics) {}
+
+    /**
+     * Rokovi pregleda, da prikaz toka skeniranja prati ono što se stvarno dešava.
+     *
+     * @return list<float>
+     */
+    public static function deadlines(): array
+    {
+        return self::PORT_DEADLINES;
+    }
+
+    /**
+     * Izvještaj o posljednjem skeniranju.
+     *
+     * @return array{addresses: int, port: int, open_ports: int, pass: int, seconds: float}|null
+     */
+    public function report(): ?array
+    {
+        return $this->report;
+    }
 
     /** @return string[] Adrese na kojima je uređaj odgovorio, npr. http://192.168.31.102:3566 */
     public function scan(?string $range = null, ?string $apiKey = null, ?int $port = null): array
@@ -54,6 +81,7 @@ class NetworkScanner
 
         $started = microtime(true);
         $socketsUsable = true;
+        $this->report = ['addresses' => count($addresses), 'port' => $port, 'open_ports' => 0, 'pass' => 0, 'seconds' => 0.0];
 
         // Cijela podmreža se prvo pregleda odjednom, samim otvaranjem konekcija: to je
         // jedan rok za sve adrese umjesto niza HTTP zahtjeva po grupama.
@@ -67,6 +95,9 @@ class NetworkScanner
             }
 
             $found = $candidates === [] ? [] : $this->verify($candidates, $port, $apiKey);
+            $this->report['open_ports'] = count($candidates);
+            $this->report['pass'] = $index + 1;
+            $this->report['seconds'] = round(microtime(true) - $started, 2);
 
             if ($found !== []) {
                 $this->diagnostics->debug('Skeniranje mreže: uređaj pronađen', [
@@ -84,6 +115,9 @@ class NetworkScanner
         foreach ($socketsUsable ? [] : self::PASSES as $index => $pass) {
             $found = $this->sweep($addresses, $port, $apiKey, $pass['connect'], $pass['timeout']);
 
+            $this->report['pass'] = $index + 1;
+            $this->report['seconds'] = round(microtime(true) - $started, 2);
+
             if ($found !== []) {
                 $this->diagnostics->debug('Skeniranje mreže: uređaj pronađen preko HTTP-a', [
                     'pass' => $index + 1,
@@ -96,11 +130,9 @@ class NetworkScanner
             }
         }
 
-        $this->diagnostics->error('Skeniranje mreže: nijedan uređaj nije odgovorio', [
-            'addresses' => count($addresses),
-            'port' => $port,
-            'seconds' => round(microtime(true) - $started, 2),
-        ]);
+        $this->report['seconds'] = round(microtime(true) - $started, 2);
+
+        $this->diagnostics->error('Skeniranje mreže: nijedan uređaj nije odgovorio', $this->report);
 
         return [];
     }

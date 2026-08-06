@@ -10,6 +10,6 @@
     ];
 @endphp
 
-<span {{ $attributes->class('px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border backdrop-blur-md '.$colors[$color]) }}>
+<span {{ $attributes->class('inline-flex shrink-0 whitespace-nowrap px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border backdrop-blur-md '.$colors[$color]) }}>
     {{ $label }}
 </span>

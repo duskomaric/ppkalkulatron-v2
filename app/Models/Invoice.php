@@ -7,6 +7,7 @@ use App\Enums\DocumentLanguage;
 use App\Enums\FiscalRecordType;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentType;
+use App\Services\CurrencyConverter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -101,6 +102,28 @@ class Invoice extends Model
     public function formatted(int $pfening): string
     {
         return number_format($pfening / 100, 2, ',', '.');
+    }
+
+    /**
+     * Ukupno u KM i kurs po kojem je preračunato.
+     *
+     * Fiskalnoj kasi iznosi idu u KM, pa se uz stranu valutu prikazuje i taj iznos.
+     * Bez kursa nema ni preračuna — i takav račun se ne može fiskalizovati.
+     *
+     * @return array{total: ?int, rate: ?string}|null `null` kad je račun već u KM
+     */
+    public function bamEquivalent(): ?array
+    {
+        if (strtoupper($this->currency) === 'BAM') {
+            return null;
+        }
+
+        $rate = app(CurrencyConverter::class)->rateFor($this->currency, $this->date);
+
+        return [
+            'rate' => $rate,
+            'total' => $rate === null ? null : (int) round($this->total * (float) $rate),
+        ];
     }
 
     /**

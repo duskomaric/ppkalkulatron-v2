@@ -13,7 +13,7 @@
         </div>
         <div class="z-10 min-w-0">
             <p class="font-black text-lg text-[var(--color-text-main)] tracking-tighter italic leading-tight truncate">{{ $entityName }}</p>
-            <div class="flex items-center gap-2 mt-1">{{ $badges ?? '' }}</div>
+            <div class="mt-1 flex flex-wrap items-center gap-1.5">{{ $badges ?? '' }}</div>
         </div>
     </div>
 

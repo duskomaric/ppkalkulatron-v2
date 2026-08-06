@@ -110,6 +110,17 @@
                 <span class="text-sm font-bold text-[var(--color-text-main)]">Ukupno:</span>
                 <span class="text-xl font-black text-primary tracking-tighter italic">{{ $invoice->formatted($invoice->total) }} {{ $invoice->currencySymbol() }}</span>
             </div>
+
+            {{-- Kasi iznosi idu u KM, pa se uz stranu valutu pokazuje i preračun. --}}
+            @if ($bam = $invoice->bamEquivalent())
+                <p class="text-right text-[11px] font-bold {{ $bam['total'] === null ? 'text-amber-500' : 'text-[var(--color-text-dim)]' }}">
+                    @if ($bam['total'] === null)
+                        Kurs za {{ $invoice->currency }} nije preuzet — račun se ne može fiskalizovati
+                    @else
+                        ≈ {{ $invoice->formatted($bam['total']) }} KM · kurs {{ rtrim(rtrim(number_format((float) $bam['rate'], 6, ',', '.'), '0'), ',') }}
+                    @endif
+                </p>
+            @endif
         </div>
         <div class="flex gap-2">
             <a href="{{ route('invoices.pdf', $invoice) }}"

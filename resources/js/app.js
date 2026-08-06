@@ -214,17 +214,36 @@ const money = (cents) => new Intl.NumberFormat('de-DE', {
     maximumFractionDigits: 2,
 }).format((cents || 0) / 100);
 
-Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, currencySymbols, clientId, showMore }) => ({
+Alpine.data('invoiceForm', ({ items, articles, clients, taxRates, currency, currencySymbols, exchangeRates, clientId, showMore }) => ({
     items: items.length ? items.map((item) => ({ ...blankItem(), ...item })) : [blankItem()],
     articles,
     clients,
     taxRates,
     currency,
     currencySymbols,
+    exchangeRates,
     clientId: clientId ?? '',
     clientOpen: false,
     clientSearch: '',
     showMore,
+
+    /** Fiskalnoj kasi iznos ide u KM, pa se uz stranu valutu prikazuje i preračun. */
+    bamNote() {
+        const rate = Number(this.exchangeRates[this.currency]);
+
+        if (! rate) {
+            return `Kurs za ${this.currency} nije preuzet — račun se ne može fiskalizovati`;
+        }
+
+        const trimmed = String(rate).replace(/0+$/, '').replace(/\.$/, '').replace('.', ',');
+
+        return `≈ ${money(Math.round(this.total() * rate))} KM · kurs ${trimmed}`;
+    },
+
+    /** Poreska oznaka artikla uz naziv, u zatvorenom izborniku. */
+    taxNote(article) {
+        return ` · PDV ${article.tax_label} (${article.tax_rate / 100}%)`;
+    },
 
     addItem() {
         this.items.push(blankItem());

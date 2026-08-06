@@ -7,6 +7,7 @@ use App\Mail\InvoiceMail;
 use App\Models\Article;
 use App\Models\Client;
 use App\Models\Currency;
+use App\Models\ExchangeRate;
 use App\Models\Invoice;
 use App\Services\FiscalReceiptStore;
 use App\Services\InvoiceNumber;
@@ -819,4 +820,43 @@ it('datum računa upisuje bez vremena, pa lista ostaje po redu', function (): vo
     expect($newer->getRawOriginal('date'))->toBe(now()->toDateString())
         ->and($this->get(route('invoices.index'))->viewData('invoices')->pluck('id')->all())
         ->toBe([$newer->id, $older->id]);
+});
+
+it('uz iznos u stranoj valuti prikazuje i iznos u KM', function (): void {
+    ExchangeRate::create(['currency' => 'EUR', 'rate_to_bam' => '1.95583', 'rate_date' => now()->subDay()]);
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+    $invoice->update(['currency' => 'EUR']);
+
+    $invoice = $invoice->fresh();
+    $expected = (int) round($invoice->total * 1.95583);
+
+    expect($invoice->bamEquivalent())->toMatchArray(['total' => $expected, 'rate' => '1.95583000']);
+
+    $this->get(route('invoices.show', $invoice))
+        ->assertSuccessful()
+        ->assertSee($invoice->formatted($expected).' KM · kurs 1,95583');
+
+    $this->get(route('invoices.edit', $invoice))
+        ->assertSuccessful()
+        // @js() escape-uje navodnike, pa se traži samo vrijednost kursa u Alpine podacima.
+        ->assertSee('exchangeRates: JSON.parse(', false)
+        ->assertSee('1.95583000', false);
+});
+
+it('upozorava kad kursa nema, umjesto da prikaže iznos u KM', function (): void {
+    $this->post(route('invoices.store'), invoicePayload());
+    $invoice = Invoice::firstOrFail();
+    $invoice->update(['currency' => 'EUR']);
+
+    $this->get(route('invoices.show', $invoice))
+        ->assertSuccessful()
+        ->assertSee('Kurs za EUR nije preuzet');
+});
+
+it('u izborniku pokazuje email klijenta i poresku oznaku artikla', function (): void {
+    $html = $this->get(route('invoices.create'))->assertSuccessful()->getContent();
+
+    expect($html)->toContain("' · ' + selectedClient().email")
+        ->and($html)->toContain('taxNote(selectedArticle(item))');
 });

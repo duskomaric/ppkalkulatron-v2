@@ -6,6 +6,7 @@
     'defaultLanguage' => 'sr_Latn',
     'defaultCurrency' => 'BAM',
     'currencySymbols' => [],
+    'exchangeRates' => [],
     'defaultDueDays' => 15,
     'defaultNotes' => null,
     'defaultPaymentType' => 'Cash',
@@ -66,6 +67,7 @@
           taxRates: @js($taxRates),
           currency: @js($currencyCode),
           currencySymbols: @js($currencySymbols),
+          exchangeRates: @js($exchangeRates),
           clientId: @js(old('client_id', $invoice?->client_id)),
           showMore: @js($errors->any()),
       })">
@@ -103,8 +105,12 @@
                             <x-icon name="contact" class="h-4 w-4" />
                         </div>
                         <span class="text-sm font-bold truncate flex-1 min-w-0"
-                              :class="selectedClient() ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-dim)]'"
-                              x-text="selectedClient() ? selectedClient().name : 'Odaberi klijenta...'"></span>
+                              :class="selectedClient() ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-dim)]'">
+                            <span x-text="selectedClient() ? selectedClient().name : 'Odaberi klijenta...'"></span>
+                            <template x-if="selectedClient() && selectedClient().email">
+                                <span class="font-medium text-[var(--color-text-dim)]" x-text="' · ' + selectedClient().email"></span>
+                            </template>
+                        </span>
                         <div class="flex items-center gap-1 shrink-0">
                             <button type="button" x-show="clientId" x-cloak x-on:click.stop="clientId = ''"
                                     aria-label="Ukloni klijenta"
@@ -235,8 +241,12 @@
                                     <x-icon name="boxes" class="h-4 w-4" />
                                 </div>
                                 <span class="text-sm font-bold truncate flex-1 min-w-0"
-                                      :class="selectedArticle(item) ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-dim)]'"
-                                      x-text="selectedArticle(item) ? selectedArticle(item).name : 'Odaberi artikal...'"></span>
+                                      :class="selectedArticle(item) ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-dim)]'">
+                                    <span x-text="selectedArticle(item) ? selectedArticle(item).name : 'Odaberi artikal...'"></span>
+                                    <template x-if="selectedArticle(item) && selectedArticle(item).tax_label">
+                                        <span class="font-medium text-[var(--color-text-dim)]" x-text="taxNote(selectedArticle(item))"></span>
+                                    </template>
+                                </span>
                                 <div class="flex items-center gap-1 shrink-0">
                                     <button type="button" x-show="item.article_id" x-cloak x-on:click.stop="clearArticle(item)"
                                             aria-label="Ukloni artikal"
@@ -376,6 +386,11 @@
                 <span class="text-sm font-bold text-[var(--color-text-main)]">Ukupno</span>
                 <span class="text-xl font-black text-primary tracking-tighter italic" x-text="money(total()) + ' ' + currencySymbol()"></span>
             </div>
+
+            {{-- Kasi iznosi idu u KM, pa se uz stranu valutu pokazuje i preračun. --}}
+            <p x-cloak x-show="currency !== 'BAM'" class="text-right text-[11px] font-bold"
+               :class="exchangeRates[currency] ? 'text-[var(--color-text-dim)]' : 'text-amber-500'"
+               x-text="bamNote()"></p>
         </div>
     </div>
 

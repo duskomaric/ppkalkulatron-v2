@@ -8,14 +8,24 @@
     <div class="md:hidden space-y-3">
         @foreach ($invoices as $invoice)
             <x-entity-card :href="route('invoices.show', $invoice)">
-                <div class="flex justify-between items-center">
+                <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-2 min-w-0">
                         <x-icon name="hash" class="w-3 h-3 text-primary shrink-0" />
                         <span class="text-base font-black tracking-tighter italic leading-none group-hover:text-primary transition-colors truncate">
                             {{ $invoice->invoice_number }}
                         </span>
                     </div>
-                    <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />@if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)<x-status-badge label="Poništen" color="red" class="ml-1" />@endif @if ($invoice->imported_at)<x-status-badge label="Uvezen" color="blue" class="ml-1" />@endif
+
+                    {{-- Više značaka na uskom ekranu ide u novi red, uvijek uz desnu ivicu. --}}
+                    <div class="flex shrink-0 flex-wrap justify-end gap-1">
+                        <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
+                        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
+                            <x-status-badge label="Poništen" color="red" />
+                        @endif
+                        @if ($invoice->imported_at)
+                            <x-status-badge label="Uvezen" color="blue" />
+                        @endif
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -93,7 +103,15 @@
                         </div>
                     </div>
 
-                    <div><x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />@if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)<x-status-badge label="Poništen" color="red" class="ml-1" />@endif @if ($invoice->imported_at)<x-status-badge label="Uvezen" color="blue" class="ml-1" />@endif</div>
+                    <div class="flex flex-wrap gap-1">
+                        <x-status-badge :label="$invoice->status->label()" :color="$invoice->status->badgeColor()" />
+                        @if ($invoice->refundInvoice?->status === \App\Enums\InvoiceStatus::Refunded)
+                            <x-status-badge label="Poništen" color="red" />
+                        @endif
+                        @if ($invoice->imported_at)
+                            <x-status-badge label="Uvezen" color="blue" />
+                        @endif
+                    </div>
 
                     <div class="flex items-center gap-1 text-xs font-bold text-[var(--color-text-muted)]">
                         <x-icon name="calendar" class="w-3 h-3 text-[var(--color-text-dim)]" />

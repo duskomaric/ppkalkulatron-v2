@@ -11,11 +11,11 @@ use RuntimeException;
  */
 class CurrencyConverter
 {
-    /** Kurs za taj datum, ili posljednji raniji. */
-    public function toBam(int $pfening, string $currency, CarbonInterface|string $date): int
+    /** Kurs koji važi na taj datum: onaj sa tog dana, ili posljednji raniji. */
+    public function rateFor(string $currency, CarbonInterface|string $date): ?string
     {
         if (strtoupper($currency) === 'BAM') {
-            return $pfening;
+            return null;
         }
 
         $rate = ExchangeRate::query()
@@ -23,6 +23,18 @@ class CurrencyConverter
             ->whereDate('rate_date', '<=', $date)
             ->orderByDesc('rate_date')
             ->value('rate_to_bam');
+
+        return $rate === null ? null : (string) $rate;
+    }
+
+    /** Kurs za taj datum, ili posljednji raniji. */
+    public function toBam(int $pfening, string $currency, CarbonInterface|string $date): int
+    {
+        if (strtoupper($currency) === 'BAM') {
+            return $pfening;
+        }
+
+        $rate = $this->rateFor($currency, $date);
 
         if ($rate === null) {
             throw new RuntimeException(

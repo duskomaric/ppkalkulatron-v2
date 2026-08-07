@@ -75,9 +75,9 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
     Route::get('/podesavanja/mail', [MailSettingsController::class, 'edit'])->name('settings.mail.edit');
     Route::put('/podesavanja/mail', [MailSettingsController::class, 'update'])->name('settings.mail.update');
 
-    Route::get('/podesavanja/pocetak', [SetupController::class, 'edit'])->name('settings.setup.edit');
-    Route::post('/podesavanja/pocetak/vrati', [SetupController::class, 'restore'])->name('setup.restore');
     Route::post('/pocetak/sakrij', [SetupController::class, 'dismiss'])->name('setup.dismiss');
+    Route::post('/pocetak/vrati', [SetupController::class, 'restore'])->name('setup.restore');
+    Route::post('/pocetak/demo', [SetupController::class, 'seedDemo'])->name('setup.demo');
 
     Route::get('/podesavanja/arhiva', [BackupController::class, 'edit'])->name('settings.backup.edit');
     Route::put('/podesavanja/arhiva', [BackupController::class, 'update'])->name('settings.backup.update');

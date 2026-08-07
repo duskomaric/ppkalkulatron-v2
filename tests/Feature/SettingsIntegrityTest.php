@@ -1,6 +1,8 @@
 <?php
 
-use App\Services\TemporaryDemoBuildSettings;
+use App\Models\Article;
+use App\Models\Client;
+use App\Services\SetupProgress;
 use App\Settings\BackupSettings;
 use App\Settings\CompanySettings;
 use App\Settings\DiagnosticsSettings;
@@ -35,16 +37,27 @@ it('svaka settings klasa ima sve svoje vrijednosti u bazi', function (string $cl
     UserSettings::class,
 ]);
 
-it('demo podešavanja se upišu na svježoj bazi', function (): void {
-    // Migracija koja ovo radi preskače testove, pa se poziva direktno — kao na uređaju.
-    expect(app(TemporaryDemoBuildSettings::class)->seedIfPristine())->toBeTrue()
-        ->and(app(FiscalSettings::class)->base_url)->not->toBeEmpty();
+it('demo podaci popune sve korake početnog podešavanja', function (): void {
+    unlocked()->post(route('setup.demo'))->assertSessionHas('status');
+
+    $setup = app(SetupProgress::class);
+    $steps = collect($setup->steps())->keyBy('key');
+
+    expect(app(CompanySettings::class)->city)->toBe('Banja Luka')
+        ->and(app(FiscalSettings::class)->base_url)->toBe('https://pos.ofs.ba')
+        ->and($steps['device']['done'])->toBeTrue()
+        ->and($steps['company']['done'])->toBeTrue()
+        ->and($steps['bank_account']['done'])->toBeTrue()
+        ->and($steps['article']['done'])->toBeTrue()
+        ->and($steps['client']['done'])->toBeTrue()
+        // Stope javlja sama kasa, pa taj korak ostaje na korisniku.
+        ->and(Article::count())->toBe(4)
+        ->and(Client::count())->toBe(3);
 });
 
-it('reset aplikacije ne vraća demo podatke kroz settings migracije', function (): void {
-    // `migrate:fresh` ponovo pokreće settings migracije, među njima i demo seed.
-    TemporaryDemoBuildSettings::skipSeeding();
+it('demo podaci ne prepisuju zatečeno stanje', function (): void {
+    unlocked()->post(route('setup.demo'))->assertSessionHas('status');
 
-    expect(app(TemporaryDemoBuildSettings::class)->seedIfPristine())->toBeFalse()
-        ->and(app(CompanySettings::class)->name)->toBe('');
+    unlocked()->post(route('setup.demo'))
+        ->assertSessionHas('error', 'Demo podaci se upisuju samo u praznu aplikaciju. Prvo uradite reset.');
 });

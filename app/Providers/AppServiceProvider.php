@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\FiscalDeviceHealth;
 use App\Services\PinLock;
+use App\Services\SetupProgress;
 use App\Settings\CompanySettings;
 use App\Settings\UserSettings;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +32,20 @@ class AppServiceProvider extends ServiceProvider
             $pinLock = $this->app->make(PinLock::class);
 
             $view->with('autoLockMinutes', $pinLock->isEnabled() ? $pinLock->autoLockMinutes() : 0);
+        });
+
+        View::composer(['layouts.app', 'components.setup-drawer'], function (ViewInstance $view): void {
+            $setup = $this->app->make(SetupProgress::class);
+
+            $view->with([
+                'setup' => $setup,
+                /*
+                 * Vodič sam iskače samo na početnom ekranu. Koraci vode na druge
+                 * stranice, pa bi ga otvaranje svuda gurnulo preko onoga po šta je
+                 * korisnik i otišao. Iz menija se otvara gdje god zatreba.
+                 */
+                'setupShouldShow' => $setup->shouldShow() && request()->routeIs('invoices.index'),
+            ]);
         });
 
         View::composer('components.app-header', function (ViewInstance $view): void {

@@ -25,24 +25,32 @@ function finishSetup(): void
     BankAccount::create(['bank_name' => 'Banka', 'account_number' => '5551000000000000', 'show_on_documents' => true]);
 }
 
-it('na svježoj instalaciji nudi korake umjesto prazne liste računa', function (): void {
+it('na svježoj instalaciji sam otvara vodič, a lista računa ostaje', function (): void {
     $this->get(route('invoices.index'))
         ->assertSuccessful()
         ->assertSee('Podesite aplikaciju za rad')
         ->assertSee('Veza sa fiskalnom kasom')
-        // Dugme za novi račun nema smisla dok kasa nije podešena.
-        ->assertDontSee('Nema pronađenih računa');
+        // Vodič je panel, pa stranica i dalje pokazuje svoje.
+        ->assertSee('Nema pronađenih računa')
+        ->assertSee('setupDrawer = true', false);
 });
 
-it('kad je sve podešeno, vodiča nema', function (): void {
+it('poslije klika na korak se ne otvara preko stranice na koju vodi', function (): void {
+    $this->get(route('settings.fiscal.edit'))
+        ->assertSuccessful()
+        // Sadržaj vodiča i dalje stoji u meniju, ali se panel ne otvara sam.
+        ->assertSee('setupDrawer = false', false)
+        ->assertSee('Podesite aplikaciju za rad');
+});
+
+it('kad je sve podešeno, vodič se ne otvara sam', function (): void {
     finishSetup();
 
     expect(app(SetupProgress::class)->isComplete())->toBeTrue();
 
     $this->get(route('invoices.index'))
         ->assertSuccessful()
-        ->assertDontSee('Podesite aplikaciju za rad')
-        ->assertSee('Nema pronađenih računa');
+        ->assertSee('setupDrawer = false', false);
 });
 
 it('koraci prate stvarno stanje aplikacije', function (): void {
@@ -60,21 +68,21 @@ it('koraci prate stvarno stanje aplikacije', function (): void {
     expect(app(SetupProgress::class)->remaining())->toBe(4);
 });
 
-it('sklonjen vodič se ne vraća sam, ali stoji u podešavanjima', function (): void {
-    $this->post(route('setup.dismiss'))
+it('sklonjen vodič se ne otvara sam, ali ostaje dostupan iz menija', function (): void {
+    $this->from(route('invoices.index'))->post(route('setup.dismiss'))
         ->assertRedirect(route('invoices.index'))
-        ->assertSessionHas('status', 'Vodič je sklonjen. Stoji u Podešavanja → Početno podešavanje.');
+        ->assertSessionHas('status', 'Vodič se više neće otvarati sam. Stoji u Podešavanja → Početno podešavanje.');
 
-    $this->get(route('invoices.index'))->assertDontSee('Podesite aplikaciju za rad');
-
-    $this->get(route('settings.setup.edit'))
+    $this->get(route('invoices.index'))
         ->assertSuccessful()
+        // Panel se ne otvara sam, ali stavka u meniju i sadržaj ostaju.
+        ->assertSee('setupDrawer = false', false)
         ->assertSee('Podesite aplikaciju za rad')
-        ->assertSee('Vrati vodič na račune');
+        ->assertSee('Neka se opet otvara sam');
 
-    $this->post(route('setup.restore'))->assertRedirect(route('settings.setup.edit'));
+    $this->from(route('invoices.index'))->post(route('setup.restore'))->assertRedirect(route('invoices.index'));
 
-    $this->get(route('invoices.index'))->assertSee('Podesite aplikaciju za rad');
+    $this->get(route('invoices.index'))->assertSee('setupDrawer = true', false);
 });
 
 it('ko već ima račune, ne dobija vodič', function (): void {
@@ -82,4 +90,15 @@ it('ko već ima račune, ne dobija vodič', function (): void {
 
     expect(app(SetupProgress::class)->isComplete())->toBeFalse()
         ->and(app(SetupProgress::class)->shouldShow())->toBeFalse();
+});
+
+it('demo podaci se nude iz vodiča, dok ih ne uklonimo', function (): void {
+    // PRIVREMENO: dugme postoji samo za interno testiranje.
+    // Vodič je u layoutu, pa je dugme dostupno svuda gdje se panel može otvoriti.
+    $this->get(route('invoices.index'))
+        ->assertSuccessful()
+        ->assertSee('Demo podaci')
+        ->assertSee('Popuni demo podacima');
+
+    unlocked()->post(route('setup.demo'))->assertSessionHas('status');
 });

@@ -1,25 +1,23 @@
 <?php
 
-use App\Services\TemporaryDemoBuildSettings;
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
 /**
- * Nove vrijednosti podešavanja moraju imati raniji datum od ove migracije: ona
- * učitava cijele settings klase, pa vrijednost koja još nije upisana ruši migraciju.
+ * Ranije je ova migracija punila aplikaciju demo podacima internog builda.
+ *
+ * Radila je i pri resetu, jer `migrate:fresh` ponovo pokreće settings migracije —
+ * pa se demo firma, testna kasa i PIN vraćali baš kad ih korisnik briše. Sada je
+ * to svjestan potez, dugmetom u Podešavanja → Backup aplikacije.
  */
 return new class extends SettingsMigration
 {
     public function up(): void
     {
-        if (app()->runningUnitTests()) {
-            return;
-        }
-
-        app(TemporaryDemoBuildSettings::class)->seedIfPristine();
+        //
     }
 
     public function down(): void
     {
-        // Ne brišemo podatke: korisnik ih je mogao izmijeniti nakon prvog pokretanja.
+        //
     }
 };

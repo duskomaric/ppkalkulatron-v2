@@ -224,9 +224,6 @@ class DatabaseBackup
     /** Briše sve i vraća aplikaciju u stanje svježe instalacije. */
     public function reset(): void
     {
-        // `migrate:fresh` ponovo pokreće i settings migracije; demo podaci se ne vraćaju.
-        TemporaryDemoBuildSettings::skipSeeding();
-
         Artisan::call('migrate:fresh', ['--force' => true]);
 
         Storage::disk('local')->deleteDirectory(self::DOCUMENTS_DIRECTORY);

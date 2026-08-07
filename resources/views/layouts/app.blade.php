@@ -4,7 +4,10 @@
     <x-app-head :title="View::yieldContent('title')" />
 </head>
 <body class="font-sans">
-<div class="min-h-screen flex flex-col pb-nav relative" x-data="{ userDrawer: false, settingsDrawer: false, moreDrawer: false }">
+<div class="min-h-screen flex flex-col pb-nav relative"
+     x-data="{ userDrawer: false, settingsDrawer: false, moreDrawer: false, setupDrawer: false }"
+     {{-- Nepodešena aplikacija sama otvara vodič, jednom po učitavanju stranice. --}}
+     x-init="$nextTick(() => setupDrawer = @js($setupShouldShow))">
     <div class="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
         <div class="glow-ball glow-ball-primary -top-20 -left-20"></div>
         <div class="glow-ball glow-ball-secondary -bottom-20 -right-20"></div>
@@ -54,6 +57,7 @@
     <x-user-drawer />
     <x-module-drawer />
     <x-settings-drawer />
+    <x-setup-drawer />
     <x-toast />
     <x-flash />
     <x-confirm-modal />

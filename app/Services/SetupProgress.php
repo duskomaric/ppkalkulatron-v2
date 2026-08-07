@@ -11,7 +11,6 @@ use App\Settings\BackupSettings;
 use App\Settings\CompanySettings;
 use App\Settings\FiscalSettings;
 use App\Settings\MailSettings;
-use App\Settings\NumberingSettings;
 use App\Settings\SetupSettings;
 
 /**
@@ -28,7 +27,6 @@ class SetupProgress
         private CompanySettings $company,
         private FiscalSettings $fiscal,
         private SetupSettings $setup,
-        private NumberingSettings $numbering,
         private MailSettings $mail,
         private BackupSettings $backup,
     ) {}
@@ -102,11 +100,6 @@ class SetupProgress
     public function recommended(): array
     {
         $items = [
-            [
-                'title' => 'Numeracija računa',
-                'done' => filled($this->numbering->invoice_prefix),
-                'route' => route('settings.general.edit'),
-            ],
             [
                 'title' => 'Mail server za slanje računa',
                 'done' => filled($this->mail->host),

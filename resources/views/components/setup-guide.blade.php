@@ -1,4 +1,4 @@
-@props(['setup', 'dismissible' => true])
+@props(['setup'])
 
 {{-- Redoslijed koraka do prvog računa; stanje se čita iz same aplikacije. --}}
 @php
@@ -7,6 +7,25 @@
 @endphp
 
 <div class="space-y-4 animate-fade-in">
+    {{-- PRIVREMENO, za interno testiranje: uklanja se prije javne distribucije. --}}
+    <x-section-block variant="accent">
+        <x-section-header icon="boxes" title="Demo podaci" subtitle="Interno: popunjava praznu aplikaciju za testiranje." />
+
+        <p class="text-[11px] font-bold leading-relaxed text-primary">
+            Popunjava sve korake: testnu kasu na pos.ofs.ba sa poreskim stopama, firmu iz
+            Banje Luke, bankovni račun, artikle, klijente, mail i PIN 1111. Ne dira ništa
+            ako je aplikacija već podešena.
+        </p>
+
+        <form method="POST" action="{{ route('setup.demo') }}"
+              data-confirm="Upisati demo podatke u praznu aplikaciju?">
+            @csrf
+            <x-button variant="primary" class="w-full !py-3 !text-[11px] !uppercase !tracking-[0.2em] !font-black">
+                <x-icon name="boxes" class="h-4 w-4" /> Popuni demo podacima
+            </x-button>
+        </form>
+    </x-section-block>
+
     <x-section-block variant="card">
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -60,18 +79,25 @@
             @endforeach
         </div>
 
-        @if ($dismissible)
+        @unless ($setup->isDismissed())
             <form method="POST" action="{{ route('setup.dismiss') }}">
                 @csrf
                 <x-button variant="ghost" class="w-full !py-3 !text-[11px] !uppercase !tracking-[0.2em] !font-black">
-                    Sakrij vodič
+                    Sakrij
                 </x-button>
             </form>
 
             <p class="text-center text-[10px] text-[var(--color-text-dim)]">
-                Uvijek se može vratiti u Podešavanja → Početno podešavanje.
+                Vodič ostaje u Podešavanja → Početno podešavanje.
             </p>
-        @endif
+        @else
+            <form method="POST" action="{{ route('setup.restore') }}">
+                @csrf
+                <x-button variant="ghost" class="w-full !py-3 !text-[11px] !uppercase !tracking-[0.2em] !font-black">
+                    Neka se opet otvara sam
+                </x-button>
+            </form>
+        @endunless
     </x-section-block>
 
     <x-section-block variant="card">

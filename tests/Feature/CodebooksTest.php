@@ -642,3 +642,16 @@ it('kad se podaci firme poklapaju, ništa ne mijenja', function (): void {
     $this->post(route('settings.company.import'))
         ->assertSessionHas('status', 'Podaci sa kase se poklapaju sa unesenim — ništa nije mijenjano.');
 });
+
+it('dugme za preuzimanje podataka firme šalje formu', function (): void {
+    // type="button" ne šalje ništa; bez type="submit" klik ne bi radio.
+    $html = $this->get(route('settings.company.edit'))->assertSuccessful()->getContent();
+
+    $button = str($html)->after('Preuzmi sa kase')->before('</form>')->toString();
+    $trigger = str($html)->before('Preuzmi sa kase')->afterLast('<button')->toString();
+
+    expect($html)->toContain('id="import-company"')
+        ->and($trigger)->toContain('form="import-company"')
+        ->and($trigger)->toContain('type="submit"')
+        ->and($button)->not->toBeEmpty();
+});

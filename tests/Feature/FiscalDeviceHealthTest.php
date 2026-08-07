@@ -415,6 +415,7 @@ it('status kase stoji u zaglavlju, na svakoj stranici', function (): void {
     $html = unlocked()->get(route('invoices.index'))->assertSuccessful()->getContent();
 
     expect($html)->toContain('backgroundChecks(')
-        ->and($html)->toContain('Bez elementa')
-        ->and($html)->toContain('Traži PIN');
+        // Bez teksta: stanje nosi boja i ikona, a čitač ekrana dobija opis.
+        ->and($html)->toContain('x-text="health.label"')
+        ->and($html)->toContain('animate-ping');
 });

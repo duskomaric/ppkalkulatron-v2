@@ -16,7 +16,7 @@
                 <p class="text-[11px] font-bold leading-relaxed text-[var(--color-text-dim)]">
                     Naziv, adresu, grad, državu i JIB nosi sertifikat fiskalne kase.
                 </p>
-                <x-button variant="ghost" type="button" form="import-company"
+                <x-button variant="ghost" type="submit" form="import-company"
                           class="shrink-0 !py-2.5 !text-[11px] !uppercase !tracking-[0.2em] !font-black">
                     <x-icon name="printer" class="h-4 w-4" /> Preuzmi sa kase
                 </x-button>

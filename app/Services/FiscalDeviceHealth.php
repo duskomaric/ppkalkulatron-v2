@@ -56,7 +56,14 @@ class FiscalDeviceHealth
                 return $this->remember('unavailable', 'Uređaj nije dostupan');
             }
 
-            if ($this->needsPin($status->json('gsc'))) {
+            $gsc = $status->json('gsc');
+
+            // 1300: kartica sigurnosnog elementa nije u uređaju — PIN tu ne pomaže.
+            if ($this->missingSecurityElement($gsc)) {
+                return $this->remember('no_element', 'Sigurnosni element nije u kasi');
+            }
+
+            if ($this->needsPin($gsc)) {
                 // Sačuvan PIN znači da korisnik ne mora ništa raditi kad kasa
                 // zatraži otključavanje — pošalje se i status se provjeri ponovo.
                 if (! $this->pin->unlock()) {
@@ -79,7 +86,18 @@ class FiscalDeviceHealth
     /** GSC 1500: sigurnosni element traži PIN. */
     private function needsPin(mixed $gsc): bool
     {
-        return in_array('1500', array_map('strval', (array) ($gsc ?? [])), true);
+        return $this->hasCode($gsc, '1500');
+    }
+
+    /** GSC 1300: kartice sigurnosnog elementa nema u uređaju. */
+    private function missingSecurityElement(mixed $gsc): bool
+    {
+        return $this->hasCode($gsc, '1300');
+    }
+
+    private function hasCode(mixed $gsc, string $code): bool
+    {
+        return in_array($code, array_map('strval', (array) ($gsc ?? [])), true);
     }
 
     public function forget(): void

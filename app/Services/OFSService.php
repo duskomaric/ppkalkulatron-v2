@@ -159,6 +159,12 @@ class OFSService
         return $this->request('GET', '/api/settings');
     }
 
+    /** GET /api/certificate — podaci vlasnika sertifikata: firma, adresa, JIB, rok važenja. */
+    public function getCertificate(): Response
+    {
+        return $this->request('GET', '/api/certificate');
+    }
+
     /**
      * POST /api/pin — PIN sigurnosnog elementa ide kao goli tekst, ne kao JSON.
      * Uređaj odgovara kodom: "0100" znači da je prihvaćen.

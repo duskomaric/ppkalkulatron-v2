@@ -13,8 +13,7 @@
                      @fiscal-health-updated="fiscalState = $event.detail.state">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-start gap-3">
-                        <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('checks', [], false)" />
-                        <div>
+                                            <div>
                             <p class="text-sm font-black text-[var(--color-text-main)]">Poreske stope nisu preuzete</p>
                             <p class="mt-1 text-xs text-[var(--color-text-dim)]">Artikli se mogu dodati tek kada se preuzmu stope sa dostupne fiskalne kase.</p>
                         </div>

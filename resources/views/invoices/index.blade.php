@@ -3,7 +3,6 @@
 
 @section('heading')
     <span>Računi</span>
-    <x-fiscal-health-indicator :health="$fiscalHealth" :url="route('checks', [], false)" />
 @endsection
 
 @section('actions')

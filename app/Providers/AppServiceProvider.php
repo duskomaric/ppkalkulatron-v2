@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\FiscalDeviceHealth;
 use App\Services\PinLock;
 use App\Settings\CompanySettings;
 use App\Settings\UserSettings;
@@ -33,7 +34,11 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('components.app-header', function (ViewInstance $view): void {
-            $view->with('companyName', $this->app->make(CompanySettings::class)->name);
+            $view->with([
+                'companyName' => $this->app->make(CompanySettings::class)->name,
+                // Stanje kase stoji u zaglavlju, pa ga svaka stranica dobija odavde.
+                'fiscalHealth' => $this->app->make(FiscalDeviceHealth::class)->current(),
+            ]);
         });
 
         View::composer('components.user-drawer', function (ViewInstance $view): void {

@@ -65,6 +65,7 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
 
     Route::get('/podesavanja/kompanija', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
     Route::put('/podesavanja/kompanija', [CompanySettingsController::class, 'update'])->name('settings.company.update');
+    Route::post('/podesavanja/kompanija/sa-kase', [CompanySettingsController::class, 'importFromDevice'])->name('settings.company.import');
 
     Route::get('/podesavanja/generalno', [GeneralSettingsController::class, 'edit'])->name('settings.general.edit');
     Route::put('/podesavanja/generalno', [GeneralSettingsController::class, 'update'])->name('settings.general.update');

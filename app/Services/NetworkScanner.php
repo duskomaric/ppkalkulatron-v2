@@ -72,6 +72,29 @@ class NetworkScanner
         return $this->report;
     }
 
+    /**
+     * Provjera adrese koja je već upisana u podešavanjima, u više pokušaja.
+     *
+     * Kasa na Wi-Fi-ju zna spavati i javiti se tek iz drugog ili trećeg pokušaja, pa
+     * ovo pogodi cilj prije nego što se pretražuje cijela mreža.
+     */
+    public function probeKnown(string $host, ?string $apiKey = null, ?int $port = null, int $attempts = 3): ?string
+    {
+        $port ??= self::PORT;
+
+        for ($attempt = 0; $attempt < $attempts; $attempt++) {
+            if ($this->sweep([$host], $port, $apiKey, 2.0, 4.0) !== []) {
+                $this->diagnostics->debug('Kasa pronađena na poznatoj adresi', [
+                    'attempt' => $attempt + 1,
+                ]);
+
+                return "http://{$host}:{$port}";
+            }
+        }
+
+        return null;
+    }
+
     /** @return string[] Adrese na kojima je uređaj odgovorio, npr. http://192.168.31.102:3566 */
     public function scan(?string $range = null, ?string $apiKey = null, ?int $port = null): array
     {

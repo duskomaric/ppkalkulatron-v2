@@ -11,6 +11,17 @@
         <x-section-block variant="card">
             <x-section-header icon="building" title="Osnovni podaci" :help="route('help').'#profil-kompanije'" />
 
+            {{-- Isti podaci stoje na sertifikatu kase, pa se mogu preuzeti umjesto prepisivati. --}}
+            <div class="flex flex-col gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-[11px] font-bold leading-relaxed text-[var(--color-text-dim)]">
+                    Naziv, adresu, grad, državu i JIB nosi sertifikat fiskalne kase.
+                </p>
+                <x-button variant="ghost" type="button" form="import-company"
+                          class="shrink-0 !py-2.5 !text-[11px] !uppercase !tracking-[0.2em] !font-black">
+                    <x-icon name="printer" class="h-4 w-4" /> Preuzmi sa kase
+                </x-button>
+            </div>
+
             <x-form-input label="Naziv kompanije" name="name" :value="$settings->name" required />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -42,4 +53,7 @@
             Sačuvaj izmjene
         </x-button>
     </form>
+
+    {{-- Zaseban zahtjev: preuzimanje sa kase ne smije nositi nesačuvane izmjene forme. --}}
+    <form id="import-company" method="POST" action="{{ route('settings.company.import') }}" class="hidden">@csrf</form>
 @endsection

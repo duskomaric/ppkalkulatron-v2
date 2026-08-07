@@ -82,7 +82,7 @@
             </div>
 
             <x-note variant="warning" x-show="fiscalState !== 'ready'" x-cloak
-               x-text="fiscalState === 'pin_required' ? 'Kasa traži PIN sigurnosnog elementa. Unesite ga prije preuzimanja stopa.' : fiscalState === 'unavailable' ? 'Kasa nije dostupna. Provjerite adresu, mrežu i podatke za pristup.' : 'Provjeravam vezu sa kasom. Preuzimanje stopa će biti dostupno kada je potvrđena.'"></x-note>
+               x-text="fiscalState === 'no_element' ? 'Sigurnosni element nije u kasi. Vratite karticu u uređaj, pa pokušajte ponovo.' : fiscalState === 'pin_required' ? 'Kasa traži PIN sigurnosnog elementa. Unesite ga prije preuzimanja stopa.' : fiscalState === 'unavailable' ? 'Kasa nije dostupna. Provjerite adresu, mrežu i podatke za pristup.' : 'Provjeravam vezu sa kasom. Preuzimanje stopa će biti dostupno kada je potvrđena.'"></x-note>
 
             @if ($taxRates->isEmpty())
                 <x-note>Stope još nisu preuzete. Bez njih nije moguće dodati artikal ni napraviti račun.</x-note>

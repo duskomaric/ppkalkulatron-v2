@@ -609,3 +609,36 @@ it('nudi numeričku tastaturu na poljima u koja idu samo cifre', function (strin
     'fiskalizacija' => ['settings.fiscal.edit', ['pac' => 'numeric', 'security_pin' => 'numeric']],
     'PIN' => ['settings.pin.edit', ['pin' => 'numeric', 'pin_confirmation' => 'numeric']],
 ]);
+
+it('preuzima podatke firme sa sertifikata kase', function (): void {
+    Http::fake(['*/api/certificate' => Http::response([
+        'name' => 'THROWCODE s.p.',
+        'address' => 'Jefimijina 53',
+        'city' => 'Prnjavor',
+        'country' => 'BA',
+        // JIB na sertifikatu zna imati vodeći razmak.
+        'tin' => ' 4512171520008',
+        'serialNumber' => '6CHWYBFU',
+        'validTo' => '2030-04-28T09:11:59+02:00',
+    ])]);
+
+    $this->post(route('settings.company.import'))
+        ->assertRedirect(route('settings.company.edit'))
+        // Država je već „BA“, pa se ne prijavljuje kao izmjena.
+        ->assertSessionHas('status', 'Preuzeto sa kase: naziv, adresa, grad, JIB.');
+
+    $company = app(CompanySettings::class);
+
+    expect($company->name)->toBe('THROWCODE s.p.')
+        ->and($company->identification_number)->toBe('4512171520008')
+        ->and($company->city)->toBe('Prnjavor');
+});
+
+it('kad se podaci firme poklapaju, ništa ne mijenja', function (): void {
+    Http::fake(['*/api/certificate' => Http::response(['name' => 'THROWCODE s.p.'])]);
+
+    $this->post(route('settings.company.import'));
+
+    $this->post(route('settings.company.import'))
+        ->assertSessionHas('status', 'Podaci sa kase se poklapaju sa unesenim — ništa nije mijenjano.');
+});

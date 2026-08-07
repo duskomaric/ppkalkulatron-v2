@@ -398,3 +398,23 @@ it('kad ništa ne sluša na portu, kaže šta dalje', function (): void {
     expect($html)->toContain('ali nijedan ne sluša na portu')
         ->and($html)->toContain('nije javio nijedan uređaj');
 });
+
+it('javlja kad sigurnosni element nije u kasi', function (): void {
+    Http::fake([
+        '*/api/attention' => Http::response('', 200),
+        // GSC 1300: kartica nije u uređaju — PIN tu ne pomaže.
+        '*/api/status' => Http::response(['gsc' => ['1300']], 200),
+    ]);
+
+    unlocked()->getJson(route('checks'))
+        ->assertSuccessful()
+        ->assertJson(['fiscal' => ['state' => 'no_element', 'label' => 'Sigurnosni element nije u kasi']]);
+});
+
+it('status kase stoji u zaglavlju, na svakoj stranici', function (): void {
+    $html = unlocked()->get(route('invoices.index'))->assertSuccessful()->getContent();
+
+    expect($html)->toContain('backgroundChecks(')
+        ->and($html)->toContain('Bez elementa')
+        ->and($html)->toContain('Traži PIN');
+});

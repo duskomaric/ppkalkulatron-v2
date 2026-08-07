@@ -32,6 +32,8 @@
         </div>
 
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+            <x-fiscal-health-indicator variant="pill" :health="$fiscalHealth" :url="route('checks', [], false)" />
+
             <button type="button" @click="settingsDrawer = true" aria-label="Podešavanja"
                     class="relative cursor-pointer h-11 w-11 rounded-lg border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-dim)] hover:text-primary hover:border-primary/30 transition-all">
                 <x-icon name="cog" class="h-4 w-4" />

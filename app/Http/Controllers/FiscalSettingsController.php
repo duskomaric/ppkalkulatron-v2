@@ -154,7 +154,13 @@ class FiscalSettingsController extends Controller
             ], 422);
         }
 
-        $found = $scanner->scan($range ?: null, $settings->api_key);
+        // Ranije upisana adresa se provjeri prva: kasa koja spava se često javi iz drugog pokušaja.
+        $known = $range === '' ? $this->knownHost($settings->base_url) : null;
+        $found = $known ? array_filter([$scanner->probeKnown($known, $settings->api_key)]) : [];
+
+        if ($found === []) {
+            $found = $scanner->scan($range ?: null, $settings->api_key);
+        }
 
         return response()->json([
             'devices' => $found,
@@ -164,6 +170,14 @@ class FiscalSettingsController extends Controller
                 ? 'Nijedan uređaj nije pronađen. Provjerite da su ovaj uređaj i kasa na istoj mreži, ili unesite opseg ručno.'
                 : 'Pronađeno uređaja: '.count($found).'.',
         ]);
+    }
+
+    /** Adresa iz podešavanja, ako je uopšte adresa na lokalnoj mreži. */
+    private function knownHost(?string $baseUrl): ?string
+    {
+        $host = parse_url((string) $baseUrl, PHP_URL_HOST);
+
+        return is_string($host) && filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $host : null;
     }
 
     /** PIN sigurnosnog elementa; uređaj ga traži poslije napajanja. */

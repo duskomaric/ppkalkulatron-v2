@@ -7,9 +7,11 @@ use App\Models\BankAccount;
 use App\Models\Client;
 use App\Models\FiscalTaxRate;
 use App\Models\Invoice;
+use App\Settings\BackupSettings;
 use App\Settings\CompanySettings;
 use App\Settings\FiscalSettings;
 use App\Settings\MailSettings;
+use App\Settings\NumberingSettings;
 use App\Settings\SetupSettings;
 
 /**
@@ -26,6 +28,9 @@ class SetupProgress
         private CompanySettings $company,
         private FiscalSettings $fiscal,
         private SetupSettings $setup,
+        private NumberingSettings $numbering,
+        private MailSettings $mail,
+        private BackupSettings $backup,
     ) {}
 
     /**
@@ -35,15 +40,7 @@ class SetupProgress
      */
     public function steps(): array
     {
-        return [
-            [
-                'key' => 'company',
-                'title' => 'Podaci firme',
-                'description' => 'Naziv i JIB idu na svaki dokument. Mogu se preuzeti i sa fiskalne kase.',
-                'done' => filled($this->company->name) && filled($this->company->identification_number),
-                'route' => route('settings.company.edit'),
-                'action' => 'Otvori profil',
-            ],
+        $steps = [
             [
                 'key' => 'device',
                 'title' => 'Veza sa fiskalnom kasom',
@@ -59,6 +56,22 @@ class SetupProgress
                 'done' => FiscalTaxRate::query()->exists(),
                 'route' => route('settings.fiscal.edit').'#stope',
                 'action' => 'Preuzmi stope',
+            ],
+            [
+                'key' => 'company',
+                'title' => 'Podaci firme',
+                'description' => 'Naziv i JIB idu na svaki dokument. Mogu se preuzeti i sa fiskalne kase.',
+                'done' => filled($this->company->name) && filled($this->company->identification_number),
+                'route' => route('settings.company.edit'),
+                'action' => 'Otvori profil',
+            ],
+            [
+                'key' => 'bank_account',
+                'title' => 'Bankovni račun',
+                'description' => 'Bez njega na PDF-u nema instrukcija za plaćanje.',
+                'done' => BankAccount::query()->exists(),
+                'route' => route('bank-accounts.create'),
+                'action' => 'Dodaj račun',
             ],
             [
                 'key' => 'article',
@@ -77,6 +90,8 @@ class SetupProgress
                 'action' => 'Dodaj klijenta',
             ],
         ];
+
+        return $steps;
     }
 
     /**
@@ -86,23 +101,30 @@ class SetupProgress
      */
     public function recommended(): array
     {
-        return [
+        $items = [
             [
-                'title' => 'Bankovni račun na dokumentima',
-                'done' => BankAccount::query()->exists(),
-                'route' => route('bank-accounts.create'),
+                'title' => 'Numeracija računa',
+                'done' => filled($this->numbering->invoice_prefix),
+                'route' => route('settings.general.edit'),
+            ],
+            [
+                'title' => 'Mail server za slanje računa',
+                'done' => filled($this->mail->host),
+                'route' => route('settings.mail.edit'),
+            ],
+            [
+                'title' => 'Arhiva dokumenata na email',
+                'done' => filled($this->backup->email),
+                'route' => route('settings.backup.edit'),
             ],
             [
                 'title' => 'PIN za zaključavanje aplikacije',
                 'done' => app(PinLock::class)->isEnabled(),
                 'route' => route('settings.pin.edit'),
             ],
-            [
-                'title' => 'Mail server za slanje računa',
-                'done' => filled(app(MailSettings::class)->host),
-                'route' => route('settings.mail.edit'),
-            ],
         ];
+
+        return $items;
     }
 
     public function remaining(): int

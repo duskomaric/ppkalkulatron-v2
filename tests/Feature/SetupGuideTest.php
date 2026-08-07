@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Article;
+use App\Models\BankAccount;
 use App\Models\Client;
 use App\Services\SetupProgress;
 use App\Settings\CompanySettings;
@@ -21,6 +22,7 @@ function finishSetup(): void
 
     Article::create(['name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F', 'is_active' => true]);
     Client::create(['name' => 'Kupac d.o.o.']);
+    BankAccount::create(['bank_name' => 'Banka', 'account_number' => '5551000000000000', 'show_on_documents' => true]);
 }
 
 it('na svježoj instalaciji nudi korake umjesto prazne liste računa', function (): void {
@@ -46,14 +48,16 @@ it('kad je sve podešeno, vodiča nema', function (): void {
 it('koraci prate stvarno stanje aplikacije', function (): void {
     $steps = collect(app(SetupProgress::class)->steps())->keyBy('key');
 
-    expect($steps['company']['done'])->toBeFalse()
+    // Veza sa kasom je prvi korak; bankovni račun je obavezan, ne preporučen.
+    expect(array_key_first($steps->all()))->toBe('device')
+        ->and($steps['company']['done'])->toBeFalse()
         ->and($steps['tax_rates']['done'])->toBeTrue()   // stopa dolazi iz TestCase
-        ->and($steps['article']['done'])->toBeFalse()
-        ->and(app(SetupProgress::class)->remaining())->toBe(4);
+        ->and($steps['bank_account']['done'])->toBeFalse()
+        ->and(app(SetupProgress::class)->remaining())->toBe(5);
 
     Article::create(['name' => 'Usluga', 'unit' => 'kom', 'tax_label' => 'F']);
 
-    expect(app(SetupProgress::class)->remaining())->toBe(3);
+    expect(app(SetupProgress::class)->remaining())->toBe(4);
 });
 
 it('sklonjen vodič se ne vraća sam, ali stoji u podešavanjima', function (): void {

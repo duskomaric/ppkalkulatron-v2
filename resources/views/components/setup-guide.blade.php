@@ -77,7 +77,7 @@
     <x-section-block variant="card">
         <x-section-header icon="star" title="Preporučeno" subtitle="Nije uslov za račun, ali olakšava rad." />
 
-        <div class="grid gap-2 sm:grid-cols-3">
+        <div class="grid gap-2 sm:grid-cols-2">
             @foreach ($setup->recommended() as $item)
                 <a href="{{ $item['route'] }}"
                    class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3 text-[11px] font-bold transition-colors hover:border-primary/40">

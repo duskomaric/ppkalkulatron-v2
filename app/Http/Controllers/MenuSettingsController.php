@@ -39,9 +39,15 @@ class MenuSettingsController extends Controller
         $settings->menu_modules = $menuModules;
         $settings->drawer_modules = array_values(array_diff($drawerModules, $menuModules));
         $settings->max_menu_items = $data['max_menu_items'];
+
+        // Stranica čuva i boju, pa poruka kaže šta je zaista promijenjeno.
+        $colourChanged = isset($data['primary_color']) && $data['primary_color'] !== $settings->primary_color;
         $settings->primary_color = $data['primary_color'] ?? $settings->primary_color;
         $settings->save();
 
-        return redirect()->route('settings.menu.edit')->with('status', 'Raspored menija je sačuvan.');
+        return redirect()->route('settings.menu.edit')->with(
+            'status',
+            $colourChanged ? 'Boja i raspored su sačuvani.' : 'Izgled i navigacija su sačuvani.',
+        );
     }
 }

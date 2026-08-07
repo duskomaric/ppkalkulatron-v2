@@ -59,7 +59,8 @@ it('nudi paletu i pamti odabranu boju', function (): void {
         'drawer_modules' => ['clients'],
         'max_menu_items' => 4,
         'primary_color' => '#10B981',
-    ])->assertRedirect(route('settings.menu.edit'));
+    ])->assertRedirect(route('settings.menu.edit'))
+        ->assertSessionHas('status', 'Boja i raspored su sačuvani.');
 
     expect(app(MenuSettings::class)->primary_color)->toBe('#10B981');
 

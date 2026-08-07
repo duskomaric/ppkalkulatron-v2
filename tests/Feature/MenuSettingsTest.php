@@ -119,3 +119,19 @@ it('ne prima ograničenje menija van jedan do četiri', function (mixed $max): v
         'max_menu_items' => $max,
     ])->assertSessionHasErrors('max_menu_items');
 })->with([0, 5, 99, -1, 'dva', '']);
+
+it('poruka o čuvanju pokriva cijelu stranicu, ne samo meni', function (): void {
+    $payload = [
+        'menu_modules' => ['invoices'],
+        'drawer_modules' => ['clients'],
+        'max_menu_items' => 4,
+        'primary_color' => app(MenuSettings::class)->primary_color,
+    ];
+
+    // Ista boja: mijenja se samo raspored.
+    $this->put(route('settings.menu.update'), $payload)
+        ->assertSessionHas('status', 'Izgled i navigacija su sačuvani.');
+
+    $this->put(route('settings.menu.update'), [...$payload, 'primary_color' => '#2563EB'])
+        ->assertSessionHas('status', 'Boja i raspored su sačuvani.');
+});

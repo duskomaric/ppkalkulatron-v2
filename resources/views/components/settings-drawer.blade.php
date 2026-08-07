@@ -4,6 +4,8 @@
             Zajednička podešavanja
         </p>
 
+        <x-drawer-nav-item :href="route('settings.setup.edit')" icon="check" title="Početno podešavanje"
+                           description="Koraci do prvog računa i šta još fali" />
         <x-drawer-nav-item :href="route('settings.company.edit')" icon="building" title="Profil kompanije"
                            description="Podaci o firmi, adresa i JIB/PIB" />
         <x-drawer-nav-item :href="route('settings.mail.edit')" icon="mail" title="Mail"

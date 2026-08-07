@@ -20,6 +20,7 @@ use App\Http\Controllers\MenuSettingsController;
 use App\Http\Controllers\MobileDiagnosticsController;
 use App\Http\Controllers\PinSettingsController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SetupController;
 use App\Http\Controllers\UnlockController;
 use App\Http\Middleware\EnsureUnlocked;
 use App\Http\Middleware\LogDiagnosticAction;
@@ -73,6 +74,10 @@ Route::middleware([EnsureUnlocked::class, LogDiagnosticAction::class])->group(fu
 
     Route::get('/podesavanja/mail', [MailSettingsController::class, 'edit'])->name('settings.mail.edit');
     Route::put('/podesavanja/mail', [MailSettingsController::class, 'update'])->name('settings.mail.update');
+
+    Route::get('/podesavanja/pocetak', [SetupController::class, 'edit'])->name('settings.setup.edit');
+    Route::post('/podesavanja/pocetak/vrati', [SetupController::class, 'restore'])->name('setup.restore');
+    Route::post('/pocetak/sakrij', [SetupController::class, 'dismiss'])->name('setup.dismiss');
 
     Route::get('/podesavanja/arhiva', [BackupController::class, 'edit'])->name('settings.backup.edit');
     Route::put('/podesavanja/arhiva', [BackupController::class, 'update'])->name('settings.backup.update');

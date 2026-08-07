@@ -15,6 +15,7 @@ use App\Services\InvoiceEmailSender;
 use App\Services\InvoiceFormData;
 use App\Services\InvoicePdfService;
 use App\Services\InvoiceWriter;
+use App\Services\SetupProgress;
 use Illuminate\Http\Request;
 use Native\Mobile\Facades\Share;
 
@@ -26,7 +27,11 @@ class InvoiceController extends Controller
         private Diagnostics $diagnostics,
     ) {}
 
-    public function index(Request $request, FiscalDeviceHealth $health)
+    /**
+     * `SetupProgress` se traži po pozivu, ne u konstruktoru: ruter zapamti instancu
+     * kontrolera, pa bi zavisnost sa stanjem ostala ista i poslije izmjene podešavanja.
+     */
+    public function index(Request $request, FiscalDeviceHealth $health, SetupProgress $setup)
     {
         $filters = [
             'q' => $request->string('q')->toString(),
@@ -55,6 +60,8 @@ class InvoiceController extends Controller
             'years' => $this->years($filters['year']),
             'activeFilters' => $this->activeFilters($filters),
             'fiscalHealth' => $health->current(),
+            // Svježa instalacija nema šta da prikaže u listi; koraci su korisniji.
+            'setup' => $setup,
         ]);
     }
 

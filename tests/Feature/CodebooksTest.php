@@ -18,6 +18,8 @@ it('prikazuje šifarnike', function (string $route): void {
 })->with(['bank-accounts.index', 'bank-accounts.create', 'currencies.index', 'currencies.create']);
 
 it('nudi sljedeći korak na praznim listama', function (string $route, string $label): void {
+    skipSetupGuide();
+
     $this->get(route($route))
         ->assertSuccessful()
         ->assertSee($label);
@@ -388,6 +390,8 @@ it('ostavlja prostor za indikator na svakom tipu select polja', function (): voi
 });
 
 it('koristi jedinstveni select za formu i filtere', function (): void {
+    skipSetupGuide();
+
     $invoiceForm = $this->get(route('invoices.create'))
         ->assertSuccessful()
         ->getContent();
@@ -402,6 +406,8 @@ it('koristi jedinstveni select za formu i filtere', function (): void {
 });
 
 it('koristi kanonske filtere bez praznih prikaza u pomoći', function (): void {
+    skipSetupGuide();
+
     $invoiceList = $this->get(route('invoices.index'))
         ->assertSuccessful()
         ->getContent();

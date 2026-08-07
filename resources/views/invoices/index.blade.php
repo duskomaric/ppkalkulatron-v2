@@ -6,12 +6,19 @@
 @endsection
 
 @section('actions')
-    <x-create-button label="Novi račun" :href="route('invoices.create')" />
+    @unless ($setup->shouldShow())
+        <x-create-button label="Novi račun" :href="route('invoices.create')" />
+    @endunless
 @endsection
 
 @section('content')
-    <div>
-        <x-invoices.filters :filters="$filters" :years="$years" :active-filters="$activeFilters" />
-        <x-invoices.list :invoices="$invoices" />
-    </div>
+    {{-- Dok aplikacija nije podešena, koraci su korisniji od prazne liste. --}}
+    @if ($setup->shouldShow())
+        <x-setup-guide :setup="$setup" />
+    @else
+        <div>
+            <x-invoices.filters :filters="$filters" :years="$years" :active-filters="$activeFilters" />
+            <x-invoices.list :invoices="$invoices" />
+        </div>
+    @endif
 @endsection

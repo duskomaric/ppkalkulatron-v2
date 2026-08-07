@@ -7,6 +7,7 @@ use App\Services\FiscalService;
 use App\Services\InvoicePdfService;
 use App\Services\InvoiceWriter;
 use App\Services\PinLock;
+use App\Services\SetupProgress;
 use App\Settings\CompanySettings;
 use App\Settings\FiscalSettings;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -133,6 +134,16 @@ function refundFor(Invoice $invoice): Invoice
 }
 
 /** Veleprodaja u fiskalnim podešavanjima. */
+/**
+ * Sklanja vodič za početno podešavanje sa liste računa.
+ *
+ * Svježa baza u testu nema ni firmu ni kasu, pa bi umjesto liste stajali koraci.
+ */
+function skipSetupGuide(): void
+{
+    app(SetupProgress::class)->dismiss();
+}
+
 function enableWholesale(): void
 {
     $settings = app(FiscalSettings::class);

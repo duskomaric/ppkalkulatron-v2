@@ -224,10 +224,20 @@ class DatabaseBackup
     /** Briše sve i vraća aplikaciju u stanje svježe instalacije. */
     public function reset(): void
     {
+        // `migrate:fresh` ponovo pokreće i settings migracije; demo podaci se ne vraćaju.
+        TemporaryDemoBuildSettings::skipSeeding();
+
         Artisan::call('migrate:fresh', ['--force' => true]);
 
         Storage::disk('local')->deleteDirectory(self::DOCUMENTS_DIRECTORY);
         File::cleanDirectory($this->workingDirectory());
+
+        /*
+         * Podešavanja su „scoped" objekti: poslije brisanja baze u memoriji ostaju
+         * stare vrijednosti, pa bi ih prvo naredno čuvanje upisalo nazad. Zato se
+         * odbacuju odmah — inače reset zna izgledati kao da nije sve obrisao.
+         */
+        app()->forgetScopedInstances();
 
         Artisan::call('cache:clear');
 

@@ -40,3 +40,11 @@ it('demo podešavanja se upišu na svježoj bazi', function (): void {
     expect(app(TemporaryDemoBuildSettings::class)->seedIfPristine())->toBeTrue()
         ->and(app(FiscalSettings::class)->base_url)->not->toBeEmpty();
 });
+
+it('reset aplikacije ne vraća demo podatke kroz settings migracije', function (): void {
+    // `migrate:fresh` ponovo pokreće settings migracije, među njima i demo seed.
+    TemporaryDemoBuildSettings::skipSeeding();
+
+    expect(app(TemporaryDemoBuildSettings::class)->seedIfPristine())->toBeFalse()
+        ->and(app(CompanySettings::class)->name)->toBe('');
+});

@@ -113,9 +113,6 @@ it('reset briše podatke, podešavanja i fiskalne dokumente', function (): void 
 
     app(DatabaseBackup::class)->reset();
 
-    // Podešavanja su singleton u kontejneru; nakon reseta korisnik dobija novi zahtjev.
-    app()->forgetInstance(CompanySettings::class);
-
     expect(Invoice::count())->toBe(0)
         ->and(Client::count())->toBe(0)
         ->and(FiscalTaxRate::count())->toBe(0)
@@ -164,4 +161,20 @@ it('uz preuzimanje šalje kolačić po kojem dugme zna da je gotovo', function (
         ->assertSuccessful()
         ->assertDownload()
         ->assertCookie('backup-preuzet');
+});
+
+it('reset ne vraća zatečena podešavanja u novu bazu', function (): void {
+    $company = app(CompanySettings::class);
+    $company->name = 'Firma prije reseta';
+    $company->save();
+
+    app(DatabaseBackup::class)->reset();
+
+    // Podešavanja su „scoped": da nisu odbačena, prvo naredno čuvanje bi vratilo
+    // staru vrijednost u svježu bazu i reset bi izgledao kao da nije uspio.
+    $fresh = app(CompanySettings::class);
+    $fresh->save();
+
+    expect($fresh->name)->not->toBe('Firma prije reseta')
+        ->and(app(CompanySettings::class)->name)->not->toBe('Firma prije reseta');
 });

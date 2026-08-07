@@ -27,11 +27,24 @@ class TemporaryDemoBuildSettings
     ) {}
 
     /**
+     * Reset aplikacije prolazi kroz `migrate:fresh`, koji ponovo pokrene i settings
+     * migracije — bez ove brane demo podaci bi se vratili baš kad ih korisnik briše.
+     *
+     * Oznaka stoji u kontejneru, ne u statičkom polju, da ne bi preživjela zahtjev.
+     */
+    public const SKIP_FLAG = 'settings.skip-demo-seed';
+
+    public static function skipSeeding(): void
+    {
+        app()->instance(self::SKIP_FLAG, true);
+    }
+
+    /**
      * Popunjava samo potpuno novu aplikaciju. Nikad ne prepisuje korisničke postavke.
      */
     public function seedIfPristine(): bool
     {
-        if (! $this->isPristine()) {
+        if (app()->bound(self::SKIP_FLAG) || ! $this->isPristine()) {
             return false;
         }
 
